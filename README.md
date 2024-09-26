@@ -1,11 +1,6 @@
-## Task List
-Here are a few things we need to accomplish by end of this week 
-* Register a google email for the startup
-* Use the email to register a Google Cloud Earth Engine Project
-* Setup a service acccount to start using the API for the CHIRPS Dataset
-* Store State Names and District Names for Cambodia (first use case) and set up api endpoint for other countries (GeoNames or REST Countries or OpenStreet Map)
-* Set up a database (Free Tier MongoDB or any other DB)
-* Set up vercel project only for MVP (switch to cloud provider for actual product because it is expensive)
+## How to run the app
+* You can run the backend by running the following command in the backend directory
+``` python -m uvicorn main:app --reload```
 
 ### Psuedo-Algorithm for Points for a selected State/District
 Psuedo Algorithm to figure out the number of points required to get all points for a certain state or district:
