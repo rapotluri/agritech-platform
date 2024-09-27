@@ -12,7 +12,6 @@ import { Calendar } from "@/components/ui/calendar"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -46,16 +45,16 @@ const formSchema = z.object({
 
 // Mock data
 const countries = ["USA", "Canada", "UK", "India"]
-const states = {
-    USA: ["California", "New York", "Texas"],
-    Canada: ["Ontario", "Quebec", "British Columbia"],
-    UK: ["England", "Scotland", "Wales"],
-    India: ["Maharashtra", "Karnataka", "Tamil Nadu"],
+const states: { [key: string]: string[] } = {
+    "USA": ["California", "New York", "Texas"],
+    "Canada": ["Ontario", "Quebec", "British Columbia"],
+    "UK": ["England", "Scotland", "Wales"],
+    "India": ["Maharashtra", "Karnataka", "Tamil Nadu"],
 }
-const districts = {
-    California: ["Los Angeles", "San Francisco", "San Diego"],
+const districts: { [key: string]: string[] } = {
+    "California": ["Los Angeles", "San Francisco", "San Diego"],
     "New York": ["New York City", "Buffalo", "Albany"],
-    Texas: ["Houston", "Austin", "Dallas"],
+    "Texas": ["Houston", "Austin", "Dallas"],
     // Add more districts for other states...
 }
 const dataTypes = ["Temperature", "Rainfall", "Humidity", "Wind Speed"]
