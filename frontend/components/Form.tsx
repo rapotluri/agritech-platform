@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -29,6 +29,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { State, City, Country, IState, ICountry, ICity } from 'country-state-city';
 
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
@@ -43,25 +44,16 @@ const formSchema = z.object({
     dataType: z.string().min(1, "Data type is required"),
 })
 
-// Mock data
-const countries = ["USA", "Canada", "UK", "India"]
-const states: { [key: string]: string[] } = {
-    "USA": ["California", "New York", "Texas"],
-    "Canada": ["Ontario", "Quebec", "British Columbia"],
-    "UK": ["England", "Scotland", "Wales"],
-    "India": ["Maharashtra", "Karnataka", "Tamil Nadu"],
-}
-const districts: { [key: string]: string[] } = {
-    "California": ["Los Angeles", "San Francisco", "San Diego"],
-    "New York": ["New York City", "Buffalo", "Albany"],
-    "Texas": ["Houston", "Austin", "Dallas"],
-    // Add more districts for other states...
-}
+
 const dataTypes = ["Temperature", "Rainfall", "Humidity", "Wind Speed"]
 
 export default function DataForm() {
-    const [availableStates, setAvailableStates] = useState<string[]>([])
-    const [availableDistricts, setAvailableDistricts] = useState<string[]>([])
+    const [countries, setCountries] = useState<ICountry[]>([]);
+    const [states, setStates] = useState<IState[]>([])
+    const [districts, setDistricts] = useState<ICity[]>([])
+    // const [selectedCountry, setSelectedCountry] = useState<string>('');
+    // const [selectedState, setSelectedState] = useState<string>('');
+    // const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -77,6 +69,47 @@ export default function DataForm() {
         console.log(values)
         // Here you would typically send this data to your backend
     }
+    useEffect(() => {
+        // Fetch all countries when the component mounts
+        const allCountries = Country.getAllCountries();
+        setCountries(allCountries);
+    }, []);
+
+    const handleCountryChange = (countryName: string) => {
+        // setSelectedCountry(countryName);
+        // setSelectedState('');
+        // setSelectedDistrict('');
+
+        // Get the ISO code for the selected country
+        const country = countries.find((c) => c.name === countryName);
+        if (country) {
+            const countryIsoCode = country.isoCode;
+            // Fetch states based on the country ISO code
+            const allStates = State.getStatesOfCountry(countryIsoCode);
+            setStates(allStates);
+        }
+
+
+    };
+
+    const handleStateChange = (stateName: string) => {
+        // setSelectedState(stateName);
+        // setSelectedDistrict('');
+        // Get the ISO code for the selected country
+
+        const state = states.find((s) => s.name === stateName);
+
+        if (state) {
+            const stateCode = state.isoCode;
+            const countryCode = state.countryCode
+            // Fetch states based on the country ISO code
+            const availableDistricts = City.getCitiesOfState(countryCode, stateCode);
+            setDistricts(availableDistricts);
+        }
+
+    };
+
+
 
     return (
         <Form {...form}>
@@ -90,7 +123,7 @@ export default function DataForm() {
                             <Select
                                 onValueChange={(value) => {
                                     field.onChange(value)
-                                    setAvailableStates(states[value] || [])
+                                    handleCountryChange(value)
                                     form.setValue("state", "")
                                     form.setValue("district", "")
                                 }}
@@ -101,9 +134,9 @@ export default function DataForm() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {countries.map((country) => (
-                                        <SelectItem key={country} value={country}>
-                                            {country}
+                                    {Object.values(countries).map((country) => (
+                                        <SelectItem key={country.name} value={country.name}>
+                                            {country.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -122,7 +155,7 @@ export default function DataForm() {
                             <Select
                                 onValueChange={(value) => {
                                     field.onChange(value)
-                                    setAvailableDistricts(districts[value] || [])
+                                    handleStateChange(value)
                                     form.setValue("district", "")
                                 }}
                             >
@@ -132,9 +165,9 @@ export default function DataForm() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {availableStates.map((state) => (
-                                        <SelectItem key={state} value={state}>
-                                            {state}
+                                    {states.map((state) => (
+                                        <SelectItem key={state.name} value={state.name}>
+                                            {state.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -150,16 +183,19 @@ export default function DataForm() {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>District</FormLabel>
-                            <Select onValueChange={field.onChange}>
+                            <Select onValueChange={(value) => {
+                                field.onChange(value)
+                                // setSelectedDistrict(value)
+                            }}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a district" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {availableDistricts.map((district) => (
-                                        <SelectItem key={district} value={district}>
-                                            {district}
+                                    {districts.map((district) => (
+                                        <SelectItem key={district.name} value={district.name}>
+                                            {district.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
