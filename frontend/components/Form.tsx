@@ -66,8 +66,29 @@ export default function DataForm() {
     })
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values)
-        // Here you would typically send this data to your backend
+        const start = values.startDate.getFullYear() + "-" + values.startDate.getMonth() + "-" + values.startDate.getDate()
+        const end = values.endDate.getFullYear() + "-" + values.endDate.getMonth() + "-" + values.endDate.getDate()
+        // Build the query string from form values
+    const queryParams = new URLSearchParams({
+        lat: "123",
+        long: "21",
+        start_date: start,  // Convert to ISO string
+        end_date: end,  // Convert to ISO string
+    }).toString();
+
+    // Make the GET request with the query parameters
+    fetch(`http://127.0.0.1:8000/api/data?${queryParams}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    }).then((response) => response.json())
+    .then((data) => {
+            console.log('Received from backend:', data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
     }
     useEffect(() => {
         // Fetch all countries when the component mounts
