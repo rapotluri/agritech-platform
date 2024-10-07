@@ -1,39 +1,27 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from api import precipitation
 from fastapi.middleware.cors import CORSMiddleware
-import ee
-import os
-from api import commune_data
+from api.climate_data import router as climate_data_router
 
+# Initialize FastAPI app
+app = FastAPI(
+    title="AccuRate Climate Data API",
+    description="API for retrieving climate data for communes within a province",
+    version="1.0.0",
+)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
-    file = os.getcwd() + "\\api\\accurate-436800-7ed6a0dbbaf7.json"
-    credentials = ee.ServiceAccountCredentials(service_account, file)
-    ee.Initialize(credentials)
-    yield
-
-
-app = FastAPI(lifespan=lifespan)
-
-origins = ["*"]
-
+# Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(precipitation.router)
+# Include the climate data router
+app.include_router(climate_data_router)
 
-app.include_router(commune_data.router) 
-
-
-
+# Root endpoint for testing
 @app.get("/")
-async def read_root():
-    return {"Hello": "AccurRate"}
+async def root():
+    return {"message": "Welcome to the AccuRate Climate Data API!"}
