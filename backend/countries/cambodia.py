@@ -1,4 +1,6 @@
-# backend/countries/cambodia.py
+import geopandas as gpd
+import os
+
 def normalize_province_name(name: str) -> str:
     """
     Normalize province names for Cambodia by removing special characters,
@@ -31,3 +33,15 @@ def normalize_province_name(name: str) -> str:
 
     # Apply manual corrections if necessary
     return manual_corrections.get(name, name)
+
+def get_communes_geodataframe():
+    """
+    Load the GeoDataFrame for Cambodia's communes and normalize the province names.
+    """
+    geojson_file = os.path.join(os.getcwd(), "boundaries", "cambodia_communes.geojson")
+    try:
+        communes_gdf = gpd.read_file(geojson_file)
+        communes_gdf["normalized_NAME_1"] = communes_gdf["NAME_1"].apply(normalize_province_name)
+    except Exception as e:
+        raise RuntimeError(f"Error reading GeoJSON file: {str(e)}")
+    return communes_gdf

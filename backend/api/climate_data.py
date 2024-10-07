@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import pandas as pd
-from utils.settings import get_communes_geodataframe
+from countries.cambodia import get_communes_geodataframe  # Use the updated import
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
@@ -15,9 +15,6 @@ router = APIRouter(
 # Load GeoDataFrame with communes
 communes_gdf = get_communes_geodataframe()
 
-# Print all unique normalized province names for debugging
-print(f"\n[DEBUG] Available normalized provinces: {communes_gdf['normalized_NAME_1'].unique()}")
-
 @router.get("/climate-data")
 async def get_climate_data(province: str, start_date: str, end_date: str, data_type: str = "precipitation"):
     """
@@ -30,9 +27,6 @@ async def get_climate_data(province: str, start_date: str, end_date: str, data_t
     """
     # Initialize Google Earth Engine if not already initialized
     initialize_gee()
-
-    # Print the province for debugging
-    print(f"\n[DEBUG] Input province: {province}")
 
     # Filter for the specified province
     province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
