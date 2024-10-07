@@ -1,5 +1,3 @@
-# backend/weather/temperature.py
-
 import ee
 import pandas as pd
 
@@ -44,19 +42,22 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
 
             # Extract the data for each date using `reduceRegion`
             def extract_daily_data(image):
-                mean_temperature = image.reduceRegion(
+                # Calculate the mean temperature in Celsius (Kelvin - 273.15)
+                mean_temperature_kelvin = image.reduceRegion(
                     reducer=ee.Reducer.mean(),
                     geometry=commune_geometry,
                     scale=5000,
                     maxPixels=1e13
                 )
-                return image.set("mean_temperature", mean_temperature.get("mean_2m_air_temperature"))
+                # Convert Kelvin to Celsius and set as a property
+                mean_temperature_celsius = ee.Number(mean_temperature_kelvin.get("mean_2m_air_temperature")).subtract(273.15)
+                return image.set("mean_temperature_celsius", mean_temperature_celsius)
 
             # Apply the `extract_daily_data` function
             time_series = temperature.map(extract_daily_data).getInfo()
 
             # Convert to a DataFrame
-            daily_data = {entry["properties"]["date"]: entry["properties"]["mean_temperature"] for entry in time_series["features"] if "mean_temperature" in entry["properties"]}
+            daily_data = {entry["properties"]["date"]: entry["properties"]["mean_temperature_celsius"] for entry in time_series["features"] if "mean_temperature_celsius" in entry["properties"]}
             daily_df = pd.DataFrame(list(daily_data.items()), columns=["Date", commune_name])
             
             # Merge results
