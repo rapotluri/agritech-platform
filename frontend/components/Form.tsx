@@ -107,7 +107,6 @@ export default function DataForm() {
                                     field.onChange(value)
                                     handleCountryChange(value)
                                     form.setValue("state", "")
-                                    form.setValue("district", "")
                                 }}
                             >
                                 <FormControl>
