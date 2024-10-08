@@ -29,12 +29,12 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { State, City, Country, IState, ICountry, ICity } from 'country-state-city';
+import { State, Country, IState, ICountry} from 'country-state-city';
+import apiClient from "@/lib/apiClient"
 
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
     state: z.string().min(1, "State is required"),
-    district: z.string().min(1, "District is required"),
     startDate: z.date({
         required_error: "Start date is required",
     }),
@@ -45,51 +45,21 @@ const formSchema = z.object({
 })
 
 
-const dataTypes = ["Temperature", "Rainfall", "Humidity", "Wind Speed"]
+const dataTypes = ["Temperature", "Precipitaion"]
 
 export default function DataForm() {
     const [countries, setCountries] = useState<ICountry[]>([]);
     const [states, setStates] = useState<IState[]>([])
-    const [districts, setDistricts] = useState<ICity[]>([])
-    // const [selectedCountry, setSelectedCountry] = useState<string>('');
-    // const [selectedState, setSelectedState] = useState<string>('');
-    // const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             country: "",
             state: "",
-            district: "",
             dataType: "",
         },
     })
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        const start = values.startDate.getFullYear() + "-" + values.startDate.getMonth() + "-" + values.startDate.getDate()
-        const end = values.endDate.getFullYear() + "-" + values.endDate.getMonth() + "-" + values.endDate.getDate()
-        // Build the query string from form values
-    const queryParams = new URLSearchParams({
-        lat: "123",
-        long: "21",
-        start_date: start,  // Convert to ISO string
-        end_date: end,  // Convert to ISO string
-    }).toString();
-
-    // Make the GET request with the query parameters
-    fetch(`http://127.0.0.1:8000/api/data?${queryParams}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    }).then((response) => response.json())
-    .then((data) => {
-            console.log('Received from backend:', data);
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    }
     useEffect(() => {
         // Fetch all countries when the component mounts
         const allCountries = Country.getAllCountries();
@@ -97,40 +67,34 @@ export default function DataForm() {
     }, []);
 
     const handleCountryChange = (countryName: string) => {
-        // setSelectedCountry(countryName);
-        // setSelectedState('');
-        // setSelectedDistrict('');
-
-        // Get the ISO code for the selected country
         const country = countries.find((c) => c.name === countryName);
         if (country) {
             const countryIsoCode = country.isoCode;
-            // Fetch states based on the country ISO code
             const allStates = State.getStatesOfCountry(countryIsoCode);
             setStates(allStates);
         }
-
-
     };
 
-    const handleStateChange = (stateName: string) => {
-        // setSelectedState(stateName);
-        // setSelectedDistrict('');
-        // Get the ISO code for the selected country
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        const start = values.startDate.getFullYear() + "-" + values.startDate.getMonth() + "-" + values.startDate.getDate()
+        const end = values.endDate.getFullYear() + "-" + values.endDate.getMonth() + "-" + values.endDate.getDate()
 
-        const state = states.find((s) => s.name === stateName);
+        const words = values.state.split(' ');
+        const formattedState = words
+            .map((word, index) => index === 1 ? word.toLowerCase() : word)
+            .join(''); 
 
-        if (state) {
-            const stateCode = state.isoCode;
-            const countryCode = state.countryCode
-            // Fetch states based on the country ISO code
-            const availableDistricts = City.getCitiesOfState(countryCode, stateCode);
-            setDistricts(availableDistricts);
-        }
-
-    };
-
-
+        const queryParams = new URLSearchParams({
+            province: formattedState,
+            start_date: start,  // Convert to ISO string
+            end_date: end,  // Convert to ISO string
+        }).toString();
+        apiClient.get(`api/climate-data?${queryParams}`).then((response) => {
+            console.log(response.data)
+        }).catch((error) => {   
+            console.log(error)
+        })
+    }
 
     return (
         <Form {...form}>
@@ -176,8 +140,6 @@ export default function DataForm() {
                             <Select
                                 onValueChange={(value) => {
                                     field.onChange(value)
-                                    handleStateChange(value)
-                                    form.setValue("district", "")
                                 }}
                             >
                                 <FormControl>
@@ -189,34 +151,6 @@ export default function DataForm() {
                                     {states.map((state) => (
                                         <SelectItem key={state.name} value={state.name}>
                                             {state.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="district"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>District</FormLabel>
-                            <Select onValueChange={(value) => {
-                                field.onChange(value)
-                                // setSelectedDistrict(value)
-                            }}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a district" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {districts.map((district) => (
-                                        <SelectItem key={district.name} value={district.name}>
-                                            {district.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
