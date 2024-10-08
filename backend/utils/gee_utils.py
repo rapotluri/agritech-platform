@@ -7,7 +7,7 @@ def initialize_gee():
     if not ee.data._credentials:
         service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
         credentials_file = os.path.join(
-            os.getcwd(), "api", "accurate-436800-37424d272a6e.json"
+            os.getcwd(), "etc", "secrets", "g_credentials.json"
         )
         credentials = ee.ServiceAccountCredentials(service_account, credentials_file)
         ee.Initialize(credentials)

@@ -79,10 +79,7 @@ export default function DataForm() {
         const start = values.startDate.getFullYear() + "-" + values.startDate.getMonth() + "-" + values.startDate.getDate()
         const end = values.endDate.getFullYear() + "-" + values.endDate.getMonth() + "-" + values.endDate.getDate()
 
-        const words = values.state.split(' ');
-        const formattedState = words
-            .map((word, index) => index === 1 ? word.toLowerCase() : word)
-            .join(''); 
+        const formattedState = values.state.replace(/\s+/g, '');
 
         const queryParams = new URLSearchParams({
             province: formattedState,
