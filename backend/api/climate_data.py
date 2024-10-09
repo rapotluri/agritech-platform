@@ -57,10 +57,3 @@ async def get_climate_data(
         "message": f"{data_type.capitalize()} data retrieved successfully",
         "filename": excel_filename,
     }
-
-
-@router.get("/climate-data/niga")
-async def get_niga(
-    province: str, start_date: str, end_date: str, data_type: str = "precipitation"
-):
-    return province
