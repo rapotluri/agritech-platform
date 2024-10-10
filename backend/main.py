@@ -10,16 +10,22 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Set up CORS middleware (add your frontend URL here)
+# Define allowed origins for CORS
+origins = [
+    "http://localhost:3000",  # For local testing
+    "https://agritech-prod.vercel.app",  # Deployed frontend on Vercel
+]
+
+# Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Allow requests only from the frontend
+    allow_origins=origins,  # Allow requests from defined origins only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include the climate data and file routers
+# Include routers for climate data and file serving
 app.include_router(climate_data_router)
 app.include_router(serve_file_router)
 
