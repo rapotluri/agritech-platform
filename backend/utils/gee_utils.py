@@ -5,19 +5,20 @@ import json
 def initialize_gee():
     """
     Initialize the Google Earth Engine API using service account credentials
-    stored in an environment variable.
+    stored in a Render secret file.
     """
-    # Read the service account credentials from the environment variable
     service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
     
-    # Fetch the credentials JSON from the environment variable
-    credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    # Define the path to the secret file (as defined in Render)
+    credentials_file = "/etc/secrets/g_credentials.json"
 
-    if not credentials_json:
-        raise RuntimeError("Google Earth Engine credentials not found in environment variables.")
+    # Check if the credentials file exists
+    if not os.path.isfile(credentials_file):
+        raise RuntimeError(f"Google Earth Engine credentials file not found at {credentials_file}")
 
-    # Parse the credentials from the JSON string
-    credentials_dict = json.loads(credentials_json)
+    # Read the JSON content from the file
+    with open(credentials_file, 'r') as file:
+        credentials_dict = json.load(file)
 
     # Create credentials object using the parsed credentials
     credentials = ee.ServiceAccountCredentials(service_account, credentials_dict)
