@@ -29,9 +29,10 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { State, Country, IState, ICountry} from 'country-state-city';
-import apiClient from "@/lib/apiClient"
+import { State, Country, IState, ICountry } from 'country-state-city'
+import { generateClimateData, downloadFile } from "@/lib/apiClient"
 
+// Define the form validation schema using Zod
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
     state: z.string().min(1, "State is required"),
@@ -44,13 +45,16 @@ const formSchema = z.object({
     dataType: z.string().min(1, "Data type is required"),
 })
 
-
-const dataTypes = ["Temperature", "Precipitaion"]
+// Options for the data type dropdown
+const dataTypes = ["Temperature", "Precipitation"]
 
 export default function DataForm() {
-    const [countries, setCountries] = useState<ICountry[]>([]);
+    const [countries, setCountries] = useState<ICountry[]>([])
     const [states, setStates] = useState<IState[]>([])
+    const [fileUrl, setFileUrl] = useState<string | null>(null)  // State to store file URL for download
+    const [loading, setLoading] = useState(false)  // State to track if a request is in progress
 
+    // Initialize the form using React Hook Form
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -60,213 +64,248 @@ export default function DataForm() {
         },
     })
 
+    // Load all countries when the component mounts
     useEffect(() => {
-        // Fetch all countries when the component mounts
-        const allCountries = Country.getAllCountries();
-        setCountries(allCountries);
-    }, []);
+        const allCountries = Country.getAllCountries()
+        setCountries(allCountries)
+    }, [])
 
+    // Handle country change to load states for the selected country
     const handleCountryChange = (countryName: string) => {
-        const country = countries.find((c) => c.name === countryName);
+        const country = countries.find((c) => c.name === countryName)
         if (country) {
-            const countryIsoCode = country.isoCode;
-            const allStates = State.getStatesOfCountry(countryIsoCode);
-            setStates(allStates);
+            const countryIsoCode = country.isoCode
+            const allStates = State.getStatesOfCountry(countryIsoCode)
+            setStates(allStates)
         }
-    };
+    }
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        const start = values.startDate.getFullYear() + "-" + values.startDate.getMonth() + "-" + values.startDate.getDate()
-        const end = values.endDate.getFullYear() + "-" + values.endDate.getMonth() + "-" + values.endDate.getDate()
+    // Handle form submission
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        if (loading) return
 
-        const formattedState = values.state.replace(/\s+/g, '');
+        setLoading(true)  // Mark request as in progress
 
-        const queryParams = new URLSearchParams({
+        // Format the start and end dates correctly
+        const start = values.startDate.toISOString().split('T')[0]  // Convert to YYYY-MM-DD
+        const end = values.endDate.toISOString().split('T')[0]
+
+        // Remove any spaces in the state name for API compatibility
+        const formattedState = values.state.replace(/\s+/g, '')
+
+        const params = {
             province: formattedState,
-            start_date: start,  // Convert to ISO string
-            end_date: end,  // Convert to ISO string
-        }).toString();
-        apiClient.get(`api/climate-data?${queryParams}`).then((response) => {
-            console.log(response.data)
-        }).catch((error) => {   
+            start_date: start,
+            end_date: end,
+            data_type: values.dataType.toLowerCase(),
+        }
+
+        try {
+            // Send request to backend to generate the climate data file
+            const response = await generateClimateData(params)
+            const { filename } = response
+
+            if (filename) {
+                const downloadLink = await downloadFile(filename)
+                setFileUrl(downloadLink)  // Set the download link for the user
+            }
+        } catch (error) {
             console.log(error)
-        })
+        } finally {
+            setLoading(false)  // Mark request as complete
+        }
     }
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Country</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value)
-                                    handleCountryChange(value)
-                                    form.setValue("state", "")
-                                }}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a country" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {Object.values(countries).map((country) => (
-                                        <SelectItem key={country.name} value={country.name}>
-                                            {country.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>State</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value)
-                                }}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a state" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {states.map((state) => (
-                                        <SelectItem key={state.name} value={state.name}>
-                                            {state.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Start Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
+        <>
+            <Form {...form}>
+                {/* Form Element */}
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    {/* Country Select Field */}
+                    <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Country</FormLabel>
+                                <Select
+                                    onValueChange={(value) => {
+                                        field.onChange(value)
+                                        handleCountryChange(value)
+                                        form.setValue("state", "")
+                                    }}
+                                >
                                     <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[240px] pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "PPP")
-                                            ) : (
-                                                <span>Pick a date</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a country" />
+                                        </SelectTrigger>
                                     </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) =>
-                                            date > new Date() || date < new Date("1900-01-01")
-                                        }
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                                    <SelectContent>
+                                        {countries.map((country) => (
+                                            <SelectItem key={country.name} value={country.name}>
+                                                {country.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>End Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
+                    {/* State Select Field */}
+                    <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>State</FormLabel>
+                                <Select onValueChange={field.onChange}>
                                     <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[240px] pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "PPP")
-                                            ) : (
-                                                <span>Pick a date</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a state" />
+                                        </SelectTrigger>
                                     </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) =>
-                                            date > new Date() || date < new Date("1900-01-01")
-                                        }
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                                    <SelectContent>
+                                        {states.map((state) => (
+                                            <SelectItem key={state.name} value={state.name}>
+                                                {state.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                <FormField
-                    control={form.control}
-                    name="dataType"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Data Type</FormLabel>
-                            <Select onValueChange={field.onChange}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select data type" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {dataTypes.map((type) => (
-                                        <SelectItem key={type} value={type}>
-                                            {type}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                    {/* Start Date Picker */}
+                    <FormField
+                        control={form.control}
+                        name="startDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Start Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-[240px] pl-3 text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value ? (
+                                                    format(field.value, "PPP")
+                                                ) : (
+                                                    <span>Pick a date</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) =>
+                                                date > new Date() || date < new Date("1900-01-01")
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                <Button type="submit">Submit</Button>
-            </form>
-        </Form>
+                    {/* End Date Picker */}
+                    <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>End Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-[240px] pl-3 text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value ? (
+                                                    format(field.value, "PPP")
+                                                ) : (
+                                                    <span>Pick a date</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) =>
+                                                date > new Date() || date < new Date("1900-01-01")
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* Data Type Select Field */}
+                    <FormField
+                        control={form.control}
+                        name="dataType"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Data Type</FormLabel>
+                                <Select onValueChange={field.onChange}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select data type" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {dataTypes.map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {type}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* Submit Button */}
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Loading..." : "Submit"}
+                    </Button>
+                </form>
+            </Form>
+
+            {/* Separate Download Button Outside the Form */}
+            {fileUrl && (
+                <div className="mt-4">
+                    <a href={fileUrl} download>
+                        <Button variant="primary">Download File</Button>
+                    </a>
+                </div>
+            )}
+        </>
     )
 }

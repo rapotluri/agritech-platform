@@ -4,6 +4,7 @@ from countries.cambodia import get_communes_geodataframe  # Use the updated impo
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
+import os
 
 # Set up the FastAPI router
 router = APIRouter(
@@ -49,11 +50,11 @@ async def get_climate_data(
             detail=f"Invalid data type: {data_type}. Supported types: precipitation, temperature",
         )
 
-    # Export the DataFrame to an Excel file
-    excel_filename = f"{province}_{data_type}_data.xlsx"
-    result_df.to_excel(excel_filename, index=False)
+    # Define the file path
+    file_name = f"{province}_{data_type}_data.xlsx"
+    file_path = os.path.join("files", file_name)
 
-    return {
-        "message": f"{data_type.capitalize()} data retrieved successfully",
-        "filename": excel_filename,
-    }
+    # Save the DataFrame to the Excel file in the files directory
+    result_df.to_excel(file_path, index=False)
+
+    return {"message": f"{data_type.capitalize()} data retrieved successfully", "filename": file_name}
