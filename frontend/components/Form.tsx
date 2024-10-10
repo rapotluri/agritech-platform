@@ -302,7 +302,7 @@ export default function DataForm() {
             {fileUrl && (
                 <div className="mt-4">
                     <a href={fileUrl} download>
-                        <Button variant="primary">Download File</Button>
+                        <Button variant="default">Download File</Button>
                     </a>
                 </div>
             )}
