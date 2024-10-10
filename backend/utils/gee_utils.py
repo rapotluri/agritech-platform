@@ -1,6 +1,7 @@
 import ee
 import os
 import json
+import tempfile
 
 def initialize_gee():
     """
@@ -20,6 +21,14 @@ def initialize_gee():
     with open(credentials_file, 'r') as file:
         credentials_dict = json.load(file)
 
-    # Create credentials object using the parsed credentials
-    credentials = ee.ServiceAccountCredentials(service_account, credentials_dict)
+    # Create a temporary file to store the JSON credentials
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        temp_file.write(json.dumps(credentials_dict).encode('utf-8'))
+        temp_file_path = temp_file.name  # Get the path to the temp file
+
+    # Initialize Earth Engine using the temporary credentials file path
+    credentials = ee.ServiceAccountCredentials(service_account, temp_file_path)
     ee.Initialize(credentials)
+
+    # Remove the temporary file after initialization
+    os.remove(temp_file_path)
