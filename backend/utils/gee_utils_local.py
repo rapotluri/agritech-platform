@@ -2,7 +2,7 @@ import ee
 import os
 
 
-def initialize_gee():
+def initialize_gee_local():
     """Initialize Google Earth Engine with the service account credentials."""
     if not ee.data._credentials:
         service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
