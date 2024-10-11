@@ -1,3 +1,5 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from multiprocessing import Process
 import os
 import ee
 import threading
@@ -51,20 +53,32 @@ def run_celery_worker():
     celery_app.worker_main(["worker", "--loglevel=info"])
 
 
-# Function to run Flower
-def run_flower():
-    subprocess.call(["celery", "-A", "worker", "flower", "--port=5555"])
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(b'{"status": "active"}')
+
+
+def run_http_server(port=8080):
+    server_address = ("", port)
+    httpd = HTTPServer(server_address, SimpleHandler)
+    print(f"Server running on port {port}...")
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
-    # Start Celery worker in one thread
-    worker_thread = threading.Thread(target=run_celery_worker)
-    worker_thread.start()
+    # Create a process for the Celery worker
+    celery_process = Process(target=run_celery_worker)
 
-    # Start Flower in another thread
-    flower_thread = threading.Thread(target=run_flower)
-    flower_thread.start()
+    # Create a process for the HTTP server
+    http_process = Process(target=run_http_server, args=(8080,))
 
-    # Wait for both threads to finish
-    worker_thread.join()
-    flower_thread.join()
+    # Start both processes
+    celery_process.start()
+    http_process.start()
+
+    # Join both processes to keep the main process running
+    celery_process.join()
+    http_process.join()
