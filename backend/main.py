@@ -1,3 +1,4 @@
+from turtle import back
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,6 +6,8 @@ from api.climate_data import router as climate_data_router
 from api.serve_file import router as serve_file_router
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
+from celery import Celery
+import os
 
 
 @asynccontextmanager
@@ -34,7 +37,21 @@ app.add_middleware(
 app.include_router(climate_data_router)
 app.include_router(serve_file_router)
 
+# Initialize Celery
+celery_app = Celery(
+    "tasks",
+    broker=os.getenv("REDIS_URL"),
+    backend=os.getenv("BACKEND_WORKER_URL"),
+)
+
+
+@celery_app.task(name="background_task")
+def background_task():
+    # Your background task logic here
+    return "Task Completed"
+
 
 @app.get("/")
 async def root():
+    background_task.delay()
     return {"message": "Welcome to the AccuRate Climate Data API!"}
