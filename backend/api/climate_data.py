@@ -1,7 +1,7 @@
 from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from countries.cambodia import get_communes_geodataframe
-from backend.celery_worker import data_task
+from celery_worker import data_task
 
 
 # Set up the FastAPI router
