@@ -2,8 +2,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing import Process
 import os
 import ee
-import threading
-import subprocess
 import pandas as pd
 from celery import Celery
 from celery.signals import worker_process_init
