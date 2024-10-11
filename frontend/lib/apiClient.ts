@@ -24,7 +24,7 @@ export const generateClimateData = async (params: ClimateDataParams) => {
 // Keep the downloadFile function as is
 export const downloadFile = async (filename: string) => {
   // Construct the download URL correctly
-  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/download/${filename}`;
+  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/file?filename=${filename}`;
   return fileUrl;
 };
 
