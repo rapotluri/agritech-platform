@@ -6,8 +6,6 @@ from api.climate_data import router as climate_data_router
 from api.serve_file import router as serve_file_router
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
-from celery import Celery
-import os
 
 
 @asynccontextmanager
@@ -36,12 +34,6 @@ app.add_middleware(
 
 app.include_router(climate_data_router)
 app.include_router(serve_file_router)
-
-# Initialize Celery
-celery_app = Celery(
-    "tasks",
-    broker=os.getenv("REDIS_URL"),
-)
 
 
 @app.get("/")
