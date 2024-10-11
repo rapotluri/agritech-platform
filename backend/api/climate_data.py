@@ -7,7 +7,7 @@ from countries.cambodia import get_communes_geodataframe
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
-from main import celery_app
+from celery_worker import celery_app
 
 
 # Set up the FastAPI router
