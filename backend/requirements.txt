@@ -7,3 +7,4 @@ earthengine-api
 gunicorn
 celery
 redis
+pymongo

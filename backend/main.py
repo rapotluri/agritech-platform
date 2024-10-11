@@ -4,6 +4,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from api.climate_data import router as climate_data_router
 from api.serve_file import router as serve_file_router
+from api.task import router as task_router
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
 
@@ -34,6 +35,7 @@ app.add_middleware(
 
 app.include_router(climate_data_router)
 app.include_router(serve_file_router)
+app.include_router(task_router)
 
 
 @app.get("/")
