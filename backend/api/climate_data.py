@@ -1,13 +1,6 @@
-import os
-import ee
-import pandas as pd
 from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from countries.cambodia import get_communes_geodataframe
-from utils.gee_utils import initialize_gee
-from weather.precipitation import retrieve_precipitation_data
-from weather.temperature import retrieve_temperature_data
-from celery_worker import celery_app
 
 
 # Set up the FastAPI router
@@ -19,25 +12,6 @@ router = APIRouter(
 
 # Load GeoDataFrame with communes
 communes_gdf = get_communes_geodataframe()
-
-
-@celery_app.task
-def data_task(province, start_date, end_date, data_type, file_name):
-    if not ee.data._credentials:  # type: ignore
-        initialize_gee()
-
-    # Filter for the specified province
-    province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
-    result_df = pd.DataFrame()
-    # Retrieve data based on the selected data type
-    if data_type == "precipitation":
-        result_df = retrieve_precipitation_data(province_gdf, start_date, end_date)
-    elif data_type == "temperature":
-        result_df = retrieve_temperature_data(province_gdf, start_date, end_date)
-    file_path = os.path.join("files", file_name)
-    print(f"[INFO] Saving data to file: {file_path}")
-    # Save the DataFrame to the Excel file in the files directory
-    result_df.to_excel(file_path, index=False)
 
 
 @router.get("/climate-data")
