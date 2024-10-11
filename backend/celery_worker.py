@@ -1,14 +1,16 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from multiprocessing import Process
 import os
 import ee
 import pandas as pd
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from multiprocessing import Process
 from celery import Celery
 from celery.signals import worker_process_init
+from backend.utils.mongo import get_mongodb_fs
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
 from countries.cambodia import get_communes_geodataframe
+from io import BytesIO
 
 # Initialize Celery
 celery_app = Celery(
@@ -40,10 +42,14 @@ def data_task(province, start_date, end_date, data_type, file_name):
         result_df = retrieve_precipitation_data(province_gdf, start_date, end_date)
     elif data_type == "temperature":
         result_df = retrieve_temperature_data(province_gdf, start_date, end_date)
-    file_path = os.path.join("files", file_name)
-    print(f"[INFO] Saving data to file: {file_path}")
-    # Save the DataFrame to the Excel file in the files directory
-    result_df.to_excel(file_path, index=False)
+
+    file_buffer = BytesIO()
+    result_df.to_excel(file_buffer, index=False, engine="openpyxl")  # Convert to bytes
+    file_buffer.seek(0)
+    fs = get_mongodb_fs()
+    file_id = fs.put(file_buffer, filename=file_name)
+
+    return str(file_id)
 
 
 # Function to run Celery worker
