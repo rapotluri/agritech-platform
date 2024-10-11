@@ -41,7 +41,6 @@ app.include_router(serve_file_router)
 celery_app = Celery(
     "tasks",
     broker=os.getenv("REDIS_URL"),
-    backend=os.getenv("BACKEND_WORKER_URL"),
 )
 
 
