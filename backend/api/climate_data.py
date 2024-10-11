@@ -1,12 +1,14 @@
 import os
-from uuid import uuid4
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from countries.cambodia import get_communes_geodataframe
-from utils.gee_utils import initialize_gee
 import ee
 import pandas as pd
+from uuid import uuid4
+from fastapi import APIRouter, HTTPException
+from countries.cambodia import get_communes_geodataframe
+from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
+from main import celery_app
+
 
 # Set up the FastAPI router
 router = APIRouter(
@@ -19,6 +21,7 @@ router = APIRouter(
 communes_gdf = get_communes_geodataframe()
 
 
+@celery_app.task
 def data_task(province, start_date, end_date, data_type, file_name):
     if not ee.data._credentials:  # type: ignore
         initialize_gee()
@@ -39,11 +42,7 @@ def data_task(province, start_date, end_date, data_type, file_name):
 
 @router.get("/climate-data")
 async def get_climate_data(
-    province: str,
-    start_date: str,
-    end_date: str,
-    data_type: str,
-    background_tasks: BackgroundTasks,
+    province: str, start_date: str, end_date: str, data_type: str
 ):
     """
     Retrieve daily climate data for all communes within the specified province.
@@ -68,11 +67,10 @@ async def get_climate_data(
     uuid = uuid4()
     file_name = f"{province}_{data_type}_data_{uuid}.xlsx"
 
-    background_tasks.add_task(
-        data_task, province, start_date, end_date, data_type, file_name
-    )
+    task = data_task.delay(province, start_date, end_date, data_type, file_name)  # type: ignore
 
     return {
-        "message": f"{data_type.capitalize()} data retrieved successfully",
+        "message": f"{data_type.capitalize()} data retrieval has been initiated.",
         "filename": file_name,
+        "task_id": task.id,  # Return the task ID
     }

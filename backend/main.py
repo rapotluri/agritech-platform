@@ -44,13 +44,6 @@ celery_app = Celery(
 )
 
 
-@celery_app.task(name="background_task")
-def background_task():
-    # Your background task logic here
-    return "Task Completed"
-
-
 @app.get("/")
 async def root():
-    background_task.delay()
     return {"message": "Welcome to the AccuRate Climate Data API!"}
