@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing import Process
 from celery import Celery
 from celery.signals import worker_process_init
-from backend.utils.mongo import get_mongodb_fs
+from utils.mongo import get_mongodb_fs
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
