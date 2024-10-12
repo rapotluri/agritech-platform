@@ -2,8 +2,6 @@ from io import BytesIO
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
-import os
-
 from utils.mongo import get_mongodb_fs
 
 # Set up the FastAPI router
