@@ -8,3 +8,4 @@ gunicorn
 celery
 redis
 pymongo
+flower
