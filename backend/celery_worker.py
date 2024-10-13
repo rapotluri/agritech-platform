@@ -50,39 +50,3 @@ def data_task(province, start_date, end_date, data_type, file_name):
     file_id = fs.put(file_buffer, filename=file_name)
 
     return str(file_id)
-
-
-# Function to run Celery worker
-def run_celery_worker():
-    celery_app.worker_main(["worker", "--loglevel=info"])
-
-
-class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        self.wfile.write(b'{"status": "active"}')
-
-
-def run_http_server(port=8080):
-    server_address = ("", port)
-    httpd = HTTPServer(server_address, SimpleHandler)
-    print(f"Server running on port {port}...")
-    httpd.serve_forever()
-
-
-if __name__ == "__main__":
-    # Create a process for the Celery worker
-    celery_process = Process(target=run_celery_worker)
-
-    # Create a process for the HTTP server
-    http_process = Process(target=run_http_server, args=(8080,))
-
-    # Start both processes
-    celery_process.start()
-    http_process.start()
-
-    # Join both processes to keep the main process running
-    celery_process.join()
-    http_process.join()
