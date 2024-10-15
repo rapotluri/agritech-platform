@@ -43,10 +43,20 @@ def data_task(province, start_date, end_date, data_type, file_name):
     elif data_type == "temperature":
         result_df = retrieve_temperature_data(province_gdf, start_date, end_date)
 
-    file_buffer = BytesIO()
-    result_df.to_excel(file_buffer, index=False, engine="openpyxl")  # Convert to bytes
-    file_buffer.seek(0)
-    fs = get_mongodb_fs()
-    file_id = fs.put(file_buffer, filename=file_name)
+    print(f"[INFO] Data retrieval complete for {data_type} data")
+    # Create a physical Excel file
+    file_path = os.path.join(os.getcwd(), "files", file_name)
+    result_df.to_excel(file_path, index=False, engine="openpyxl")
 
+    # Get MongoDB GridFS instance and upload the file
+    fs = get_mongodb_fs()
+    with open(file_path, "rb") as file:
+        file_id = fs.put(file, filename=file_name)  # Upload the file to GridFS
+
+    # Delete the local file after upload
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        print(f"[INFO] Local file deleted: {file_path}")
+
+    # Return the file ID from MongoDB
     return str(file_id)
