@@ -16,6 +16,7 @@ from io import BytesIO
 celery_app = Celery(
     "tasks",
     broker=os.getenv("REDIS_URL"),
+    backend=os.getenv("REDIS_URL"),
 )
 
 celery_app.conf.broker_connection_retry_on_startup = True
@@ -42,6 +43,8 @@ def data_task(province, start_date, end_date, data_type, file_name):
         result_df = retrieve_precipitation_data(province_gdf, start_date, end_date)
     elif data_type == "temperature":
         result_df = retrieve_temperature_data(province_gdf, start_date, end_date)
+
+    print(f"[INFO] Data retrieval completed for {data_type} data.")
 
     file_buffer = BytesIO()
     result_df.to_excel(file_buffer, index=False, engine="openpyxl")  # Convert to bytes
