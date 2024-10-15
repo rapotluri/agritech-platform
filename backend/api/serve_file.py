@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
 from utils.mongo import get_mongodb_fs
+from bson import ObjectId
 
 # Set up the FastAPI router
 router = APIRouter(
@@ -24,7 +25,8 @@ async def download_file(task_id: str):
 
     if task_result.state == "SUCCESS":
         fs = get_mongodb_fs()
-        file_data = fs.get(task_result.result)
+        file_id = ObjectId(task_result.result)
+        file_data = fs.get(file_id)
 
         if not file_data:
             raise HTTPException(status_code=404, detail="File not found")
