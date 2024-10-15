@@ -1,5 +1,4 @@
-import os
-import gridfs
+from io import BytesIO
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
@@ -25,15 +24,16 @@ async def download_file(task_id: str):
 
     if task_result.state == "SUCCESS":
         fs = get_mongodb_fs()
-        download_path = os.path.join(os.getcwd(), "files", "climate_data.xlsx")
+        file_data = fs.get(task_result.result)
 
-        try:
-            file_data = fs.get(task_result.result)
-            with open(download_path, "wb") as output_file:
-                output_file.write(file_data.read())
-            print(f"File saved to '{download_path}'.")
-        except gridfs.errors.NoFile:  # type: ignore
+        if not file_data:
             raise HTTPException(status_code=404, detail="File not found")
+
+        # Create a BytesIO stream from the file content
+        file_stream = BytesIO(
+            file_data.read()
+        )  # Read file content into a BytesIO stream
+        file_stream.seek(0)  # Rewind the stream to the beginning
 
         # Return the file as a FileResponse
         return FileResponse(
