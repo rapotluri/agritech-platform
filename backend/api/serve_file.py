@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from celery.result import AsyncResult
 from utils.mongo import get_mongodb_fs
 from bson import ObjectId
+from celery_worker import celery_app
 
 # Set up the FastAPI router
 router = APIRouter(
@@ -21,7 +22,7 @@ async def download_file(task_id: str):
     Args:
     - filename: The name of the Excel file to download.
     """
-    task_result = AsyncResult(task_id)
+    task_result = AsyncResult(task_id, app=celery_app)
 
     if task_result.state == "SUCCESS":
         fs = get_mongodb_fs()
