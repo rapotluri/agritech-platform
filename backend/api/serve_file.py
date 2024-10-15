@@ -34,17 +34,14 @@ async def download_file(task_id: str):
             raise HTTPException(status_code=404, detail="File not found")
 
         # Create a BytesIO stream from the file content
-        file_stream = BytesIO(
-            file_data.read()
-        )  # Read file content into a BytesIO stream
-        file_stream.seek(0)  # Rewind the stream to the beginning
+        file_stream = file_data.read()
 
         # Create a temporary file to store the GridFS data
         temp_file_path = os.path.join(os.getcwd(), "files", f"{file_data.filename}")
 
         # Write the data from GridFS into the temporary file
         with open(temp_file_path, "wb") as temp_file:
-            temp_file.write(file_data.read())
+            temp_file.write(file_stream)
 
         # Return the file response with appropriate media type and filename
         return FileResponse(
