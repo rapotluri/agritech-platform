@@ -23,7 +23,7 @@ async def get_task_status(task_id: str):
     if task_result.state == "PENDING":
         # Task is still in progress
         response = {"task_id": task_id, "status": "Pending", "result": None}
-    elif task_result.state == " SUCCESS":
+    elif task_result.state == "SUCCESS":
         # Task is completed successfully
         response = {
             "task_id": task_id,
