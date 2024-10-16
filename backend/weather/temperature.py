@@ -32,9 +32,9 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
 
             # Fetch ERA5 Daily Temperature data for the commune's polygon over the specified time period
             temperature = (
-                ee.ImageCollection("ECMWF/ERA5/DAILY")
+                ee.ImageCollection("ECMWF/ERA5_LAND/DAILY_AGGR")
                 .filterDate(start_date, end_date)
-                .select("mean_2m_air_temperature")
+                .select("temperature_2m_max")
             )
 
             # Add a 'date' property to each image
@@ -50,7 +50,7 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
                     maxPixels=1e13
                 )
                 # Convert Kelvin to Celsius and set as a property
-                mean_temperature_celsius = ee.Number(mean_temperature_kelvin.get("mean_2m_air_temperature")).subtract(273.15)
+                mean_temperature_celsius = ee.Number(mean_temperature_kelvin.get("temperature_2m_max")).subtract(273.15)
                 return image.set("mean_temperature_celsius", mean_temperature_celsius)
 
             # Apply the `extract_daily_data` function
