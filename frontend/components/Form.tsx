@@ -84,10 +84,10 @@ export default function DataForm() {
             const { data } = await apiClient.get(`/api/tasks/${taskId}`);
     
             if (data.status === 'Pending') {
-                setTimeout(() => pollTaskStatus(taskId), 3000);  // Poll every 3 seconds
+                setTimeout(() => pollTaskStatus(taskId), 15000);  // Poll every 3 seconds
             } else if (data.status === 'SUCCESS') {
                 // Assuming 'result' contains the file ID or file URL in successful tasks
-                setFileUrl(`/api/files/${data.result}`);  // Assuming the backend returns a file ID
+                setFileUrl(`https://agritech-prod.onrender.com/api/files?task_id=${taskId}`);  // Assuming the backend returns a file ID
                 setLoading(false);
             } else {
                 setError("Task failed. Please try again.");
@@ -295,7 +295,7 @@ export default function DataForm() {
 
             {fileUrl && (
                     <div className="mt-4">
-                        <a href={`/api/file?task_id=${taskId}`} download>
+                        <a href={fileUrl} download>
                             <Button variant="default">Download File</Button>
                         </a>
                     </div>
