@@ -82,11 +82,14 @@ export default function DataForm() {
     const pollTaskStatus = async (taskId: string) => {
         try {
             const { data } = await apiClient.get(`/api/tasks/${taskId}`);
-            if (data.status === 'SUCCESS') {
-                setFileUrl(data.file_url);  // Store the file URL when task is complete
-                setLoading(false);
-            } else if (data.status === 'PENDING') {
+            
+            // Instead of checking for 'SUCCESS', check if it's not 'PENDING' or 'FAILURE'
+            if (data.status === 'PENDING') {
                 setTimeout(() => pollTaskStatus(taskId), 3000);  // Poll every 3 seconds
+            } else if (data.status !== 'FAILURE') {
+                // Assuming 'result' contains the file URL in successful tasks
+                setFileUrl(data.result?.file_url);  // Store the file URL when task is complete
+                setLoading(false);
             } else {
                 setError("Task failed. Please try again.");
                 setLoading(false);
