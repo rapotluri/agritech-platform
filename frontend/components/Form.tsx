@@ -51,7 +51,6 @@ export default function DataForm() {
     const [states, setStates] = useState<IState[]>([]);
     const [loading, setLoading] = useState(false);
     const [fileUrl, setFileUrl] = useState<string | null>(null);  // For the download link
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [taskId, setTaskId] = useState<string | null>(null);  // For polling the task status
     const [error, setError] = useState<string | null>(null);
 
@@ -115,7 +114,7 @@ export default function DataForm() {
         };
 
         try {
-            const { data } = await apiClient.post(`/api/climate-data`, queryParams);
+            const { data } = await apiClient.get(`/api/climate-data`, { params: queryParams });
             setTaskId(data.task_id);  // Store task ID returned by the backend
             pollTaskStatus(data.task_id);  // Start polling for task status
         } catch (error) {
