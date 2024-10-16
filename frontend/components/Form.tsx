@@ -73,7 +73,18 @@ export default function DataForm() {
         const country = countries.find((c) => c.name === countryName);
         if (country) {
             const countryIsoCode = country.isoCode;
-            const allStates = State.getStatesOfCountry(countryIsoCode);
+            let allStates = State.getStatesOfCountry(countryIsoCode);
+            // Check if the selected country is Cambodia
+            if (country.name === "Cambodia") {
+                allStates = allStates.map((state) => {
+                    // Replace 'TaiPoDistrict' with 'TbongKhmum' if present
+                    if (state.name === "Tai Po District") {
+                        return { ...state, name: "Tbong Khmum" };
+                    }
+                    return state;
+                });
+            }
+
             setStates(allStates);
         }
     };
