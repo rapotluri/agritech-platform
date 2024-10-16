@@ -87,7 +87,7 @@ export default function DataForm() {
                 setTimeout(() => pollTaskStatus(taskId), 15000);  // Poll every 3 seconds
             } else if (data.status === 'SUCCESS') {
                 // Assuming 'result' contains the file ID or file URL in successful tasks
-                setFileUrl(`https://agritech-prod.onrender.com/api/files?task_id=${taskId}`);  // Assuming the backend returns a file ID
+                setFileUrl(`https://agritech-prod.onrender.com/api/file?task_id=${taskId}`);  // Assuming the backend returns a file ID
                 setLoading(false);
             } else {
                 setError("Task failed. Please try again.");
