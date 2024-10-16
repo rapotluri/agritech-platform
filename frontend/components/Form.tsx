@@ -290,7 +290,10 @@ export default function DataForm() {
                     {loading ? "Processing..." : "Submit"}
                 </Button>
 
-                {fileUrl && (
+                
+            </form>
+
+            {fileUrl && (
                     <div className="mt-4">
                         <a href={fileUrl} download>
                             <Button variant="default">Download File</Button>
@@ -299,7 +302,7 @@ export default function DataForm() {
                 )}
 
                 {error && <p className="text-red-500">{error}</p>}
-            </form>
+                
         </Form>
     );
 }
