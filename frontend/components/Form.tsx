@@ -86,7 +86,7 @@ export default function DataForm() {
             // Instead of checking for 'SUCCESS', check if it's not 'PENDING' or 'FAILURE'
             if (data.status === 'PENDING') {
                 setTimeout(() => pollTaskStatus(taskId), 3000);  // Poll every 3 seconds
-            } else if (data.status !== 'FAILURE') {
+            } else if (data.status === 'SUCCESS') {
                 // Assuming 'result' contains the file URL in successful tasks
                 setFileUrl(data.result);  // Store the file URL when task is complete
                 setLoading(false);
