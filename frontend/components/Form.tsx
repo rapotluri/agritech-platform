@@ -88,7 +88,7 @@ export default function DataForm() {
                 setTimeout(() => pollTaskStatus(taskId), 3000);  // Poll every 3 seconds
             } else if (data.status !== 'FAILURE') {
                 // Assuming 'result' contains the file URL in successful tasks
-                setFileUrl(data.result?.file_url);  // Store the file URL when task is complete
+                setFileUrl(data.result);  // Store the file URL when task is complete
                 setLoading(false);
             } else {
                 setError("Task failed. Please try again.");
