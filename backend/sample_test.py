@@ -25,7 +25,7 @@ provinces = [
     "Sihanoukville",
     "StungTreng",
     "SvayRieng",
-    "TaiPoDistrict",
+    "TbongKhmum",
     "Takeo",
 ]
 
@@ -38,4 +38,7 @@ def test_provinces():
         province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
         if province_gdf.empty:
             province_with_no_geojson.append(province)
-    print(province_with_no_geojson)
+    return province_with_no_geojson
+
+
+print(test_provinces())

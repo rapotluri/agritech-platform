@@ -1,6 +1,7 @@
 import geopandas as gpd
 import os
 
+
 def normalize_province_name(name: str) -> str:
     """
     Normalize province names for Cambodia by removing special characters,
@@ -8,10 +9,35 @@ def normalize_province_name(name: str) -> str:
     Example: "Kâmpóng Spœ" -> "KampongSpeu"
     """
     special_char_map = {
-        "â": "a", "œ": "oe", "é": "e", "è": "e", "ê": "e", "ô": "o", "û": "u", "ç": "c",
-        "î": "i", "ï": "i", "à": "a", "ë": "e", "ü": "u", "ù": "u", "ÿ": "y", "ñ": "n",
-        "ø": "o", "õ": "o", "Ã": "A", "ã": "a", "É": "E", "È": "E", "À": "A", "Ó": "O",
-        "ó": "o", "Ú": "U", "ú": "u", "ß": "ss", "í": "i"
+        "â": "a",
+        "œ": "oe",
+        "é": "e",
+        "è": "e",
+        "ê": "e",
+        "ô": "o",
+        "û": "u",
+        "ç": "c",
+        "î": "i",
+        "ï": "i",
+        "à": "a",
+        "ë": "e",
+        "ü": "u",
+        "ù": "u",
+        "ÿ": "y",
+        "ñ": "n",
+        "ø": "o",
+        "õ": "o",
+        "Ã": "A",
+        "ã": "a",
+        "É": "E",
+        "È": "E",
+        "À": "A",
+        "Ó": "O",
+        "ó": "o",
+        "Ú": "U",
+        "ú": "u",
+        "ß": "ss",
+        "í": "i",
     }
 
     # Remove special characters using the mapping
@@ -19,20 +45,33 @@ def normalize_province_name(name: str) -> str:
 
     # Remove spaces and ensure capitalization of words
     name_parts = name.split(" ")
-    name = "".join([part.capitalize() for part in name_parts])
+    name = "".join([part for part in name_parts])
 
     # Manually fix known discrepancies
     manual_corrections = {
-        "Kampongspoe": "KampongSpeu",     # Correct to the standard format
+        "KampongSpoe": "KampongSpeu",  # Correct to the standard format
         "Phnompenh": "PhnomPenh",
         "Tbongkhmum": "TboungKhmum",
         "Preahvihear": "PreahVihear",
         "Siemreab": "SiemReap",
-        "Svayrieng": "SvayRieng"
+        "Svayrieng": "SvayRieng",
+        "Batdambang": "Battambang",
+        "KampongThum": "KampongThom",
+        "KaohKong": "KohKong",
+        "Rotanokiri": "Ratanakiri",
+        "StoengTreng": "StungTreng",
+        "MondolKiri": "Mondulkiri",
+        "OtdarMeanChey": "OddarMeanchey",
+        "Kracheh": "Kratie",
+        "Pouthisat": "Pursat",
+        "Takev": "Takeo",
+        "KrongPreahSihanouk": "Sihanoukville",
+        "KrongPailin": "Pailin",
     }
 
     # Apply manual corrections if necessary
     return manual_corrections.get(name, name)
+
 
 def get_communes_geodataframe():
     """
@@ -41,7 +80,9 @@ def get_communes_geodataframe():
     geojson_file = os.path.join(os.getcwd(), "boundaries", "cambodia_communes.geojson")
     try:
         communes_gdf = gpd.read_file(geojson_file)
-        communes_gdf["normalized_NAME_1"] = communes_gdf["NAME_1"].apply(normalize_province_name)
+        communes_gdf["normalized_NAME_1"] = communes_gdf["NAME_1"].apply(
+            normalize_province_name
+        )
     except Exception as e:
         raise RuntimeError(f"Error reading GeoJSON file: {str(e)}")
     return communes_gdf
