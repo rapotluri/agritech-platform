@@ -51,6 +51,7 @@ export default function DataForm() {
     const [states, setStates] = useState<IState[]>([]);
     const [loading, setLoading] = useState(false);
     const [fileUrl, setFileUrl] = useState<string | null>(null);  // For the download link
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [taskId, setTaskId] = useState<string | null>(null);  // For polling the task status
     const [error, setError] = useState<string | null>(null);
 
