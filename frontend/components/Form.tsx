@@ -102,20 +102,20 @@ export default function DataForm() {
         setLoading(true);
         setError(null);
         setFileUrl(null);
-
+    
         const start = `${values.startDate.getFullYear()}-${values.startDate.getMonth() + 1}-${values.startDate.getDate()}`;
         const end = `${values.endDate.getFullYear()}-${values.endDate.getMonth() + 1}-${values.endDate.getDate()}`;
         const formattedState = values.state.replace(/\s+/g, '');
-
+    
         const queryParams = {
             province: formattedState,
             start_date: start,
             end_date: end,
             data_type: values.dataType.toLowerCase(),
         };
-
+    
         try {
-            const { data } = await apiClient.get(`/api/climate-data`, queryParams);
+            const { data } = await apiClient.get(`/api/climate-data`, { params: queryParams });
             setTaskId(data.task_id);  // Store task ID returned by the backend
             pollTaskStatus(data.task_id);  // Start polling for task status
         } catch (error) {
@@ -124,6 +124,7 @@ export default function DataForm() {
             setLoading(false);
         }
     };
+    
 
     return (
         <Form {...form}>
