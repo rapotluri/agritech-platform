@@ -295,14 +295,14 @@ export default function DataForm() {
 
             {fileUrl && (
                     <div className="mt-4">
-                        <a href={fileUrl} download>
+                        <a href={`/api/file?task_id=${taskId}`} download>
                             <Button variant="default">Download File</Button>
                         </a>
                     </div>
                 )}
 
                 {error && <p className="text-red-500">{error}</p>}
-                
+
         </Form>
     );
 }
