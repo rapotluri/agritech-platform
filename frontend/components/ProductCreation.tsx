@@ -1,8 +1,8 @@
   "use client"
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/ProductForm";
+import { ProductDialog } from "./ProductDialog";
 
   
   export default function ProductCreation() {
@@ -12,9 +12,6 @@ import ProductForm from "@/components/ProductForm";
       setShowForm(true); // Show form when button is clicked
     };
   
-    const handleFormSubmit = () => {
-      setShowForm(false); // Hide form and show button after form is submitted
-    };
     
     return (
         <>
@@ -22,9 +19,10 @@ import ProductForm from "@/components/ProductForm";
             (    <ProductForm  /> ) 
             : 
             (
-            <Button variant="agro" onClick={handleButtonClick}>
-            Add new Product
-            </Button> 
+            // <Button variant="agro" onClick={handleButtonClick}>
+            // Add new Product
+            // </Button> 
+            <ProductDialog/>
         )
         }
         </>
