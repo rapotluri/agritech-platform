@@ -21,14 +21,14 @@ export default function InsuranceProducts() {
                     </div>
                 </CardContent>
                 </Card>
-                <Card className="w-[700px]">
+                {/* <Card className="w-[700px]">
                 <CardHeader>
                     <CardTitle>Existing Insurance Products</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <ProductTable />
                 </CardContent>
-                </Card>
+                </Card> */}
             </div>
 
 

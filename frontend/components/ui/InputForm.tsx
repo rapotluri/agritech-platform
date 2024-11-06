@@ -1,47 +1,51 @@
-"use client"
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
 import {
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { cn } from "@/lib/utils"
-import { Input } from "./input";
-
-interface InputFormProps extends React.ComponentPropsWithoutRef<"input"> {
-    control: any;
-    name: string;
-    placeholder: string;
-    classname?: string;
-    label?: string;
-    values?: any;
-    handleChange?: any;
-  
-  }
-
-
-export function InputForm({ control, classname, name, placeholder, label,type, values,handleChange }: InputFormProps) {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={
-        () => (
-        <FormItem className={cn(classname)}>
-          <FormLabel>{label}</FormLabel>
-            <FormControl>
-            <Input 
-            placeholder={placeholder} 
-            type={type} 
-            value={values}
-            onChange={handleChange}
-            />
-            </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-
-  )
+  FormControl,
+} from "./form"
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  control: any
+  name: string
+  label?: string
 }
+
+const InputForm = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, control, name, label, ...props }, ref) => {
+    return (
+
+      <FormField
+        control={control}
+        name={name}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            <FormControl>
+              <input
+                type={type}
+                className={cn(
+                  "flex flex-col h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  className
+                )}
+                {...field}
+                ref={ref}
+                {...props}
+              />
+            </FormControl>
+
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+    )
+  }
+)
+InputForm.displayName = "Input"
+
+export { InputForm }

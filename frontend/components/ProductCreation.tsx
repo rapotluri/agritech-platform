@@ -15,7 +15,7 @@ import { ProductDialog } from "./ProductDialog";
     
     return (
         <>
-        {showForm ? 
+        {/* {showForm ? 
             (    <ProductForm  /> ) 
             : 
             (
@@ -24,7 +24,8 @@ import { ProductDialog } from "./ProductDialog";
             // </Button> 
             <ProductDialog/>
         )
-        }
+        } */}
+        <ProductForm  />
         </>
     )
   }
