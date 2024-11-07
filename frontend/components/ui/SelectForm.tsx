@@ -14,9 +14,10 @@ import {
   SelectContent,
 } from "@/components/ui/select"
 import { ReactNode } from "react"
+import { Control, FieldValues } from "react-hook-form"
 
-interface SelectFormProps extends React.ComponentPropsWithoutRef<"select"> {
-  control: any;
+interface SelectFormProps<T extends FieldValues> extends React.ComponentPropsWithoutRef<"select"> {
+  control: Control<T>;
   name: string;
   children: ReactNode;
   placeholder: string;
@@ -25,7 +26,7 @@ interface SelectFormProps extends React.ComponentPropsWithoutRef<"select"> {
 
 }
 
-export function SelectForm({ control, classname, name, placeholder, label, ...props }: SelectFormProps) {
+export function SelectForm({ control, classname, name, placeholder, label, ...props }: SelectFormProps<any>) {
   return (
     <FormField
       control={control}

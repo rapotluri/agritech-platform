@@ -9,42 +9,43 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
   FormControl,
 } from "./form"
+import { Control, FieldValues } from "react-hook-form"
 
-export interface CheckboxProps {
-  control: any
+export interface CheckboxProps<T extends FieldValues> {
+  control: Control<T>
   name: string
+  label: string
   items: { id: string; label: string }[]
 }
 
 const CheckboxForm = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & CheckboxProps
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & CheckboxProps<any>
 
 
->(({ control, name, className, items, ...props }, ref) => (
+>(({ control, name, className, label,items, ...props }, ref) => (
 
 
   <FormField
     control={control}
-    name="items"
+    name={name}
     render={() => (
       <FormItem>
-        <div className={cn("flex flex-row items-start gap space-y-0", className)}>
-              <FormLabel className="text-base">Sidebar</FormLabel>
+        <div className={cn("mb-4", className)}>
+              <FormLabel className="text-base">{label}</FormLabel>
               {
               items.map((item) => (
                 <FormField
                   key={item.id}
                   control={control}
-                  name="items"
+                  name={name}
                   render={({ field }) => {
                     return (
                       <FormItem
                         key={item.id}
-                        className="flex flex-row items-start space-x-3 space-y-0"
+                        className="flex flex-row m-2 items-start space-x-3 space-y-0"
                       >
                         <FormControl>
                         <CheckboxPrimitive.Root
@@ -52,15 +53,22 @@ const CheckboxForm = React.forwardRef<
                             "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground", className
                           )}
                           checked={field.value?.includes(item.id)}
-                          onCheckedChange={(checked: any) => {
-                            return checked
-                              ? field.onChange([field.value, item.id])
-                              : field.onChange(
-                                field.value?.filter(
-                                  (value: string) => value != item.id
+                          onCheckedChange={(checked) => {
+                            const updatedValue = field.value || []; // Ensure field.value is an array
+                            if (checked) {
+                              field.onChange([
+                                ...updatedValue,
+                                item.id,
+                              ]);
+                            } else {
+                              field.onChange(
+                                updatedValue.filter(
+                                  (value: string) => value !== item.id
                                 )
-                              )
+                              );
+                            }
                           }}
+
 
                           {...props}
 

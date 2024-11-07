@@ -13,8 +13,12 @@ import { buttonVariants } from "@/components/ui/button"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
-  control: any
+import { Control } from "react-hook-form"
+
+import { FieldValues } from "react-hook-form"
+
+export type CalendarProps<T extends FieldValues> = React.ComponentProps<typeof DayPicker> & {
+  control: Control<T>
   name: string
   label: string
   placeholder?: string
@@ -30,7 +34,7 @@ function CalendarForm({
   placeholder,
   locale,
   ...props
-}: CalendarProps) {
+}: CalendarProps<any>) {
   return (
 
     <FormField
