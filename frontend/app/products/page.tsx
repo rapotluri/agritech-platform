@@ -1,7 +1,7 @@
 
 import Header from "@/components/Header";
 import { Card, CardContent,CardHeader, CardTitle } from "@/components/ui/card";
-import ProductTable from "@/components/ProductTable";
+// import ProductTable from "@/components/ProductTable";
 import ProductCreation from "@/components/ProductCreation";
 
 

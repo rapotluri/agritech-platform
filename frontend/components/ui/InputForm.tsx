@@ -8,14 +8,15 @@ import {
   FormMessage,
   FormControl,
 } from "./form"
-export interface InputProps
+import { Control, FieldValues } from "react-hook-form"
+export interface InputProps<T extends FieldValues>
   extends React.InputHTMLAttributes<HTMLInputElement> {
-  control: any
+  control: Control<T>
   name: string
   label?: string
 }
 
-const InputForm = React.forwardRef<HTMLInputElement, InputProps>(
+const InputForm = React.forwardRef<HTMLInputElement, InputProps<any>>(
   ({ className, type, control, name, label, ...props }, ref) => {
     return (
 

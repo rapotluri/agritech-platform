@@ -1,16 +1,15 @@
   "use client"
 
-import { useState } from "react";
 import ProductForm from "@/components/ProductForm";
-import { ProductDialog } from "./ProductDialog";
+// import { ProductDialog } from "./ProductDialog";
 
   
   export default function ProductCreation() {
-    const [showForm, setShowForm] = useState(false);
+    // const [showForm, setShowForm] = useState(false);
 
-    const handleButtonClick = () => {
-      setShowForm(true); // Show form when button is clicked
-    };
+    // const handleButtonClick = () => {
+    //   setShowForm(true); // Show form when button is clicked
+    // };
   
     
     return (
