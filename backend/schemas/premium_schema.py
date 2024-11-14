@@ -5,7 +5,8 @@ from datetime import date
 class Phase(BaseModel):
     phaseName: str
     length: int
-    sos: int
+    sosStart: int
+    sosEnd: int
 
 class Index(BaseModel):
     type: str
@@ -14,6 +15,7 @@ class Index(BaseModel):
     dailyCap: float
     unitPayout: float
     maxPayout: float
+    consecutiveDays: int
     phases: List[str]
 
 class PremiumRequest(BaseModel):

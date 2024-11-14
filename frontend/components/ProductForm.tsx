@@ -42,12 +42,12 @@ export default function ProductForm() {
   const form = useForm({
     defaultValues: {
       phases: [
-        { phaseName: "Early", length: "", sos: "" },
-        { phaseName: "Middle", length: "", sos: "" },
-        { phaseName: "Late", length: "", sos: "" }
+        { phaseName: "Early", length: "", sosStart: "0", sosEnd: "60" },
+        { phaseName: "Middle", length: "", sosStart: "61", sosEnd: "120" },
+        { phaseName: "Late", length: "", sosStart: "121", sosEnd: "180" }
       ],
       indexes: [
-        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', phases: ["Early", "Middle", "Late"] }
+        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '', phases: ["Early", "Middle", "Late"] }
       ]
     }
   });
@@ -115,19 +115,54 @@ export default function ProductForm() {
         <h3 className="font-medium mb-2">Phases</h3>
         {phases.map((item: { id: Key | null | undefined; }, index: number) => (
           <div className="flex gap-2 items-center" key={item.id}>
-            <InputForm control={control} name={`phases.${index}.phaseName`} placeholder="Phase Name" type="string" />
-            <InputForm control={control} name={`phases.${index}.length`} placeholder="Length (days)" type="number" />
-            <InputForm control={control} name={`phases.${index}.sos`} placeholder="SoS + X (days)" type="number" />
-            <Button variant="destructive" onClick={(e) => {
-              e.preventDefault();
-              removePhase(index)
-            }}><Trash className="w-4 h-4" /></Button>
+            <InputForm 
+              control={control} 
+              name={`phases.${index}.phaseName`} 
+              placeholder="Phase Name" 
+              type="string" 
+            />
+            <InputForm 
+              control={control} 
+              name={`phases.${index}.length`} 
+              placeholder="Length (days)" 
+              type="number" 
+            />
+            <div className="flex items-center gap-2">
+              <InputForm 
+                control={control} 
+                name={`phases.${index}.sosStart`} 
+                placeholder="From" 
+                type="number" 
+                className="w-24"
+              />
+              <span>to</span>
+              <InputForm 
+                control={control} 
+                name={`phases.${index}.sosEnd`} 
+                placeholder="To" 
+                type="number" 
+                className="w-24"
+              />
+            </div>
+            <Button 
+              variant="destructive" 
+              onClick={(e) => {
+                e.preventDefault();
+                removePhase(index)
+              }}
+            >
+              <Trash className="w-4 h-4" />
+            </Button>
           </div>
         ))}
-        <Button variant="outline" className="mt-2" onClick={(e) => {
-          e.preventDefault();
-          addPhase({ phaseName: "", length: "", sos: "" })
-        }}>
+        <Button 
+          variant="outline" 
+          className="mt-2" 
+          onClick={(e) => {
+            e.preventDefault();
+            addPhase({ phaseName: "", length: "", sosStart: "", sosEnd: "" })
+          }}
+        >
           Add Phase
         </Button>
 
@@ -143,6 +178,7 @@ export default function ProductForm() {
                   </SelectItem>
                 ))}
               </SelectForm>
+              <InputForm control={control} name={`indexes.${index}.consecutiveDays`} placeholder="Consecutive days for trigger" type="number" />
               <InputForm control={control} name={`indexes.${index}.trigger`} placeholder="Trigger (mm)" type="number" />
               <InputForm control={control} name={`indexes.${index}.exit`} placeholder="Exit (mm)" type="number" />
               <InputForm control={control} name={`indexes.${index}.dailyCap`} placeholder="Daily cap (mm)" type="number" />
@@ -165,7 +201,7 @@ export default function ProductForm() {
         ))}
         <Button variant="outline" className="col-span-1 mr-0" onClick={(e) => {
           e.preventDefault();
-          addIndex({ type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', phases: [] })
+          addIndex({ type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '', phases: [] })
         }}>
           Add Index
         </Button>
