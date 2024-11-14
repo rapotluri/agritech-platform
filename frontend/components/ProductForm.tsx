@@ -169,7 +169,7 @@ export default function ProductForm() {
         {/* Indexes */}
         <h3 className="font-medium mb-2">Indexes</h3>
         {indexes.map((item, index) => (
-          <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={index}>
+          <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={item.id}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <SelectForm control={control} name={`indexes.${index}.type`} placeholder="Select Index type">
                 {indexTypes.map((type) => (
@@ -184,14 +184,23 @@ export default function ProductForm() {
               <InputForm control={control} name={`indexes.${index}.dailyCap`} placeholder="Daily cap (mm)" type="number" />
               <InputForm control={control} name={`indexes.${index}.unitPayout`} placeholder="Unit Payout (USD)" type="number" />
               <InputForm control={control} name={`indexes.${index}.maxPayout`} placeholder="Max Payout (USD)" type="number" />
-              <CheckboxForm control={control} name={`indexes.${index}.phases`} label="Apply to Phases" items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} />
+              <CheckboxForm 
+                control={control} 
+                name={`indexes.${index}.phases`} 
+                label="Apply to Phases" 
+                items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
+              />
 
               <div className="col-span-3 flex justify-center">
                 {(phases && phases.length > 0) &&
-                  <Button variant="destructive" onClick={(e) => {
-                    e.preventDefault()
-                    removeIndex(index)
-                  }} className="w-12 mr-0">
+                  <Button 
+                    variant="destructive" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeIndex(index);
+                    }} 
+                    className="w-12 mr-0"
+                  >
                     <Trash className="w-4 h-4" />
                   </Button>
                 }
@@ -199,10 +208,23 @@ export default function ProductForm() {
             </div>
           </div>
         ))}
-        <Button variant="outline" className="col-span-1 mr-0" onClick={(e) => {
-          e.preventDefault();
-          addIndex({ type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '', phases: [] })
-        }}>
+        <Button 
+          variant="outline" 
+          className="col-span-1 mr-0" 
+          onClick={(e) => {
+            e.preventDefault();
+            addIndex({ 
+              type: '', 
+              trigger: '', 
+              exit: '', 
+              dailyCap: '', 
+              unitPayout: '', 
+              maxPayout: '', 
+              consecutiveDays: '', 
+              phases: [] 
+            });
+          }}
+        >
           Add Index
         </Button>
 

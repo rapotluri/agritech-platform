@@ -94,15 +94,19 @@ def calculate_premium(request: PremiumRequest) -> Dict:
         for year in range(start_year, end_year + 1):
             year_results = {"year": year, "triggers": []}
             
-            # Process each phase
-            for phase in request.phases:
-                # Get date range for this phase in the historical year
-                phase_start, phase_end = get_aligned_dates(
-                    planting_date, year, phase.sosStart, phase.sosEnd
-                )
+            # Process each index
+            for index in request.indexes:
+                # Get selected phases for this index
+                selected_phases = [phase for phase in request.phases 
+                                 if phase.phaseName in index.phases]
                 
-                # Process each index
-                for index in request.indexes:
+                # Process each selected phase for this index
+                for phase in selected_phases:
+                    # Get date range for this phase in the historical year
+                    phase_start, phase_end = get_aligned_dates(
+                        planting_date, year, phase.sosStart, phase.sosEnd
+                    )
+                    
                     trigger_met, critical_value = analyze_phase_data(
                         df,
                         request.commune,
