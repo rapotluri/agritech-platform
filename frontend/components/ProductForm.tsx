@@ -127,7 +127,9 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         data.plantingDate = data.plantingDate.toISOString().split('T')[0];
       }
       
-      const response = await fetch('http://localhost:8000/api/premium/calculate', {
+      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+      const response = await fetch(`${API_URL}/api/premium/calculate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
