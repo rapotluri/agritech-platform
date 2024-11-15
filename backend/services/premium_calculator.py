@@ -167,7 +167,10 @@ def calculate_premium(request: PremiumRequest) -> Dict:
         
         # Calculate year range based on weather data period
         end_year = 2023
-        start_year = end_year - request.weatherDataPeriod
+        start_year = end_year - request.weatherDataPeriod + 1  # Add +1 to include the current year in the count
+        
+        # Log the analysis period
+        logger.info(f"\nAnalyzing rainfall data from {start_year} to {end_year} ({end_year - start_year + 1} years)")
         
         # Store results for each year
         results = []
@@ -267,17 +270,57 @@ def calculate_premium(request: PremiumRequest) -> Dict:
                 logger.info(f"Minimum Payout: ${summary['min_payout']:.2f}")
         
         return {
-            "message": "Analysis completed",
             "status": "success",
-            "results": results,
-            "summary": {
+            "premium": {
+                "rate": float(premium_calculation['premium_percentage']),
+                "etotal": float(premium_calculation['etotal_percentage']),
+                "max_payout": float(premium_calculation['max_payout_across_years'])
+            },
+            "phase_analysis": {
+                phase: {
+                    "indexes": {
+                        index_type: {
+                            "average_payout_percentage": summary["average_payout_percentage"],
+                            "total_payout": summary["total_payout"],
+                            "max_payout": summary["max_payout"],
+                            "min_payout": summary["min_payout"]
+                        }
+                        for index_type, summary in index_data.items()
+                    },
+                    "total_contribution": sum(
+                        summary["average_payout_percentage"] 
+                        for summary in index_data.values()
+                    )
+                }
+                for phase, index_data in phase_summaries.items()
+            },
+            "risk_metrics": {
+                "years_analyzed": len(total_payouts),
+                "payout_years": len([p for p in total_payouts if p > 0]),
+                "payout_probability": len([p for p in total_payouts if p > 0]) / len(total_payouts) * 100,
                 "average_annual_payout": float(avg_annual_payout),
                 "max_annual_payout": float(max(total_payouts)),
-                "min_annual_payout": float(min(total_payouts)),
-                "years_analyzed": len(total_payouts)
+                "min_annual_payout": float(min(total_payouts))
             },
-            "phase_summaries": phase_summaries,
-            "premium_calculation": premium_calculation
+            "yearly_analysis": [
+                {
+                    "year": result["year"],
+                    "total_payout": result["total_payout"],
+                    "triggers": [
+                        {
+                            "phase": trigger["phase"],
+                            "index_type": trigger["index_type"],
+                            "rainfall": trigger["critical_value"],
+                            "trigger_value": trigger["trigger_value"],
+                            "payout": trigger["payout"]
+                        }
+                        for trigger in result["triggers"]
+                        if trigger["trigger_met"]
+                    ]
+                }
+                for result in results
+                if any(trigger["trigger_met"] for trigger in result["triggers"])
+            ]
         }
         
     except Exception as e:

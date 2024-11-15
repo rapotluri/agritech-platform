@@ -1,17 +1,66 @@
 "use client";
 
-import { Key, useEffect } from "react";
+import { Key, useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { SelectItem } from "@/components/ui/select";
-import { Trash } from 'lucide-react';
+import { Trash, Loader2 } from 'lucide-react';
 import { InputForm } from "./ui/InputForm";
 import { SelectForm } from "./ui/SelectForm";
 import { CheckboxForm } from "./ui/CheckboxForm";
 import { CalendarForm } from "./ui/CalendarForm";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PremiumResults } from "./PremiumResults";
 
-export default function ProductForm() {
+type PremiumResponse = {
+  status: string;
+  premium: {
+    rate: number;
+    etotal: number;
+    max_payout: number;
+  };
+  phase_analysis: {
+    [phase: string]: {
+      indexes: {
+        [index: string]: {
+          average_payout_percentage: number;
+          total_payout: number;
+          max_payout: number;
+          min_payout: number;
+        };
+      };
+      total_contribution: number;
+    };
+  };
+  risk_metrics: {
+    years_analyzed: number;
+    payout_years: number;
+    payout_probability: number;
+    average_annual_payout: number;
+    max_annual_payout: number;
+    min_annual_payout: number;
+  };
+  yearly_analysis: Array<{
+    year: number;
+    total_payout: number;
+    triggers: Array<{
+      phase: string;
+      index_type: string;
+      rainfall: number;
+      trigger_value: number;
+      payout: number;
+    }>;
+  }>;
+};
+
+// Update the component props
+interface ProductFormProps {
+  setPremiumResponse: (response: PremiumResponse | null) => void;
+}
+
+export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   const cropTypes = ["Rice", "Maize", "Wheat", "Soybean", "Cotton"];
   const coverageTypes = ["Drought", "Excess Rainfall"];
   const indexTypes = ["Excess Rainfall", "Drought"];
@@ -68,6 +117,37 @@ export default function ProductForm() {
   useEffect(() => {
     // This will trigger whenever phases change
   }, [watchedPhases]);
+
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const onSubmit = async (data: any) => {
+    setIsCalculating(true);
+    try {
+      if (data.plantingDate instanceof Date) {
+        data.plantingDate = data.plantingDate.toISOString().split('T')[0];
+      }
+      
+      const response = await fetch('http://localhost:8000/api/premium/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate premium');
+      }
+
+      const result = await response.json();
+      setPremiumResponse(result);
+    } catch (error) {
+      console.error('Error calculating premium:', error);
+      setPremiumResponse(null);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -236,23 +316,38 @@ export default function ProductForm() {
           ))}
         </SelectForm>
 
-        {/* Premium Calculation */}
-        <h3 className="font-medium">Premium Calculation</h3>
-        <div className="mt-4 p-4 text-center rounded-lg bg-gray-200">
-          <span className="text-2xl font-bold">$100.00 USD</span>
-        </div>
-
         {/* Calculate Premium Button */}
-        <Button onClick={form.handleSubmit(onSubmit)} className="w-full mt-4" variant="default">
-          Calculate Premium
+        <Button 
+          onClick={form.handleSubmit(onSubmit)} 
+          className="w-full" 
+          variant="default"
+          disabled={isCalculating}
+        >
+          {isCalculating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Calculating...
+            </>
+          ) : (
+            'Calculate Premium'
+          )}
         </Button>
 
         {/* Save and Discard Buttons */}
-        <div className="flex justify-center items-start space-x-6">
-          <Button type="submit" className="w-full mt-4" variant="agro" color="green">
+        <div className="flex justify-center items-start space-x-6 mt-8">
+          <Button type="submit" className="w-full" variant="agro" color="green">
             Save Product
           </Button>
-          <Button type="button" className="w-full mt-4" variant="destructive" color="green" onClick={() => form.reset()}>
+          <Button 
+            type="button" 
+            className="w-full" 
+            variant="destructive" 
+            color="green" 
+            onClick={() => {
+              form.reset();
+              setPremiumResponse(null);
+            }}
+          >
             Discard Product
           </Button>
         </div>
@@ -260,30 +355,3 @@ export default function ProductForm() {
     </Form>
   );
 }
-
-const onSubmit = async (data: any) => {
-  if (data.plantingDate instanceof Date) {
-    data.plantingDate = data.plantingDate.toISOString().split('T')[0]; // Convert to "YYYY-MM-DD"
-  }
-  console.log(data); // Log the data to check the payload
-  try {
-    const response = await fetch('http://localhost:8000/api/premium/calculate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to calculate premium');
-    }
-
-    const result = await response.json();
-    console.log('Premium calculation result:', result);
-    // Update state or UI with the result as needed
-  } catch (error) {
-    console.error('Error calculating premium:', error);
-    // Handle error appropriately
-  }
-};
