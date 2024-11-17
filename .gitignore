@@ -8,3 +8,8 @@ backend/~$KampongSpeu_climate_data.xlsx
 *.xlsx
 !Battambang.xlsx
 backend/api/g_credentials.json
+backend/.ebextensions/01_environment.config
+backend/tests/test_deployment.py
+backend-deploy.zip
+backend/tests/local_test.py
+backend/tests/run_celery.py

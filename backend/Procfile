@@ -1,0 +1,2 @@
+web: cd /var/app/current && PYTHONPATH=/var/app/current gunicorn backend.application:handler --bind 127.0.0.1:8000 --workers 4 --log-level debug
+worker: cd /var/app/current && PYTHONPATH=/var/app/current celery -A backend.celery_worker.celery_app worker --loglevel=info 

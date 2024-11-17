@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from schemas.premium_schema import PremiumRequest
-from services.premium_calculator import calculate_premium
+from backend.schemas.premium_schema import PremiumRequest
+from backend.services.premium_calculator import calculate_premium
 
 router = APIRouter(
     prefix="/api/premium",

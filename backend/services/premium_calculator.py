@@ -3,7 +3,8 @@ import pandas as pd
 import logging
 from typing import Dict, List
 from datetime import datetime, timedelta
-from schemas.premium_schema import PremiumRequest
+from backend.schemas.premium_schema import PremiumRequest
+from backend.utils.config import PREMIUM_BASE_RATE, PREMIUM_MULTIPLIER
 from fastapi import HTTPException
 
 logging.basicConfig(level=logging.INFO)
@@ -149,7 +150,8 @@ def calculate_final_premium(results: List[dict], phase_summaries: Dict) -> Dict:
         "premium_percentage": float(premium_rate)
     }
 
-def calculate_premium(request: PremiumRequest) -> Dict:
+def calculate_premium(request: PremiumRequest) -> dict:
+    """Calculate premium based on request parameters"""
     try:
         # Load historical rainfall data
         file_path = os.path.join(os.getcwd(), "files", "Battambang.xlsx")

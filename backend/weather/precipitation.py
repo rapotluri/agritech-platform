@@ -2,6 +2,9 @@
 
 import ee
 import pandas as pd
+import geopandas as gpd
+from backend.utils.gee_utils import get_date_range, get_feature_collection
+from backend.utils.config import CHIRPS_PRECIPITATION_DATASET
 
 
 def retrieve_precipitation_data(province_gdf, start_date: str, end_date: str):

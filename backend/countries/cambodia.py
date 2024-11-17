@@ -1,5 +1,6 @@
 import geopandas as gpd
 import os
+from backend.utils.config import BOUNDARIES_DIR
 
 
 def normalize_province_name(name: str) -> str:
@@ -74,15 +75,12 @@ def normalize_province_name(name: str) -> str:
 
 
 def get_communes_geodataframe():
-    """
-    Load the GeoDataFrame for Cambodia's communes and normalize the province names.
-    """
-    geojson_file = os.path.join(os.getcwd(), "boundaries", "cambodia_communes.geojson")
+    """Load the GeoDataFrame for Cambodia's communes"""
     try:
+        # Use absolute path
+        geojson_file = os.path.join(os.path.dirname(__file__), "..", "boundaries", "cambodia_communes.geojson")
         communes_gdf = gpd.read_file(geojson_file)
-        communes_gdf["normalized_NAME_1"] = communes_gdf["NAME_1"].apply(
-            normalize_province_name
-        )
+        communes_gdf["normalized_NAME_1"] = communes_gdf["NAME_1"].apply(normalize_province_name)
+        return communes_gdf
     except Exception as e:
         raise RuntimeError(f"Error reading GeoJSON file: {str(e)}")
-    return communes_gdf

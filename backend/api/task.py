@@ -1,6 +1,7 @@
 from celery.result import AsyncResult
 from fastapi import APIRouter
-from celery_worker import celery_app
+from backend.utils.dynamo import get_task_result
+from backend.celery_worker import celery_app
 
 
 # Set up the FastAPI router

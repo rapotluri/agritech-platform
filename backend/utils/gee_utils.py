@@ -1,14 +1,16 @@
-import ee
 import os
+import ee
 import json
 import tempfile
+from datetime import datetime
+from backend.utils.config import GEE_SERVICE_ACCOUNT, GEE_PRIVATE_KEY
 
 def initialize_gee():
     """
     Initialize the Google Earth Engine API using service account credentials
     stored in a Render secret file.
     """
-    service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
+    service_account = GEE_SERVICE_ACCOUNT
     
     # Define the path to the secret file (as defined in Render)
     #credentials_file = "/etc/secrets/g_credentials.json"
@@ -35,3 +37,13 @@ def initialize_gee():
 
     # Remove the temporary file after initialization
     os.remove(temp_file_path)
+
+def get_date_range(start_date: str, end_date: str):
+    """Convert date strings to ee.Date objects"""
+    start = ee.Date(start_date)
+    end = ee.Date(end_date)
+    return start, end
+
+def get_feature_collection(geometry):
+    """Convert geometry to ee.FeatureCollection"""
+    return ee.FeatureCollection([ee.Feature(geometry)])
