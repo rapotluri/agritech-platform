@@ -10,17 +10,20 @@ def initialize_gee():
     """
     service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
     
-    credentials_str = os.getenv("GOOGLE_CREDENTIALS")
-    fixed_str = (
-        credentials_str
-        .replace("{", '{"')             # Add opening quotes for keys
-        .replace("}", '"}')             # Add closing quotes for keys
-        .replace(":", '": "')           # Add quotes around keys and values
-        .replace(",", '", "')           # Add quotes around pairs
-        .replace('", "}', '"}')         # Remove trailing comma properly
-    )
+    # Define the path to the secret file (as defined in Render)
+    #credentials_file = "/etc/secrets/g_credentials.json"
 
-    credentials_dict = json.loads(fixed_str)
+    #Local
+    credentials_file = os.path.join(os.getcwd(), "api", "g_credentials.json")
+
+    # Check if the credentials file exists
+    if not os.path.isfile(credentials_file):
+        raise RuntimeError(f"Google Earth Engine credentials file not found at {credentials_file}")
+
+    # Read the JSON content from the file
+    with open(credentials_file, 'r') as file:
+        credentials_dict = json.load(file)
+
     # Create a temporary file to store the JSON credentials
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         temp_file.write(json.dumps(credentials_dict).encode('utf-8'))
