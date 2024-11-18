@@ -5,6 +5,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing import Process
 from celery import Celery
 from celery.signals import worker_process_init
+from services.premium_calculator import calculate_premium
+from schemas.premium_schema import PremiumRequest
 from utils.mongo import get_mongodb_fs
 from utils.gee_utils import initialize_gee
 from weather.precipitation import retrieve_precipitation_data
@@ -53,3 +55,7 @@ def data_task(province, start_date, end_date, data_type, file_name):
     file_id = fs.put(file_buffer, filename=file_name)
 
     return str(file_id)
+
+@celery_app.task(name="premium_task")
+def premium_task(request: PremiumRequest):
+    return calculate_premium(request)
