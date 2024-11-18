@@ -56,6 +56,6 @@ def data_task(province, start_date, end_date, data_type, file_name):
 
     return str(file_id)
 
-@celery_app.task(name="premium_calculator")
+@celery_app.task(name="premium_task")
 def premium_task(request: PremiumRequest):
     return calculate_premium(request)
