@@ -10,9 +10,6 @@ import { InputForm } from "./ui/InputForm";
 import { SelectForm } from "./ui/SelectForm";
 import { CheckboxForm } from "./ui/CheckboxForm";
 import { CalendarForm } from "./ui/CalendarForm";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PremiumResults } from "./PremiumResults";
 
 type PremiumResponse = {
   status: string;
@@ -266,12 +263,14 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               <InputForm control={control} name={`indexes.${index}.dailyCap`} placeholder="Daily cap (mm)" type="number" />
               <InputForm control={control} name={`indexes.${index}.unitPayout`} placeholder="Unit Payout (USD)" type="number" />
               <InputForm control={control} name={`indexes.${index}.maxPayout`} placeholder="Max Payout (USD)" type="number" />
-              <CheckboxForm 
-                control={control} 
-                name={`indexes.${index}.phases`} 
-                label="Apply to Phases" 
-                items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
-              />
+              <div className="col-span-3">
+                <CheckboxForm 
+                  control={control} 
+                  name={`indexes.${index}.phases`} 
+                  label="Apply to Phases" 
+                  items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
+                />
+              </div>  
 
               <div className="col-span-3 flex justify-center">
                 {(phases && phases.length > 0) &&

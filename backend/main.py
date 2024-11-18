@@ -1,9 +1,11 @@
+import os
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from api.climate_data import router as climate_data_router
 from api.serve_file import router as serve_file_router
 from api.task import router as task_router
+from utils.gee_utils_local import initialize_gee_local
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
 from api.premium import router as premium_router
@@ -11,7 +13,10 @@ from api.premium import router as premium_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    initialize_gee()
+    if os.getenv("ENV") == "LOCAL":
+        initialize_gee_local()
+    else:
+        initialize_gee()
     yield
     print("Shutting down...")
 
