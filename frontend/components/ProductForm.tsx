@@ -10,6 +10,7 @@ import { InputForm } from "./ui/InputForm";
 import { SelectForm } from "./ui/SelectForm";
 import { CheckboxForm } from "./ui/CheckboxForm";
 import { CalendarForm } from "./ui/CalendarForm";
+import apiClient from "@/lib/apiClient";
 
 type PremiumResponse = {
   status: string;
@@ -123,16 +124,8 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
       if (data.plantingDate instanceof Date) {
         data.plantingDate = data.plantingDate.toISOString().split('T')[0];
       }
-      
-      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-      const response = await fetch(`${API_URL}/api/premium/calculate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post('/api/premium/calculate', data);
 
       if (!response.ok) {
         throw new Error('Failed to calculate premium');
