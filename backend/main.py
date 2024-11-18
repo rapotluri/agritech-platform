@@ -9,11 +9,11 @@ from utils.gee_utils_local import initialize_gee_local
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
 from api.premium import router as premium_router
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_dotenv()
+    # load_dotenv()
     if os.getenv("ENV") == "LOCAL":
         initialize_gee_local()
     else:
