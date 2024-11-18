@@ -11,10 +11,7 @@ def initialize_gee():
     service_account = "accurate-596@accurate-436800.iam.gserviceaccount.com"
     
     # Define the path to the secret file (as defined in Render)
-    #credentials_file = "/etc/secrets/g_credentials.json"
-
-    #Local
-    credentials_file = os.path.join(os.getcwd(), "api", "g_credentials.json")
+    credentials_file = "/etc/secrets/g_credentials.json"
 
     # Check if the credentials file exists
     if not os.path.isfile(credentials_file):
