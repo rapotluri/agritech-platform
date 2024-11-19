@@ -131,8 +131,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         throw new Error('Failed to calculate premium');
       }
 
-      const result = await response.json();
-      setPremiumResponse(result);
+      setPremiumResponse(response.data);
     } catch (error) {
       console.error('Error calculating premium:', error);
       setPremiumResponse(null);

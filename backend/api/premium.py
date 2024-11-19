@@ -12,7 +12,7 @@ router = APIRouter(
 async def calculate_premium_endpoint(request: PremiumRequest):
     try:
         # Convert Pydantic model to dict for Celery serialization
-        request_dict = request.dict()
+        request_dict = request.dict(by_alias=True)
         task = premium_task.delay(request_dict)
         return {
             "message": "Premium Calculation has been initiated.",
