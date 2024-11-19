@@ -53,6 +53,20 @@ type PremiumResponse = {
   }>;
 };
 
+// Add this type for task status response
+type TaskResponse = {
+  task_id: string;
+  status: string;
+  result?: {
+    premium: {
+      rate: number;
+      etotal: number;
+      max_payout: number;
+    };
+    // ... other result fields
+  };
+};
+
 // Update the component props
 interface ProductFormProps {
   setPremiumResponse: (response: PremiumResponse | null) => void;
@@ -125,17 +139,42 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         data.plantingDate = data.plantingDate.toISOString().split('T')[0];
       }
 
+      // Initial request to start calculation
       const response = await apiClient.post('/api/premium/calculate', data);
 
       if (response.status !== 200) {
         throw new Error('Failed to calculate premium');
       }
 
-      setPremiumResponse(response.data);
+      const taskId = response.data.task_id;
+
+      // Poll for task completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const taskResponse = await apiClient.get<TaskResponse>(`/api/tasks/${taskId}`);
+          
+          if (taskResponse.data.status === 'SUCCESS' && taskResponse.data.result) {
+            clearInterval(pollInterval);
+            setPremiumResponse(taskResponse.data.result);
+            setIsCalculating(false);
+          } else if (taskResponse.data.status === 'FAILURE') {
+            clearInterval(pollInterval);
+            throw new Error('Premium calculation failed');
+          }
+        } catch (error) {
+          clearInterval(pollInterval);
+          console.error('Error checking task status:', error);
+          setPremiumResponse(null);
+          setIsCalculating(false);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Clean up interval if component unmounts
+      return () => clearInterval(pollInterval);
+
     } catch (error) {
       console.error('Error calculating premium:', error);
       setPremiumResponse(null);
-    } finally {
       setIsCalculating(false);
     }
   };
