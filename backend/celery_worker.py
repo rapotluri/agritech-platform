@@ -57,5 +57,13 @@ def data_task(province, start_date, end_date, data_type, file_name):
     return str(file_id)
 
 @celery_app.task(name="premium_task")
-def premium_task(request: PremiumRequest):
-    return calculate_premium(request)
+def premium_task(request_dict):
+    try:
+        # Convert dict to PremiumRequest
+        request = PremiumRequest(**request_dict)
+        result = calculate_premium(request)
+        return result
+    except Exception as e:
+        # Log the error and re-raise
+        print(f"Error in premium_task: {str(e)}")
+        raise
