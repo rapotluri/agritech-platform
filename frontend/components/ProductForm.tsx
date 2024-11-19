@@ -57,14 +57,7 @@ type PremiumResponse = {
 type TaskResponse = {
   task_id: string;
   status: string;
-  result?: {
-    premium: {
-      rate: number;
-      etotal: number;
-      max_payout: number;
-    };
-    // ... other result fields
-  };
+  result?: PremiumResponse;  // Use the existing PremiumResponse type
 };
 
 // Update the component props
