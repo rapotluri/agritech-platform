@@ -11,10 +11,13 @@ router = APIRouter(
 @router.post("/calculate")
 async def calculate_premium_endpoint(request: PremiumRequest):
     try:
-        task = premium_task.delay(request)
+        # Convert Pydantic model to dict for Celery serialization
+        request_dict = request.dict()
+        task = premium_task.delay(request_dict)
         return {
             "message": "Premium Calculation has been initiated.",
             "task_id": task.id
         }
     except Exception as e:
+        print(f"Error in calculate_premium_endpoint: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) 

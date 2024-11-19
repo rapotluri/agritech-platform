@@ -127,7 +127,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
 
       const response = await apiClient.post('/api/premium/calculate', data);
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Failed to calculate premium');
       }
 
