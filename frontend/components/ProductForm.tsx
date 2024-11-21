@@ -11,6 +11,7 @@ import { SelectForm } from "./ui/SelectForm";
 import { CheckboxForm } from "./ui/CheckboxForm";
 import { CalendarForm } from "./ui/CalendarForm";
 import apiClient from "@/lib/apiClient";
+import { SimpleTooltip } from "./ui/tooltip";
 
 type PremiumResponse = {
   status: string;
@@ -175,77 +176,108 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   return (
     <Form {...form}>
       <form className="space-y-4">
-        <InputForm control={control} name="productName" placeholder="Enter Product Name" label="Product Name" type="string" />
+        <SimpleTooltip content="The name of the insurance product">
+          <InputForm control={control} name="productName" placeholder="Enter Product Name" label="Product Name" type="string" />
+        </SimpleTooltip>  
         
-        {/* Commune Dropdown */}
-        <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
-          {communes.map((commune) => (
-            <SelectItem key={commune} value={commune}>
-              {commune}
-            </SelectItem>
-          ))}
-        </SelectForm>
-
-        <SelectForm control={control} name="cropType" placeholder="Select Crop type" label="Crop Type">
-          {cropTypes.map((type) => (
+        <SimpleTooltip content="The commune where the crop is grown">
+          <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
+            {communes.map((commune) => (
+              <SelectItem key={commune} value={commune}>
+                {commune}
+              </SelectItem>
+            ))}
+          </SelectForm>
+        </SimpleTooltip>
+        <SimpleTooltip content="The type of crop for your insurance product">
+          <SelectForm control={control} name="cropType" placeholder="Select Crop type" label="Crop Type">
+            {cropTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectForm>
+        </SimpleTooltip>
+        <SimpleTooltip content="The Coverage type for your insurance product">
+        <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
+          {coverageTypes.map((type) => (
             <SelectItem key={type} value={type}>
               {type}
             </SelectItem>
           ))}
         </SelectForm>
+        </SimpleTooltip>
+        
         <div className="flex items-start space-x-3">
-          <InputForm
-            control={control}
-            className="flex flex-col"
-            name="growingDuration"
-            placeholder="Enter duration"
-            label="Total Growing Duration (days)"
-            type="number"
-          />
+          <SimpleTooltip content="The total growing duration for the crop in days">
+            <InputForm
+              control={control}
+              className="flex flex-col"
+              name="growingDuration"
+              placeholder="Enter duration"
+              label="Total Growing Duration (days)"
+              type="number"
+            />
+          </SimpleTooltip>
+          <SimpleTooltip content="The planting date for the crop">
           <CalendarForm
             control={control}
             name="plantingDate"
             label="Planting Date"
             placeholder="Select a date"
           />
+          </SimpleTooltip>
         </div>
         <h3 className="font-medium mb-2">Weather Data Period</h3>
-        <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
-          <SelectItem value="10">10 years</SelectItem>
-          <SelectItem value="20">20 years</SelectItem>
-          <SelectItem value="30">30 years</SelectItem>
-        </SelectForm>
+        <SimpleTooltip content="The time period used for analysing weather data">
+          <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
+            <SelectItem value="10">10 years</SelectItem>
+            <SelectItem value="20">20 years</SelectItem>
+            <SelectItem value="30">30 years</SelectItem>
+          </SelectForm>
+        </SimpleTooltip>
         <h3 className="font-medium mb-2">Phases</h3>
         {phases.map((item: { id: Key | null | undefined; }, index: number) => (
           <div className="flex gap-2 items-center" key={item.id}>
-            <InputForm 
-              control={control} 
-              name={`phases.${index}.phaseName`} 
-              placeholder="Phase Name" 
-              type="string" 
-            />
-            <InputForm 
-              control={control} 
-              name={`phases.${index}.length`} 
-              placeholder="Length (days)" 
-              type="number" 
-            />
+            <SimpleTooltip content="Name of the crop phase">
+              <InputForm 
+                control={control} 
+                name={`phases.${index}.phaseName`} 
+                placeholder="Phase Name" 
+                label="Phase Name"
+                type="string" 
+              />
+            </SimpleTooltip>
+            <SimpleTooltip content="The length of the phase in days">
+              <InputForm 
+                control={control} 
+                name={`phases.${index}.length`} 
+                placeholder="Length (days)" 
+                label="Phase Length (days)"
+                type="number" 
+              />
+            </SimpleTooltip>
             <div className="flex items-center gap-2">
+            <SimpleTooltip content="The start the phase in days">
               <InputForm 
                 control={control} 
                 name={`phases.${index}.sosStart`} 
                 placeholder="From" 
                 type="number" 
+                label="Phase Start"
                 className="w-24"
               />
-              <span>to</span>
+              </SimpleTooltip>
+              <SimpleTooltip content="The end of the phase in days">
               <InputForm 
                 control={control} 
-                name={`phases.${index}.sosEnd`} 
+                name={`phases.${index}.sosEnd`}
+                label="Phase End" 
                 placeholder="To" 
                 type="number" 
                 className="w-24"
               />
+              </SimpleTooltip>
             </div>
             <Button 
               variant="destructive" 
@@ -274,26 +306,42 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         {indexes.map((item, index) => (
           <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={item.id}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <SelectForm control={control} name={`indexes.${index}.type`} placeholder="Select Index type">
-                {indexTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectForm>
-              <InputForm control={control} name={`indexes.${index}.consecutiveDays`} placeholder="Consecutive days for trigger" type="number" />
-              <InputForm control={control} name={`indexes.${index}.trigger`} placeholder="Trigger (mm)" type="number" />
-              <InputForm control={control} name={`indexes.${index}.exit`} placeholder="Exit (mm)" type="number" />
-              <InputForm control={control} name={`indexes.${index}.dailyCap`} placeholder="Daily cap (mm)" type="number" />
-              <InputForm control={control} name={`indexes.${index}.unitPayout`} placeholder="Unit Payout (USD)" type="number" />
-              <InputForm control={control} name={`indexes.${index}.maxPayout`} placeholder="Max Payout (USD)" type="number" />
+              <SimpleTooltip content="Coverage Type of the Index">
+                <SelectForm control={control} name={`indexes.${index}.type`} label="Index Coverage Type" placeholder="Select Index type">
+                  {indexTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectForm>
+              </SimpleTooltip>
+              <SimpleTooltip content="The number of consecutive days for the trigger">
+                <InputForm label="Trigger Days" control={control} name={`indexes.${index}.consecutiveDays`} placeholder="Consecutive days for trigger" type="number" />
+              </SimpleTooltip>
+              <SimpleTooltip content="The rainfall trigger value for the index in mm">
+                <InputForm label="Trigger" control={control} name={`indexes.${index}.trigger`} placeholder="Trigger (mm)" type="number" />
+              </SimpleTooltip>
+              <SimpleTooltip content="The exit trigger value for the index in mm">
+                <InputForm label="Exit Trigger" control={control} name={`indexes.${index}.exit`} placeholder="Exit (mm)" type="number" />
+              </SimpleTooltip>
+              <SimpleTooltip content="The daily capacity for rainfall in mm">
+                <InputForm label="Daily Cap" control={control} name={`indexes.${index}.dailyCap`} placeholder="Daily cap (mm)" type="number" />
+              </SimpleTooltip>
+              <SimpleTooltip content="The unit payout of the index in USD">
+                <InputForm label="Unit Payout" control={control} name={`indexes.${index}.unitPayout`} placeholder="Unit Payout (USD)" type="number" />
+              </SimpleTooltip>
+              <SimpleTooltip content="The max payout of the index in USD">
+                <InputForm label="Max Payout" control={control} name={`indexes.${index}.maxPayout`} placeholder="Max Payout (USD)" type="number" />
+              </SimpleTooltip>
               <div className="col-span-3">
-                <CheckboxForm 
-                  control={control} 
-                  name={`indexes.${index}.phases`} 
-                  label="Apply to Phases" 
-                  items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
-                />
+                <SimpleTooltip content="The phases that this index applies to">
+                  <CheckboxForm 
+                    control={control} 
+                    name={`indexes.${index}.phases`} 
+                    label="Apply to Phases" 
+                    items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
+                  />
+                </SimpleTooltip>  
               </div>  
 
               <div className="col-span-3 flex justify-center">
@@ -333,13 +381,6 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           Add Index
         </Button>
 
-        <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
-          {coverageTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
-        </SelectForm>
 
         {/* Calculate Premium Button */}
         <Button 
