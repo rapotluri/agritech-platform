@@ -14,7 +14,7 @@ export default function ProductCreation() {
       {/* Form Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Create Product</CardTitle>
+          <CardTitle className="text-2xl font-bold">Create Product</CardTitle>
         </CardHeader>
         <CardContent>
           <ProductForm setPremiumResponse={setPremiumResponse} />

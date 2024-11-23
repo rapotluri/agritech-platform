@@ -176,43 +176,46 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   return (
     <Form {...form}>
       <form className="space-y-4">
-        <SimpleTooltip content="The name of the insurance product">
-          <InputForm control={control} name="productName" placeholder="Enter Product Name" label="Product Name" type="string" />
-        </SimpleTooltip>  
-        
-        <SimpleTooltip content="The commune where the crop is grown">
-          <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
-            {communes.map((commune) => (
-              <SelectItem key={commune} value={commune}>
-                {commune}
-              </SelectItem>
-            ))}
-          </SelectForm>
-        </SimpleTooltip>
-        <SimpleTooltip content="The type of crop for your insurance product">
-          <SelectForm control={control} name="cropType" placeholder="Select Crop type" label="Crop Type">
-            {cropTypes.map((type) => (
+        <div className="grid grid-cols-2 gap-4">
+          <SimpleTooltip content="The name of the insurance product">
+            <InputForm control={control} name="productName" placeholder="Enter Product Name" label="Product Name" type="string" />
+          </SimpleTooltip>  
+          
+          <SimpleTooltip content="The commune where the crop is grown">
+            <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
+              {communes.map((commune) => (
+                <SelectItem key={commune} value={commune}>
+                  {commune}
+                </SelectItem>
+              ))}
+            </SelectForm>
+          </SimpleTooltip>
+
+          <SimpleTooltip content="The type of crop for your insurance product">
+            <SelectForm control={control} name="cropType" placeholder="Select Crop type" label="Crop Type">
+              {cropTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectForm>
+          </SimpleTooltip>
+          <SimpleTooltip content="The Coverage type for your insurance product">
+          <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
+            {coverageTypes.map((type) => (
               <SelectItem key={type} value={type}>
                 {type}
               </SelectItem>
             ))}
           </SelectForm>
-        </SimpleTooltip>
-        <SimpleTooltip content="The Coverage type for your insurance product">
-        <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
-          {coverageTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
-        </SelectForm>
-        </SimpleTooltip>
-        
-        <div className="flex items-start space-x-3">
-          <SimpleTooltip content="The total growing duration for the crop in days">
+          </SimpleTooltip>
+        </div>
+        <h3 className="text-xl font-bold tracking-tight">Weather Data Period</h3>
+        <p className="text-md text-muted-foreground">Select Growing Duration and Weather Data Period for risk analysis</p>
+        <div className="grid grid-cols-2 gap-4">
+        <SimpleTooltip content="The total growing duration for the crop in days">
             <InputForm
               control={control}
-              className="flex flex-col"
               name="growingDuration"
               placeholder="Enter duration"
               label="Total Growing Duration (days)"
@@ -220,15 +223,16 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
             />
           </SimpleTooltip>
           <SimpleTooltip content="The planting date for the crop">
+            <div className="mt-3">
           <CalendarForm
             control={control}
             name="plantingDate"
             label="Planting Date"
             placeholder="Select a date"
           />
+          </div>
           </SimpleTooltip>
         </div>
-        <h3 className="font-medium mb-2">Weather Data Period</h3>
         <SimpleTooltip content="The time period used for analysing weather data">
           <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
             <SelectItem value="10">10 years</SelectItem>
@@ -236,7 +240,8 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
             <SelectItem value="30">30 years</SelectItem>
           </SelectForm>
         </SimpleTooltip>
-        <h3 className="font-medium mb-2">Phases</h3>
+        <h3 className="text-xl font-bold tracking-tight">Phases</h3>
+        <p className="text-md text-muted-foreground">Enter Phase Details and Durations for Selected Crop</p>
         {phases.map((item: { id: Key | null | undefined; }, index: number) => (
           <div className="flex gap-2 items-center" key={item.id}>
             <SimpleTooltip content="Name of the crop phase">
@@ -279,7 +284,8 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               />
               </SimpleTooltip>
             </div>
-            <Button 
+            <Button
+              className="mt-7" 
               variant="destructive" 
               onClick={(e) => {
                 e.preventDefault();
@@ -302,7 +308,8 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         </Button>
 
         {/* Indexes */}
-        <h3 className="font-medium mb-2">Indexes</h3>
+        <h3 className="text-xl font-bold tracking-tight">Indexes</h3>
+        <p className="text-md text-muted-foreground">Enter Index Details for Insurance Product</p>
         {indexes.map((item, index) => (
           <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={item.id}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
