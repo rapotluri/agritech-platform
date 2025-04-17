@@ -267,7 +267,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
       // Show validation error
       form.setError('indexes', {
         type: 'manual',
-        message: 'Please complete all fields in the current phase before adding a new one'
+        message: 'Please complete all fields in the current index before adding a new one'
       });
       return;
     }
@@ -382,13 +382,6 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           </div>
           </SimpleTooltip>
 
-
-        {formState.errors.indexes && (
-          <div className="text-red-500 text-sm mb-2">
-            {formState.errors.indexes.message}
-          </div>
-        )}
-
         {/* Indexes */}
         <h3 className="text-xl font-bold tracking-tight">Indexes</h3>
         <p className="text-md text-muted-foreground">Enter Index Details for Insurance Product</p>
@@ -491,6 +484,11 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           Add Index
         </Button>
 
+        {formState.errors.indexes && (
+          <div className="text-red-500 text-sm mb-2">
+            {formState.errors.indexes.message}
+          </div>
+        )}
 
         {/* Calculate Premium Button */}
         <Button 
