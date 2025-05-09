@@ -2,14 +2,15 @@
 
 import { Key, useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { SelectItem } from "@/components/ui/select";
 import { Trash, Loader2 } from 'lucide-react';
 import { InputForm } from "./ui/InputForm";
 import { SelectForm } from "./ui/SelectForm";
-import { CheckboxForm } from "./ui/CheckboxForm";
-import { CalendarForm } from "./ui/CalendarForm";
+import { DatePicker } from "./ui/datepicker";
 import apiClient from "@/lib/apiClient";
 import { SimpleTooltip } from "./ui/tooltip";
 
@@ -66,6 +67,57 @@ interface ProductFormProps {
   setPremiumResponse: (response: PremiumResponse | null) => void;
 }
 
+// Create zod schema
+const formSchema = z.object({
+  productName: z.string().min(1, "Product name is required"),
+  commune: z.string().min(1, "Commune is required"),
+  cropType: z.string().min(1, "Crop type is required"),
+  coverageType: z.string().min(1, "Coverage type is required"),
+  growingDuration: z.string().min(1, "Growing duration is required"),
+  plantingDate: z.date({
+    required_error: "Planting date is required",
+  }),
+  weatherDataPeriod: z.string().min(1, "Weather data period is required"),
+  indexes: z.array(
+    z.object({
+      type: z.string().optional(),
+      trigger: z.string().optional(),
+      exit: z.string().optional(),
+      dailyCap: z.string().optional(),
+      unitPayout: z.string().optional(),
+      maxPayout: z.string().optional(),
+      consecutiveDays: z.string().optional(),
+      phaseName: z.string().min(1, "Phase name is required"),
+      length: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, "Length must be a positive number"),
+      sosStart: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, "Start must be a non-negative number"),
+      sosEnd: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, "End must be a positive number")
+    })
+
+  ).refine(indexes => {
+    // Check phases follow each other correctly
+    for (let i = 0; i < indexes.length; i++) {
+      const currentIndex = indexes[i];
+      
+      // Check if end date = start date + length - 1
+      if (Number(currentIndex.sosStart) + Number(currentIndex.length) - 1 !== Number(currentIndex.sosEnd)) {
+        return false;
+      }
+      
+      // Check if this phase starts after previous phase ends
+      if (i > 0 && Number(indexes[i].sosStart) !== Number(indexes[i-1].sosEnd) + 1) {
+        return false;
+      }
+      if (!indexes[i].phaseName || !indexes[i].length || !indexes[i].type || 
+        !indexes[i].trigger || !indexes[i].exit || !indexes[i].dailyCap || 
+        !indexes[i].unitPayout || !indexes[i].maxPayout || !indexes[i].consecutiveDays) {
+          return false;
+        }
+    }
+    return true;
+  }, "Phases must follow each other continuously with correct lengths"),
+
+});
+
 export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   const cropTypes = ["Rice", "Maize", "Wheat", "Soybean", "Cotton"];
   const coverageTypes = ["Drought", "Excess Rainfall"];
@@ -95,40 +147,65 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   ];
 
   const form = useForm({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      phases: [
-        { phaseName: "Early", length: "", sosStart: "0", sosEnd: "60" },
-        { phaseName: "Middle", length: "", sosStart: "61", sosEnd: "120" },
-        { phaseName: "Late", length: "", sosStart: "121", sosEnd: "180" }
-      ],
       indexes: [
-        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '', phases: ["Early", "Middle", "Late"] }
-      ]
+        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "Early", length: "61", sosStart: "0", sosEnd: "60" },
+      ],
+      plantingDate: new Date()
     }
   });
 
-  const { control, watch } = form;
-  const { fields: phases, append: addPhase, remove: removePhase } = useFieldArray({
-    control,
-    name: "phases"
-  });
+  const { control, watch, setValue,getValues, formState } = form;
   const { fields: indexes, append: addIndex, remove: removeIndex } = useFieldArray({
     control,
     name: "indexes"
   });
 
   // Watch for changes in phases
-  const watchedPhases = watch("phases");
-
+  const watchedIndexes = watch("indexes");
+  
   useEffect(() => {
-    // This will trigger whenever phases change
-  }, [watchedPhases]);
+    // Batch updates to prevent multiple re-renders
+    const updates: { (): void; (): void; }[] = [];
+    
+    watchedIndexes.forEach((phase, index) => {
+      // Skip if no length or start
+      if (!phase.length || !phase.sosStart) return;  
+      
+      const start = Number(phase.sosStart);
+      const length = Number(phase.length);
+      
+      if (!isNaN(start) && !isNaN(length) && length > 0) {
+        // Calculate end date
+        const end = start + length - 1;
+        const currentEnd = getValues(`indexes.${index}.sosEnd`);
+        
+        if (currentEnd !== end.toString()) {
+          updates.push(() => setValue(`indexes.${index}.sosEnd`, end.toString()));
+        }
+  
+        // Update next phase start date if there is one
+        if (index < watchedIndexes.length - 1) {
+          const nextStart = getValues(`indexes.${index + 1}.sosStart`);
+          if (nextStart !== (end + 1).toString()) {
+            updates.push(() => setValue(`indexes.${index + 1}.sosStart`, (end + 1).toString()));
+          }
+        }
+      }
+    });
+    
+    // Apply all updates at once
+    updates.forEach(update => update());
+    
+  }, [watchedIndexes, setValue, getValues]);
 
   const [isCalculating, setIsCalculating] = useState(false);
 
   const onSubmit = async (data: any) => {
     setIsCalculating(true);
     try {
+      console.log(data);
       if (data.plantingDate instanceof Date) {
         data.plantingDate = data.plantingDate.toISOString().split('T')[0];
       }
@@ -173,6 +250,68 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     }
   };
 
+  // Add a convenience function to create a new phase with proper values
+  const handleAddIndex = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    const indexes = watchedIndexes;
+    if (indexes.length === 0) {
+      // First phase starts at 0
+      addIndex({ type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "", length: "0", sosStart: "0", sosEnd: "0" },);
+      return
+    } 
+      const lastIndex = indexes[indexes.length - 1];
+      if (!lastIndex.phaseName || !lastIndex.length || !lastIndex.type || 
+        !lastIndex.trigger || !lastIndex.exit || !lastIndex.dailyCap || 
+        !lastIndex.unitPayout || !lastIndex.maxPayout || !lastIndex.consecutiveDays) {
+      // Show validation error
+      form.setError('indexes', {
+        type: 'manual',
+        message: 'Please complete all fields in the current index before adding a new one'
+      });
+      return;
+    }
+      const nextStart = lastIndex.sosEnd ? (Number(lastIndex.sosEnd) + 1).toString() : "0";
+      addIndex({ type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "", length: "", sosStart: nextStart, sosEnd: "0" },);
+  };
+
+  // Add a function to handle phase removal and adjust subsequent phases
+  const handleRemoveIndex = (index: number) => {
+    // If we're removing a phase that's not the last one, we need to adjust the start days of later phases
+    if (index < watchedIndexes.length - 1) {
+      // Get the start day of the phase we're removing
+      const removedPhaseStart = Number(watchedIndexes[index].sosStart);
+      const removedPhaseLength = Number(watchedIndexes[index].length);
+      
+      // Remove the phase first
+      removeIndex(index);
+      
+      // If there's a previous phase, connect the next phase to it
+      if (index > 0) {
+        const prevPhaseEnd = Number(watchedIndexes[index-1].sosEnd);
+        setValue(`indexes.${index}.sosStart`, (prevPhaseEnd + 1).toString());
+      }
+      
+      // Adjust all subsequent phases
+      for (let i = index; i < watchedIndexes.length - 1; i++) {
+        // Recalculate phase start and end
+        const currentStart = Number(watchedIndexes[i].sosStart);
+        const currentLength = Number(watchedIndexes[i].length);
+        const newStart = i === index ? 
+          (index > 0 ? Number(watchedIndexes[index-1].sosEnd) + 1 : removedPhaseStart) : 
+          Number(watchedIndexes[i-1].sosEnd) + 1;
+        
+        setValue(`indexes.${i}.sosStart`, newStart.toString());
+        if (currentLength) {
+          setValue(`indexes.${i}.sosEnd`, (newStart + currentLength - 1).toString());
+        }
+      }
+    } else {
+      // If it's the last phase, simply remove it
+      removeIndex(index);
+    }
+  };
+
   return (
     <Form {...form}>
       <form className="space-y-4">
@@ -210,8 +349,6 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           </SelectForm>
           </SimpleTooltip>
         </div>
-        <h3 className="text-xl font-bold tracking-tight">Weather Data Period</h3>
-        <p className="text-md text-muted-foreground">Select Growing Duration and Weather Data Period for risk analysis</p>
         <div className="grid grid-cols-2 gap-4">
         <SimpleTooltip content="The total growing duration for the crop in days">
             <InputForm
@@ -222,9 +359,21 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               type="number"
             />
           </SimpleTooltip>
+          <SimpleTooltip content="The time period used for analysing weather data">
+          <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
+            <SelectItem value="10">10 years</SelectItem>
+            <SelectItem value="20">20 years</SelectItem>
+            <SelectItem value="30">30 years</SelectItem>
+          </SelectForm>
+        </SimpleTooltip>
+        </div>
+
+        <h3 className="text-xl font-bold tracking-tight">Weather Data Period</h3>
+        <p className="text-md text-muted-foreground">Select Growing Duration and Weather Data Period for risk analysis</p>
+
           <SimpleTooltip content="The planting date for the crop">
             <div className="mt-3">
-          <CalendarForm
+          <DatePicker
             control={control}
             name="plantingDate"
             label="Planting Date"
@@ -232,22 +381,17 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           />
           </div>
           </SimpleTooltip>
-        </div>
-        <SimpleTooltip content="The time period used for analysing weather data">
-          <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
-            <SelectItem value="10">10 years</SelectItem>
-            <SelectItem value="20">20 years</SelectItem>
-            <SelectItem value="30">30 years</SelectItem>
-          </SelectForm>
-        </SimpleTooltip>
-        <h3 className="text-xl font-bold tracking-tight">Phases</h3>
-        <p className="text-md text-muted-foreground">Enter Phase Details and Durations for Selected Crop</p>
-        {phases.map((item: { id: Key | null | undefined; }, index: number) => (
-          <div className="flex gap-2 items-center" key={item.id}>
+
+        {/* Indexes */}
+        <h3 className="text-xl font-bold tracking-tight">Indexes</h3>
+        <p className="text-md text-muted-foreground">Enter Index Details for Insurance Product</p>
+        {indexes.map((item: { id: Key | null | undefined; }, index: number) => (
+          <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={item.id}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <SimpleTooltip content="Name of the crop phase">
               <InputForm 
                 control={control} 
-                name={`phases.${index}.phaseName`} 
+                name={`indexes.${index}.phaseName`} 
                 placeholder="Phase Name" 
                 label="Phase Name"
                 type="string" 
@@ -256,7 +400,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
             <SimpleTooltip content="The length of the phase in days">
               <InputForm 
                 control={control} 
-                name={`phases.${index}.length`} 
+                name={`indexes.${index}.length`} 
                 placeholder="Length (days)" 
                 label="Phase Length (days)"
                 type="number" 
@@ -266,53 +410,26 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
             <SimpleTooltip content="The start the phase in days">
               <InputForm 
                 control={control} 
-                name={`phases.${index}.sosStart`} 
+                name={`indexes.${index}.sosStart`} 
                 placeholder="From" 
                 type="number" 
                 label="Phase Start"
                 className="w-24"
+                disabled
               />
               </SimpleTooltip>
               <SimpleTooltip content="The end of the phase in days">
               <InputForm 
                 control={control} 
-                name={`phases.${index}.sosEnd`}
+                name={`indexes.${index}.sosEnd`}
                 label="Phase End" 
                 placeholder="To" 
                 type="number" 
                 className="w-24"
+                disabled // End date is always calculated
               />
               </SimpleTooltip>
             </div>
-            <Button
-              className="mt-7" 
-              variant="destructive" 
-              onClick={(e) => {
-                e.preventDefault();
-                removePhase(index)
-              }}
-            >
-              <Trash className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-        <Button 
-          variant="outline" 
-          className="mt-2" 
-          onClick={(e) => {
-            e.preventDefault();
-            addPhase({ phaseName: "", length: "", sosStart: "", sosEnd: "" })
-          }}
-        >
-          Add Phase
-        </Button>
-
-        {/* Indexes */}
-        <h3 className="text-xl font-bold tracking-tight">Indexes</h3>
-        <p className="text-md text-muted-foreground">Enter Index Details for Insurance Product</p>
-        {indexes.map((item, index) => (
-          <div className="w-full p-6 border border-gray-300 shadow-md rounded-lg" key={item.id}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <SimpleTooltip content="Coverage Type of the Index">
                 <SelectForm control={control} name={`indexes.${index}.type`} label="Index Coverage Type" placeholder="Select Index type">
                   {indexTypes.map((type) => (
@@ -340,54 +457,38 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               <SimpleTooltip content="The max payout of the index in USD">
                 <InputForm label="Max Payout" control={control} name={`indexes.${index}.maxPayout`} placeholder="Max Payout (USD)" type="number" />
               </SimpleTooltip>
-              <div className="col-span-3">
-                <SimpleTooltip content="The phases that this index applies to">
-                  <CheckboxForm 
-                    control={control} 
-                    name={`indexes.${index}.phases`} 
-                    label="Apply to Phases" 
-                    items={watchedPhases.map(phase => ({ id: phase.phaseName, label: phase.phaseName }))} 
-                  />
-                </SimpleTooltip>  
-              </div>  
 
-              <div className="col-span-3 flex justify-center">
-                {(phases && phases.length > 0) &&
-                  <Button 
-                    variant="destructive" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      removeIndex(index);
-                    }} 
-                    className="w-12 mr-0"
-                  >
-                    <Trash className="w-4 h-4" />
-                  </Button>
-                }
-              </div>
             </div>
+            <Button
+              className="mt-7"
+              type="button"
+              variant="destructive" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleRemoveIndex(index);
+              }}
+            >
+              <Trash className="w-4 h-4" />
+            </Button>
           </div>
         ))}
         <Button 
-          variant="outline" 
+          variant="outline"
+          type="button" 
           className="col-span-1 mr-0" 
           onClick={(e) => {
             e.preventDefault();
-            addIndex({ 
-              type: '', 
-              trigger: '', 
-              exit: '', 
-              dailyCap: '', 
-              unitPayout: '', 
-              maxPayout: '', 
-              consecutiveDays: '', 
-              phases: [] 
-            });
+            handleAddIndex(e);
           }}
         >
           Add Index
         </Button>
 
+        {formState.errors.indexes && (
+          <div className="text-red-500 text-sm mb-2">
+            {formState.errors.indexes.message}
+          </div>
+        )}
 
         {/* Calculate Premium Button */}
         <Button 
