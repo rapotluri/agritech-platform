@@ -150,7 +150,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       indexes: [
-        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "Early", length: "61", sosStart: "0", sosEnd: "60" },
+        { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "Early", length: "", sosStart: "0", sosEnd: "-" },
       ],
       plantingDate: new Date()
     }
@@ -182,14 +182,14 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         const currentEnd = getValues(`indexes.${index}.sosEnd`);
         
         if (currentEnd !== end.toString()) {
-          updates.push(() => setValue(`indexes.${index}.sosEnd`, end.toString()));
+          updates.push(() => setValue(`indexes.${index}.sosEnd`, end.toString(), { shouldValidate: true }));
         }
   
         // Update next phase start date if there is one
         if (index < watchedIndexes.length - 1) {
           const nextStart = getValues(`indexes.${index + 1}.sosStart`);
           if (nextStart !== (end + 1).toString()) {
-            updates.push(() => setValue(`indexes.${index + 1}.sosStart`, (end + 1).toString()));
+            updates.push(() => setValue(`indexes.${index + 1}.sosStart`, (end + 1).toString(), { shouldValidate: true }));
           }
         }
       }
@@ -403,7 +403,28 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
                 name={`indexes.${index}.length`} 
                 placeholder="Length (days)" 
                 label="Phase Length (days)"
-                type="number" 
+                type="number"
+                onBlur={(e) => {
+                  const length = e.target.value;
+                  if (length && !isNaN(Number(length))) {
+                    const start = Number(getValues(`indexes.${index}.sosStart`));
+                    const end = start + Number(length) - 1;
+                    setValue(`indexes.${index}.sosEnd`, end.toString(), { shouldValidate: true });
+                    
+                    // Update next phase start if it exists
+                    if (index < watchedIndexes.length - 1) {
+                      setValue(`indexes.${index + 1}.sosStart`, (end + 1).toString(), { shouldValidate: true });
+                    }
+                  } else {
+                    // If length is empty or invalid, set end date to "-"
+                    setValue(`indexes.${index}.sosEnd`, "-", { shouldValidate: true });
+                    
+                    // Update next phase start if it exists
+                    if (index < watchedIndexes.length - 1) {
+                      setValue(`indexes.${index + 1}.sosStart`, "-", { shouldValidate: true });
+                    }
+                  }
+                }}
               />
             </SimpleTooltip>
             <div className="flex items-center gap-2">
