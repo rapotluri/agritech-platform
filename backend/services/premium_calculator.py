@@ -176,65 +176,59 @@ def calculate_premium(request: PremiumRequest) -> Dict:
         results = []
         logger.info(f"\nAnalyzing rainfall data from {start_year} to {end_year}")
         
-        total_payouts = []  # Store payouts for each year
+        total_payouts = []
         
         # Analyze each historical year
         for year in range(start_year, end_year + 1):
             year_results = {"year": year, "triggers": [], "total_payout": 0.0}
             year_payout = 0.0  # Track total payout for this year
             
-            # Process each index
-            for index in request.indexes:
-                # Get selected phases for this index
-                selected_phases = [phase for phase in request.phases 
-                                 if phase.phaseName in index.phases]
+            # Process each combined phase+index
+            for idx in request.indexes:
+                # Get date range for this phase in the historical year
+                phase_start, phase_end = get_aligned_dates(
+                    planting_date, year, idx.sosStart, idx.sosEnd
+                )
                 
-                # Process each selected phase for this index
-                for phase in selected_phases:
-                    # Get date range for this phase in the historical year
-                    phase_start, phase_end = get_aligned_dates(
-                        planting_date, year, phase.sosStart, phase.sosEnd
+                trigger_met, critical_value = analyze_phase_data(
+                    df,
+                    request.commune,
+                    phase_start,
+                    phase_end,
+                    idx.consecutiveDays,
+                    idx.type,
+                    idx.trigger
+                )
+                
+                # Calculate payout if trigger is met
+                payout = calculate_payout(
+                    critical_value,
+                    idx.trigger,
+                    idx.unitPayout,
+                    idx.maxPayout,
+                    idx.type
+                )
+                
+                year_payout += payout
+                
+                result = {
+                    "phase": idx.phaseName,
+                    "index_type": idx.type,
+                    "trigger_met": bool(trigger_met),
+                    "critical_value": float(critical_value),
+                    "trigger_value": float(idx.trigger),
+                    "payout": float(payout)
+                }
+                year_results["triggers"].append(result)
+                
+                if trigger_met:
+                    logger.info(
+                        f"{year} - {idx.phaseName} Phase - {idx.type}:\n"
+                        f"{'Maximum' if idx.type == 'Excess Rainfall' else 'Minimum'} "
+                        f"rainfall: {critical_value:.2f}mm "
+                        f"({'>' if idx.type == 'Excess Rainfall' else '<'} {idx.trigger}mm)\n"
+                        f"Payout: ${payout:.2f}"
                     )
-                    
-                    trigger_met, critical_value = analyze_phase_data(
-                        df,
-                        request.commune,
-                        phase_start,
-                        phase_end,
-                        index.consecutiveDays,
-                        index.type,
-                        index.trigger
-                    )
-                    
-                    # Calculate payout if trigger is met
-                    payout = calculate_payout(
-                        critical_value,
-                        index.trigger,
-                        index.unitPayout,
-                        index.maxPayout,
-                        index.type
-                    )
-                    
-                    year_payout += payout  # Add to year's total payout
-                    
-                    result = {
-                        "phase": phase.phaseName,
-                        "index_type": index.type,
-                        "trigger_met": bool(trigger_met),
-                        "critical_value": float(critical_value),
-                        "trigger_value": float(index.trigger),
-                        "payout": float(payout)
-                    }
-                    year_results["triggers"].append(result)
-                    
-                    if trigger_met:
-                        logger.info(
-                            f"{year} - {phase.phaseName} Phase - {index.type}:\n"
-                            f"{'Maximum' if index.type == 'Excess Rainfall' else 'Minimum'} "
-                            f"rainfall: {critical_value:.2f}mm "
-                            f"({'>' if index.type == 'Excess Rainfall' else '<'} {index.trigger}mm)\n"
-                            f"Payout: ${payout:.2f}"
-                        )
             
             year_results["total_payout"] = float(year_payout)
             total_payouts.append(year_payout)
