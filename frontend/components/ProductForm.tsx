@@ -70,6 +70,7 @@ interface ProductFormProps {
 // Create zod schema
 const formSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
+  province: z.string().min(1, "Province is required"),
   commune: z.string().min(1, "Commune is required"),
   cropType: z.string().min(1, "Crop type is required"),
   coverageType: z.string().min(1, "Coverage type is required"),
@@ -92,7 +93,6 @@ const formSchema = z.object({
       sosStart: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, "Start must be a non-negative number"),
       sosEnd: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, "End must be a positive number")
     })
-
   ).refine(indexes => {
     // Check phases follow each other correctly
     for (let i = 0; i < indexes.length; i++) {
@@ -115,7 +115,6 @@ const formSchema = z.object({
     }
     return true;
   }, "Phases must follow each other continuously with correct lengths"),
-
 });
 
 export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
@@ -146,9 +145,14 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     "TaMeun", "TaPung", "TonléSap"
   ];
 
+  const provinces = [
+    "Battambang" // Add more provinces as you add more files
+  ];
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      province: "Battambang",
       indexes: [
         { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "Early", length: "", sosStart: "0", sosEnd: "-" },
       ],
@@ -205,7 +209,8 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   const onSubmit = async (data: any) => {
     setIsCalculating(true);
     try {
-      console.log(data);
+      // Province and dataType are now always present
+      data.dataType = "precipitation";
       if (data.plantingDate instanceof Date) {
         data.plantingDate = data.plantingDate.toISOString().split('T')[0];
       }
@@ -315,11 +320,32 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   return (
     <Form {...form}>
       <form className="space-y-4">
+        {/* First row: Product Name and Coverage Type */}
         <div className="grid grid-cols-2 gap-4">
           <SimpleTooltip content="The name of the insurance product">
             <InputForm control={control} name="productName" placeholder="Enter Product Name" label="Product Name" type="string" />
-          </SimpleTooltip>  
-          
+          </SimpleTooltip>
+          <SimpleTooltip content="The Coverage type for your insurance product">
+            <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
+              {coverageTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectForm>
+          </SimpleTooltip>
+        </div>
+        {/* Second row: Province and Commune */}
+        <div className="grid grid-cols-2 gap-4">
+          <SimpleTooltip content="The province where the crop is grown">
+            <SelectForm control={control} name="province" placeholder="Select Province" label="Province">
+              {provinces.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+            </SelectForm>
+          </SimpleTooltip>
           <SimpleTooltip content="The commune where the crop is grown">
             <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
               {communes.map((commune) => (
@@ -329,7 +355,9 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               ))}
             </SelectForm>
           </SimpleTooltip>
-
+        </div>
+        {/* Third row: Crop Type and Total Growing Duration */}
+        <div className="grid grid-cols-2 gap-4">
           <SimpleTooltip content="The type of crop for your insurance product">
             <SelectForm control={control} name="cropType" placeholder="Select Crop type" label="Crop Type">
               {cropTypes.map((type) => (
@@ -339,18 +367,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               ))}
             </SelectForm>
           </SimpleTooltip>
-          <SimpleTooltip content="The Coverage type for your insurance product">
-          <SelectForm control={control} name="coverageType" placeholder="Select Coverage type" label="Coverage Type">
-            {coverageTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
-          </SelectForm>
-          </SimpleTooltip>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-        <SimpleTooltip content="The total growing duration for the crop in days">
+          <SimpleTooltip content="The total growing duration for the crop in days">
             <InputForm
               control={control}
               name="growingDuration"
@@ -359,28 +376,28 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
               type="number"
             />
           </SimpleTooltip>
-          <SimpleTooltip content="The time period used for analysing weather data">
-          <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
-            <SelectItem value="10">10 years</SelectItem>
-            <SelectItem value="20">20 years</SelectItem>
-            <SelectItem value="30">30 years</SelectItem>
-          </SelectForm>
-        </SimpleTooltip>
         </div>
 
+        {/* Weather Data Period section header and description moved here */}
         <h3 className="text-xl font-bold tracking-tight">Weather Data Period</h3>
         <p className="text-md text-muted-foreground">Select Growing Duration and Weather Data Period for risk analysis</p>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <SimpleTooltip content="The planting date for the crop">
-            <div className="mt-3">
-          <DatePicker
-            control={control}
-            name="plantingDate"
-            label="Planting Date"
-            placeholder="Select a date"
-          />
-          </div>
+            <DatePicker
+              control={control}
+              name="plantingDate"
+              label="Planting Date"
+              placeholder="Select a date"
+            />
           </SimpleTooltip>
+          <SimpleTooltip content="The time period used for analysing weather data">
+            <SelectForm control={control} name="weatherDataPeriod" placeholder="Select Data Period" label="Weather Data Period">
+              <SelectItem value="10">10 years</SelectItem>
+              <SelectItem value="20">20 years</SelectItem>
+              <SelectItem value="30">30 years</SelectItem>
+            </SelectForm>
+          </SimpleTooltip>
+        </div>
 
         {/* Indexes */}
         <h3 className="text-xl font-bold tracking-tight">Indexes</h3>
