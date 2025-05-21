@@ -222,7 +222,6 @@ function Calendar({
         ),
         MonthGrid: ({ className, children, ...props }) => (
           <MonthGrid
-            children={children}
             className={className}
             displayYears={displayYears}
             startMonth={startMonth}
@@ -230,7 +229,9 @@ function Calendar({
             navView={navView}
             setNavView={setNavView}
             {...props}
-          />
+          >
+            {children}
+          </MonthGrid>
         ),
       }}
       numberOfMonths={columnsDisplayed}
@@ -299,45 +300,30 @@ function Nav({
     return !nextMonth
   })()
 
-  const handlePreviousClick = React.useCallback(() => {
-    if (!previousMonth) return
+  const handlePrevClick = React.useCallback(() => {
     if (navView === "years") {
-      setDisplayYears((prev) => ({
-        from: prev.from - (prev.to - prev.from + 1),
-        to: prev.to - (prev.to - prev.from + 1),
-      }))
-      onPrevClick?.(
-        new Date(
-          displayYears.from - (displayYears.to - displayYears.from),
-          0,
-          1
-        )
-      )
-      return
+      const range = displayYears.to - displayYears.from + 1;
+      setDisplayYears({
+        from: displayYears.from - range,
+        to: displayYears.to - range,
+      })
+    } else if (previousMonth) {
+      onPrevClick?.(previousMonth)
     }
-    goToMonth(previousMonth)
-    onPrevClick?.(previousMonth)
-  }, [previousMonth, goToMonth])
+  }, [displayYears.from, displayYears.to, navView, onPrevClick, previousMonth, setDisplayYears])
 
   const handleNextClick = React.useCallback(() => {
-    if (!nextMonth) return
     if (navView === "years") {
-      setDisplayYears((prev) => ({
-        from: prev.from + (prev.to - prev.from + 1),
-        to: prev.to + (prev.to - prev.from + 1),
-      }))
-      onNextClick?.(
-        new Date(
-          displayYears.from + (displayYears.to - displayYears.from),
-          0,
-          1
-        )
-      )
-      return
+      const range = displayYears.to - displayYears.from + 1;
+      setDisplayYears({
+        from: displayYears.from + range,
+        to: displayYears.to + range,
+      })
+    } else if (nextMonth) {
+      onNextClick?.(nextMonth)
     }
-    goToMonth(nextMonth)
-    onNextClick?.(nextMonth)
-  }, [goToMonth, nextMonth])
+  }, [displayYears.from, displayYears.to, navView, onNextClick, nextMonth, setDisplayYears])
+
   return (
     <nav className={cn("flex items-center", className)}>
       <Button
@@ -353,7 +339,7 @@ function Nav({
               } years`
             : labelPrevious(previousMonth)
         }
-        onClick={handlePreviousClick}
+        onClick={handlePrevClick}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>

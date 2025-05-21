@@ -286,7 +286,6 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     if (index < watchedIndexes.length - 1) {
       // Get the start day of the phase we're removing
       const removedPhaseStart = Number(watchedIndexes[index].sosStart);
-      const removedPhaseLength = Number(watchedIndexes[index].length);
       
       // Remove the phase first
       removeIndex(index);
@@ -300,7 +299,6 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
       // Adjust all subsequent phases
       for (let i = index; i < watchedIndexes.length - 1; i++) {
         // Recalculate phase start and end
-        const currentStart = Number(watchedIndexes[i].sosStart);
         const currentLength = Number(watchedIndexes[i].length);
         const newStart = i === index ? 
           (index > 0 ? Number(watchedIndexes[index-1].sosEnd) + 1 : removedPhaseStart) : 
