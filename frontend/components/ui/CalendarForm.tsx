@@ -80,7 +80,7 @@ function Calendar({
     }, [yearRange])
   )
 
-  const { onPrevClick, startMonth, endMonth } = props
+  const { onPrevClick } = props
 
   const columnsDisplayed = navView === "years" ? 1 : numberOfMonths
 
@@ -206,8 +206,6 @@ function Calendar({
             displayYears={displayYears}
             navView={navView}
             setDisplayYears={setDisplayYears}
-            startMonth={startMonth}
-            endMonth={endMonth}
             onPrevClick={onPrevClick}
           />
         ),
@@ -224,8 +222,6 @@ function Calendar({
           <MonthGrid
             className={className}
             displayYears={displayYears}
-            startMonth={startMonth}
-            endMonth={endMonth}
             navView={navView}
             setNavView={setNavView}
             {...props}
@@ -244,36 +240,32 @@ Calendar.displayName = "Calendar"
 function Nav({
   className,
   navView,
-  startMonth,
-  endMonth,
   displayYears,
   setDisplayYears,
   onPrevClick,
 }: {
   className?: string
   navView: NavView
-  startMonth?: Date
-  endMonth?: Date
   displayYears: { from: number; to: number }
   setDisplayYears: React.Dispatch<
     React.SetStateAction<{ from: number; to: number }>
   >
   onPrevClick?: (date: Date) => void
 }) {
-  const { nextMonth, previousMonth, goToMonth } = useDayPicker()
+  const { nextMonth, previousMonth } = useDayPicker()
 
   const isPreviousDisabled = (() => {
     if (navView === "years") {
       return (
-        (startMonth &&
+        (previousMonth &&
           differenceInCalendarDays(
             new Date(displayYears.from - 1, 0, 1),
-            startMonth
+            previousMonth
           ) < 0) ||
-        (endMonth &&
+        (nextMonth &&
           differenceInCalendarDays(
             new Date(displayYears.from - 1, 0, 1),
-            endMonth
+            nextMonth
           ) > 0)
       )
     }
@@ -283,15 +275,15 @@ function Nav({
   const isNextDisabled = (() => {
     if (navView === "years") {
       return (
-        (startMonth &&
+        (previousMonth &&
           differenceInCalendarDays(
             new Date(displayYears.to + 1, 0, 1),
-            startMonth
+            previousMonth
           ) < 0) ||
-        (endMonth &&
+        (nextMonth &&
           differenceInCalendarDays(
             new Date(displayYears.to + 1, 0, 1),
-            endMonth
+            nextMonth
           ) > 0)
       )
     }
@@ -393,8 +385,6 @@ function MonthGrid({
   className,
   children,
   displayYears,
-  startMonth,
-  endMonth,
   navView,
   setNavView,
   ...props
@@ -402,8 +392,6 @@ function MonthGrid({
   className?: string
   children: React.ReactNode
   displayYears: { from: number; to: number }
-  startMonth?: Date
-  endMonth?: Date
   navView: NavView
   setNavView: React.Dispatch<React.SetStateAction<NavView>>
 } & React.TableHTMLAttributes<HTMLTableElement>) {
@@ -437,8 +425,6 @@ function YearGrid({
   setNavView: React.Dispatch<React.SetStateAction<NavView>>
   navView: NavView
 } & React.HTMLAttributes<HTMLDivElement>) {
-  const { selected } = useDayPicker();
-
   return (
     <div className={cn("grid grid-cols-4 gap-y-2", className)} {...props}>
       {Array.from(
