@@ -151,8 +151,19 @@ def calculate_final_premium(results: List[dict], phase_summaries: Dict) -> Dict:
 
 def calculate_premium(request: PremiumRequest) -> Dict:
     try:
-        # Load historical rainfall data
-        file_path = os.path.join(os.getcwd(), "files", "Battambang.xlsx")
+        # Debug log for incoming request
+        logger.info(f"Received premium calculation request: province={getattr(request, 'province', None)}, dataType={getattr(request, 'dataType', None)}")
+        # Get province and data type from request (default to precipitation)
+        province = getattr(request, 'province', None)
+        data_type = getattr(request, 'dataType', 'precipitation')
+        if not province:
+            raise ValueError("Province is required for weather data lookup.")
+        province = province.replace(" ", "")
+        data_type = data_type.lower()
+        # Build file path
+        file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
+        if not os.path.exists(file_path):
+            raise ValueError(f"Weather data file not found for province '{province}' and data type '{data_type}'.")
         df = pd.read_excel(file_path, parse_dates=['Date'])
         
         # Convert planting date

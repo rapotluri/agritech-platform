@@ -23,4 +23,6 @@ class PremiumRequest(BaseModel):
     weatherDataPeriod: int
     plantingDate: date
     indexes: List[Index]
-    coverageType: str 
+    coverageType: str
+    province: str
+    dataType: str 
