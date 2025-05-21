@@ -4,9 +4,7 @@ import { format } from "date-fns"
 import * as React from "react"
 import { CalendarIcon } from "lucide-react"
 import { Control, FieldValues, Path } from "react-hook-form"
-
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/CalendarForm"
 import {
   Popover,
   PopoverContent,
@@ -14,6 +12,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { FormControl, FormField, FormItem, FormLabel } from "./form"
+import { ModernCalendar } from "@/components/ui/ModernCalendar"
 
 interface DatePickerProps<T extends FieldValues> {
   control: Control<T>
@@ -54,11 +53,12 @@ export function DatePicker<T extends FieldValues>({
                 </Button>
               </FormControl>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
+            <PopoverContent className="w-auto p-0 rounded-xl shadow-lg border bg-white" align="start">
+              <ModernCalendar
                 selected={field.value}
                 onSelect={field.onChange}
+                fromYear={1900}
+                toYear={2100}
               />
             </PopoverContent>
           </Popover>
