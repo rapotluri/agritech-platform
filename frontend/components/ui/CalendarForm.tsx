@@ -443,47 +443,41 @@ function YearGrid({
   setNavView: React.Dispatch<React.SetStateAction<NavView>>
   navView: NavView
 } & React.HTMLAttributes<HTMLDivElement>) {
-  const { selected } = useDayPicker()
+  const { goToMonth, selected } = useDayPicker();
 
   return (
     <div className={cn("grid grid-cols-4 gap-y-2", className)} {...props}>
       {Array.from(
         { length: displayYears.to - displayYears.from + 1 },
         (_, i) => {
-          const isBefore =
-            differenceInCalendarDays(
-              new Date(displayYears.from + i, 11, 31),
-              startMonth!
-            ) < 0
-
-          const isAfter =
-            differenceInCalendarDays(
-              new Date(displayYears.from + i, 0, 0),
-              endMonth!
-            ) > 0
-
-          const isDisabled = isBefore || isAfter
+          const year = displayYears.from + i;
           return (
             <Button
-              key={i}
+              key={year}
               className={cn(
                 "h-7 w-full text-sm font-normal text-foreground",
-                displayYears.from + i === new Date().getFullYear() &&
+                year === new Date().getFullYear() &&
                   "bg-accent font-medium text-accent-foreground"
               )}
               variant="ghost"
               onClick={() => {
-                setNavView("days")
+                setNavView("days");
+                goToMonth(
+                  new Date(
+                    year,
+                    (selected as Date | undefined)?.getMonth() ?? 0
+                  )
+                );
               }}
-              disabled={navView === "years" ? isDisabled : undefined}
+              disabled={navView === "years" ? false : undefined}
             >
-              {displayYears.from + i}
+              {year}
             </Button>
-          )
+          );
         }
       )}
     </div>
-  )
+  );
 }
 
 export { Calendar }
