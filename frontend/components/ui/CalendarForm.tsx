@@ -443,7 +443,7 @@ function YearGrid({
   setNavView: React.Dispatch<React.SetStateAction<NavView>>
   navView: NavView
 } & React.HTMLAttributes<HTMLDivElement>) {
-  const { goToMonth, selected } = useDayPicker()
+  const { selected } = useDayPicker()
 
   return (
     <div className={cn("grid grid-cols-4 gap-y-2", className)} {...props}>
@@ -474,12 +474,6 @@ function YearGrid({
               variant="ghost"
               onClick={() => {
                 setNavView("days")
-                goToMonth(
-                  new Date(
-                    displayYears.from + i,
-                    (selected as Date | undefined)?.getMonth() ?? 0
-                  )
-                )
               }}
               disabled={navView === "years" ? isDisabled : undefined}
             >
