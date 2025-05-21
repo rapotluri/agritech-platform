@@ -80,7 +80,7 @@ function Calendar({
     }, [yearRange])
   )
 
-  const { onNextClick, onPrevClick, startMonth, endMonth } = props
+  const { onPrevClick, startMonth, endMonth } = props
 
   const columnsDisplayed = navView === "years" ? 1 : numberOfMonths
 
@@ -249,7 +249,6 @@ function Nav({
   displayYears,
   setDisplayYears,
   onPrevClick,
-  onNextClick,
 }: {
   className?: string
   navView: NavView
@@ -260,7 +259,6 @@ function Nav({
     React.SetStateAction<{ from: number; to: number }>
   >
   onPrevClick?: (date: Date) => void
-  onNextClick?: (date: Date) => void
 }) {
   const { nextMonth, previousMonth, goToMonth } = useDayPicker()
 
@@ -320,9 +318,9 @@ function Nav({
         to: displayYears.to + range,
       })
     } else if (nextMonth) {
-      onNextClick?.(nextMonth)
+      onPrevClick?.(nextMonth)
     }
-  }, [displayYears.from, displayYears.to, navView, onNextClick, nextMonth, setDisplayYears])
+  }, [displayYears.from, displayYears.to, navView, onPrevClick, nextMonth, setDisplayYears])
 
   return (
     <nav className={cn("flex items-center", className)}>
