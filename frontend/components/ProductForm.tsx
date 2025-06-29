@@ -13,6 +13,9 @@ import { SelectForm } from "./ui/SelectForm";
 import { DatePicker } from "./ui/datepicker";
 import apiClient from "@/lib/apiClient";
 import { SimpleTooltip } from "./ui/tooltip";
+import provincesCommunesData from "../data/cambodia_provinces_communes.json";
+
+const provincesCommunes = provincesCommunesData as Record<string, string[]>;
 
 type PremiumResponse = {
   status: string;
@@ -121,38 +124,16 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   const cropTypes = ["Rice", "Maize", "Wheat", "Soybean", "Cotton"];
   const coverageTypes = ["Drought", "Excess Rainfall"];
   const indexTypes = ["Excess Rainfall", "Drought"];
-  const communes = [
-    "KaohChiveang", "PeamAek", "PreaekKhpob", "PreaekLuong", "PreaekNorint",
-    "PreyChas", "SamraongKnong", "BayDamram", "ChaengMeanChey", "ChheuTeal",
-    "KantueuMuoy", "KantueuPir", "PhnumSampov", "Snoeng", "TaKream",
-    "ChomkarSomraong", "KdolDounTeav", "OMal", "OuChar", "PrekPreahSdach",
-    "Rottanak", "SlaKet", "SvayPor", "TuolTaEk", "WatKor",
-    "AmpilPramDaeum", "Bavel", "BoeungPram", "KdolTaHaen", "KhlaengMeas",
-    "KhnachRomeas", "Lvea", "PreyKhpos", "BoengReang", "Kamrieng",
-    "OuDa", "TaKrei", "TaSaen", "Trang", "ChhnalMoan",
-    "DounBa", "Hab", "KaosKrala", "PreahPhos", "Thipakdei",
-    "Chrey_x", "Kakaoh", "Kear", "Moung", "PreySvay",
-    "PreyTouch", "RobasMongkol", "RuesseiKrang", "TaLoas", "BarangThleak",
-    "Bour", "OuRumduol", "PechChenda", "PhnumProek", "AndaeukHaeb",
-    "PhlovMeas", "ReaksmeiSongha", "Sdau", "Traeng", "Basak",
-    "MukhReah", "PreaekChik", "PreyTralach", "SdokPravoek", "KampongLpov",
-    "MeanChey", "OuSamril", "Samlout", "Sung", "TaSanh",
-    "TaTaok", "AngkorBan", "ChreySeima", "SampovLun", "Santepheap",
-    "SereiMeanChey", "TaSda", "AnlongVil", "KampongPreah", "KampongPrieng",
-    "Norea", "OuDambangMuoy", "OuDambangPir", "ReangKesei", "Roka",
-    "TaPon", "VaotTaMuem", "AnlongRun", "BansayTraeng", "BoengPring",
-    "Chrey_y", "ChrouySdau", "KoukKhmum", "OuTaKi", "RungChrey",
-    "TaMeun", "TaPung", "TonléSap"
-  ];
 
-  const provinces = [
-    "Battambang" // Add more provinces as you add more files
-  ];
+  // Dynamic provinces and communes
+  const [selectedProvince, setSelectedProvince] = useState<string>(Object.keys(provincesCommunes)[0]);
+  const [communeOptions, setCommuneOptions] = useState<string[]>(provincesCommunes[selectedProvince]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      province: "Battambang",
+      province: selectedProvince,
+      commune: provincesCommunes[selectedProvince][0],
       indexes: [
         { type: '', trigger: '', exit: '', dailyCap: '', unitPayout: '', maxPayout: '', consecutiveDays: '',  phaseName: "Early", length: "", sosStart: "0", sosEnd: "-" },
       ],
@@ -160,7 +141,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     }
   });
 
-  const { control, watch, setValue,getValues, formState } = form;
+  const { control, watch, setValue, getValues, formState } = form;
   const { fields: indexes, append: addIndex, remove: removeIndex } = useFieldArray({
     control,
     name: "indexes"
@@ -169,6 +150,19 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   // Watch for changes in phases
   const watchedIndexes = watch("indexes");
   
+  // Watch for province changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "province" && value.province) {
+        setSelectedProvince(value.province);
+        setCommuneOptions(provincesCommunes[value.province]);
+        // Optionally reset commune value
+        setValue("commune", provincesCommunes[value.province][0]);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setValue]);
+
   useEffect(() => {
     // Batch updates to prevent multiple re-renders
     const updates: { (): void; (): void; }[] = [];
@@ -337,7 +331,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         <div className="grid grid-cols-2 gap-4">
           <SimpleTooltip content="The province where the crop is grown">
             <SelectForm control={control} name="province" placeholder="Select Province" label="Province">
-              {provinces.map((province) => (
+              {Object.keys(provincesCommunes).map((province) => (
                 <SelectItem key={province} value={province}>
                   {province}
                 </SelectItem>
@@ -346,7 +340,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
           </SimpleTooltip>
           <SimpleTooltip content="The commune where the crop is grown">
             <SelectForm control={control} name="commune" placeholder="Select Commune" label="Commune">
-              {communes.map((commune) => (
+              {communeOptions.map((commune) => (
                 <SelectItem key={commune} value={commune}>
                   {commune}
                 </SelectItem>
