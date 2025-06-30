@@ -7,35 +7,35 @@ from celery import Celery
 from celery.signals import worker_process_init
 from services.premium_calculator import calculate_premium
 from schemas.premium_schema import PremiumRequest
-from utils.mongo import get_mongodb_fs
 from utils.gee_utils import initialize_gee
+from utils.gee_utils_local import initialize_gee_local
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
 from countries.cambodia import get_communes_geodataframe
 from io import BytesIO
+from dotenv import load_dotenv
+from services.insure_smart_optimizer import optimize_insure_smart
+
+load_dotenv()
 
 # Initialize Celery
-celery_app = Celery(
-    "tasks",
-    broker=os.getenv("REDIS_URL"),
-    backend=os.getenv("REDIS_URL"),
-)
-
-celery_app.conf.broker_connection_retry_on_startup = True
+celery_app = Celery("tasks")
+celery_app.config_from_object("celeryconfig")
 
 # Load GeoDataFrame with communes
 communes_gdf = get_communes_geodataframe()
 
+# Create files directory if it doesn't exist
+os.makedirs(os.path.join(os.getcwd(), "files"), exist_ok=True)
 
 @worker_process_init.connect
 def init_worker(**kwargs):
-    initialize_gee()
-
+    initialize_gee_local()
 
 @celery_app.task(name="data_task")
 def data_task(province, start_date, end_date, data_type, file_name):
     if not ee.data._credentials:  # type: ignore
-        initialize_gee()
+        initialize_gee_local()
 
     # Filter for the specified province
     province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
@@ -48,13 +48,11 @@ def data_task(province, start_date, end_date, data_type, file_name):
 
     print(f"[INFO] Data retrieval completed for {data_type} data.")
 
-    file_buffer = BytesIO()
-    result_df.to_excel(file_buffer, index=False, engine="openpyxl")  # Convert to bytes
-    file_buffer.seek(0)
-    fs = get_mongodb_fs()
-    file_id = fs.put(file_buffer, filename=file_name)
-
-    return str(file_id)
+    # Save the file locally
+    file_path = os.path.join(os.getcwd(), "files", file_name)
+    result_df.to_excel(file_path, index=False, engine="openpyxl")
+    
+    return file_name  # Return the filename instead of MongoDB file ID
 
 @celery_app.task(name="premium_task")
 def premium_task(request_dict):
@@ -66,4 +64,13 @@ def premium_task(request_dict):
     except Exception as e:
         # Log the error and re-raise
         print(f"Error in premium_task: {str(e)}")
+        raise
+
+@celery_app.task(name="insure_smart_optimize_task")
+def insure_smart_optimize_task(request_dict):
+    try:
+        result = optimize_insure_smart(request_dict)
+        return result
+    except Exception as e:
+        print(f"Error in insure_smart_optimize_task: {str(e)}")
         raise

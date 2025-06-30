@@ -11,6 +11,7 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
 import { SelectItem } from "@/components/ui/select";
 import provincesCommunesData from "../data/cambodia_provinces_communes.json";
+import apiClient from "@/lib/apiClient";
 
 const provincesCommunes = provincesCommunesData as Record<string, string[]>;
 
@@ -165,48 +166,39 @@ export default function InsureSmartWizard() {
     );
   }
 
-  // Step 3: Optimization UI (mock results)
+  // Step 3: Optimization UI (integrated with backend)
   function OptimizationStep() {
-    function runOptimization() {
+    async function runOptimization() {
       setOptimizing(true);
-      setTimeout(() => {
-        setResults([
-          {
-            lossRatio: 0.85,
-            expectedPayout: 212.5,
-            premiumRate: 0.04,
-            premiumCost: 16.0,
-            triggers: [
-              { type: "Low Rainfall", value: "≤ 75mm", payout: "$150" },
-              { type: "High Rainfall", value: "≥ 200mm", payout: "$100" },
-            ],
-            riskLevel: "MEDIUM RISK",
-          },
-          {
-            lossRatio: 0.78,
-            expectedPayout: 195,
-            premiumRate: 0.038,
-            premiumCost: 15.2,
-            triggers: [
-              { type: "Low Rainfall", value: "≤ 80mm", payout: "$125" },
-              { type: "High Rainfall", value: "≥ 180mm", payout: "$125" },
-            ],
-            riskLevel: "LOW RISK",
-          },
-          {
-            lossRatio: 0.92,
-            expectedPayout: 230,
-            premiumRate: 0.042,
-            premiumCost: 16.8,
-            triggers: [
-              { type: "Low Rainfall", value: "≤ 70mm", payout: "$175" },
-              { type: "High Rainfall", value: "≥ 220mm", payout: "$75" },
-            ],
-            riskLevel: "HIGH RISK",
-          },
-        ]);
+      setResults(null);
+      try {
+        // Prepare payload
+        const payload = {
+          product: productForm,
+          periods: periods,
+        };
+        // POST to backend
+        const { data } = await apiClient.post("/api/insure-smart/optimize", payload);
+        const taskId = data.task_id;
+        // Poll for result
+        async function pollStatus() {
+          const { data: statusData } = await apiClient.get(`/api/insure-smart/status/${taskId}`);
+          if (statusData.status === "PENDING" || statusData.status === "Pending") {
+            setTimeout(pollStatus, 1500);
+          } else if (statusData.status === "SUCCESS") {
+            setResults(statusData.result);
+            setOptimizing(false);
+          } else {
+            setResults(null);
+            setOptimizing(false);
+            alert("Optimization failed. Please try again.");
+          }
+        }
+        pollStatus();
+      } catch (err) {
         setOptimizing(false);
-      }, 2000);
+        alert("Failed to start optimization. Please try again.");
+      }
     }
     return (
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-green-100 p-12 space-y-8">
@@ -233,7 +225,7 @@ export default function InsureSmartWizard() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-green-700 font-semibold">
               Optimization Complete<br />Found {results.length} optimized configurations that meet your criteria
             </div>
-            {results.map((result, idx) => (
+            {results.map((result: any, idx: number) => (
               <div key={idx} className="mb-6 border rounded-lg p-4 bg-gray-50">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-lg">Configuration {idx + 1}</span>
