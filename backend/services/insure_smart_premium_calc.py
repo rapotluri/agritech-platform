@@ -12,6 +12,7 @@ def calculate_insure_smart_premium(
     commune: str,
     province: str,
     periods: List[Dict[str, Any]],
+    sum_insured: float,
     weather_data_period: int = 30,
     data_type: str = "precipitation"
 ) -> Dict[str, Any]:
@@ -29,6 +30,7 @@ def calculate_insure_smart_premium(
             - allocated_si (float)
             - start_day (int, optional)
             - end_day (int, optional)
+        sum_insured: Product-level sum insured (cap on total payout per year)
         weather_data_period: Number of years (default 30)
         data_type: "precipitation" (default)
     Returns:
@@ -65,26 +67,32 @@ def calculate_insure_smart_premium(
                 payout = 0.0
                 trigger_met = False
             else:
-                # Slide window for consecutive days
-                rolling = period_data.rolling(window=period["duration"])
-                if period["peril_type"] == "LRI":
-                    # LRI: payout if min(rolling sum) < trigger
-                    rolling_sum = rolling.sum().dropna()
-                    min_rain = rolling_sum.min()
-                    trigger_met = min_rain < period["trigger"]
-                    if trigger_met:
-                        payout = min((period["trigger"] - min_rain) * period["unit_payout"], period["max_payout"], period["allocated_si"])
+                # Optimized rolling window calculation
+                if len(period_data) >= period["duration"]:
+                    # Use numpy for faster rolling sum
+                    import numpy as np
+                    rolling_sums = np.convolve(period_data.values, np.ones(period["duration"]), mode='valid')
+                    
+                    if period["peril_type"] == "LRI":
+                        # LRI: payout if min(rolling sum) < trigger
+                        min_rain = rolling_sums.min()
+                        trigger_met = min_rain < period["trigger"]
+                        if trigger_met:
+                            payout = min((period["trigger"] - min_rain) * period["unit_payout"], period["max_payout"], period["allocated_si"])
+                        else:
+                            payout = 0.0
                     else:
-                        payout = 0.0
+                        # ERI: payout if max(rolling sum) > trigger
+                        max_rain = rolling_sums.max()
+                        trigger_met = max_rain > period["trigger"]
+                        if trigger_met:
+                            payout = min((max_rain - period["trigger"]) * period["unit_payout"], period["max_payout"], period["allocated_si"])
+                        else:
+                            payout = 0.0
                 else:
-                    # ERI: payout if max(rolling sum) > trigger
-                    rolling_sum = rolling.sum().dropna()
-                    max_rain = rolling_sum.max()
-                    trigger_met = max_rain > period["trigger"]
-                    if trigger_met:
-                        payout = min((max_rain - period["trigger"]) * period["unit_payout"], period["max_payout"], period["allocated_si"])
-                    else:
-                        payout = 0.0
+                    # Not enough data for this period
+                    payout = 0.0
+                    trigger_met = False
             year_result["periods"].append({
                 "peril_type": period["peril_type"],
                 "trigger": period["trigger"],
@@ -99,17 +107,17 @@ def calculate_insure_smart_premium(
         yearly_results.append(year_result)
 
     # 4. Summarize payouts and calculate metrics
-    payouts = [y["total_payout"] for y in yearly_results]
-    avg_payout = sum(payouts) / len(payouts)
-    max_payout = max(payouts)
-    payout_years = sum(1 for p in payouts if p > 0)
-    coverage_score = payout_years / len(payouts)
-    payout_stability = pd.Series(payouts).std() if len(payouts) > 1 else 0.0
-    premium = avg_payout / max_payout if max_payout > 0 else 0.0
-    # No scaling by sum insured; optimizer will handle this
-    premium_utilization = None  # Not calculated here
-    loss_ratio = None  # Not calculated here
-
+    # Cap total payout for any year at the sum insured
+    yearly_total_payouts = [min(y["total_payout"], sum_insured) for y in yearly_results]
+    Etotal = sum(yearly_total_payouts) / len(yearly_total_payouts) if yearly_total_payouts else 0.0
+    max_payout_across_years = max(yearly_total_payouts) if yearly_total_payouts else 0.0
+    payout_years = sum(1 for p in yearly_total_payouts if p > 0)
+    coverage_score = payout_years / len(yearly_total_payouts) if yearly_total_payouts else 0.0
+    payout_stability = pd.Series(yearly_total_payouts).std() if len(yearly_total_payouts) > 1 else 0.0
+    
+    # Premium calculation: expected payout as % of sum insured
+    premium_rate = Etotal / sum_insured if sum_insured > 0 else 0.0
+    
     # 5. Prepare breakdowns
     period_breakdown = []
     for idx, period in enumerate(periods):
@@ -128,9 +136,9 @@ def calculate_insure_smart_premium(
 
     # 6. Return all metrics
     return {
-        "premium_rate": premium,  # This is the premium as a fraction of total SI (optimizer will scale)
-        "avg_payout": avg_payout,
-        "max_payout": max_payout,
+        "premium_rate": premium_rate,  # This is the premium as a fraction of total SI (optimizer will scale)
+        "avg_payout": Etotal,
+        "max_payout": max_payout_across_years,
         "payout_years": payout_years,
         "coverage_score": coverage_score,
         "payout_stability_score": 1.0 / (1.0 + payout_stability),
