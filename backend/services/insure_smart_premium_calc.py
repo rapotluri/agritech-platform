@@ -6,6 +6,22 @@ from datetime import datetime, timedelta
 # Helper: Map index type
 INDEX_TYPE_MAP = {"LRI": "Low Rainfall Index", "ERI": "Excess Rainfall Index"}
 
+# Module-level cache for weather data
+_weather_data_cache = {}
+
+def clear_weather_data_cache():
+    """Clear the in-memory weather data cache."""
+    _weather_data_cache.clear()
+
+def _get_weather_data(province, data_type):
+    key = (province, data_type)
+    if key in _weather_data_cache:
+        return _weather_data_cache[key]
+    file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
+    df = pd.read_excel(file_path, parse_dates=['Date'])
+    _weather_data_cache[key] = df
+    return df
+
 # Main function
 
 def calculate_insure_smart_premium(
@@ -42,10 +58,7 @@ def calculate_insure_smart_premium(
     """
     # 1. Load weather data
     province = province.replace(" ", "")
-    file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
-    if not os.path.exists(file_path):
-        raise ValueError(f"Weather data file not found for province '{province}' and data type '{data_type}'.")
-    df = pd.read_excel(file_path, parse_dates=['Date'])
+    df = _get_weather_data(province, data_type)
     if commune not in df.columns:
         raise ValueError(f"Commune '{commune}' not found in data. Available: {df.columns.tolist()}")
 

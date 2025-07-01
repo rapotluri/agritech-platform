@@ -69,6 +69,12 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             # Use loss ratio from result
             loss_ratio = result["loss_ratio"]
             
+            # Payout frequency filter
+            payout_years = result["coverage_score"] * 30  # 30 years assumed
+            if payout_years < 2 or payout_years > 20:
+                print(f"Trial {trial.number}: Invalid payout frequency ({payout_years:.0f} years with payout)")
+                return -float('inf')
+            
             # Calculate composite score (use loaded premium)
             score = calculate_composite_score(result, loaded_premium_cost, sum_insured, loss_ratio)
             
@@ -133,72 +139,75 @@ def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
 def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
     """
     Generate a trial configuration by sampling parameters for each period and peril.
-    Constrain max_payout to be between 20% and 100% of sum insured.
+    SI is split between indexes (LRI, ERI) using a discrete set (40/60, 50/50, 60/40) for two indexes. If an index has multiple periods, split its SI allocation equally among its periods.
+    max_payout for each period/peril is set to its SI allocation. Only trigger, duration, and unit_payout are optimized.
     """
-    trial_periods = []
-    total_allocated = 0.0
+    # First, determine which indexes are present and how many periods each has
+    index_periods = {}
+    for period in base_periods:
+        for peril in period.get("perils", []):
+            idx = peril["type"]
+            if idx not in index_periods:
+                index_periods[idx] = []
+            index_periods[idx].append(period)
     
+    indexes = list(index_periods.keys())
+    n_indexes = len(indexes)
+    
+    # SI split logic
+    si_split = {}
+    if n_indexes == 1:
+        si_split[indexes[0]] = 1.0
+    elif n_indexes == 2:
+        # Sample split for LRI/ERI from discrete set
+        split_options = [0.4, 0.5, 0.6]
+        lri_split = trial.suggest_categorical("lri_si_split", split_options)
+        eri_split = 1.0 - lri_split
+        # Assign splits based on which index is LRI/ERI
+        if "LRI" in indexes and "ERI" in indexes:
+            si_split["LRI"] = lri_split
+            si_split["ERI"] = eri_split
+        else:
+            # If not standard, assign first index split, second gets remainder
+            si_split[indexes[0]] = lri_split
+            si_split[indexes[1]] = eri_split
+    else:
+        # If more than 2, split equally
+        for idx in indexes:
+            si_split[idx] = 1.0 / n_indexes
+    
+    # For each index, split its SI allocation equally among its periods
+    index_period_count = {idx: len(index_periods[idx]) for idx in indexes}
+    index_period_si = {idx: (sum_insured * si_split[idx]) / index_period_count[idx] for idx in indexes}
+    
+    trial_periods = []
     for period_idx, base_period in enumerate(base_periods):
-        period_config = {
-            "start_day": base_period.get("start_day", 0),
-            "end_day": base_period.get("end_day", 364)
-        }
-        
-        # Get perils for this period (user-selected)
         perils = base_period.get("perils", [])
-        if not perils:
-            continue
-            
-        period_perils = []
-        period_si_remaining = sum_insured - total_allocated
-        
         for peril_idx, peril in enumerate(perils):
-            peril_type = peril["type"]  # "ERI" or "LRI"
-
-            # Constrain max_payout to 20%-100% of sum insured
-            min_max_payout = 0.2 * sum_insured
-            max_max_payout = 1.0 * sum_insured
-            
-            # Sample parameters for this peril
+            peril_type = peril["type"]
+            # SI allocation for this period/peril
+            allocated_si = index_period_si[peril_type]
+            # Optimize trigger, duration, unit_payout
             if peril_type == "LRI":
                 trigger = trial.suggest_float(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
                 duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", 5, 30)
                 unit_payout = trial.suggest_float(f"lri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
-                max_payout = trial.suggest_float(f"lri_max_payout_{period_idx}_{peril_idx}", min_max_payout, max_max_payout)
             else:  # ERI
                 trigger = trial.suggest_float(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
                 duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", 1, 5)
                 unit_payout = trial.suggest_float(f"eri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
-                max_payout = trial.suggest_float(f"eri_max_payout_{period_idx}_{peril_idx}", min_max_payout, max_max_payout)
-            
-            
-            # Allocate SI for this peril
-            if peril_idx == len(perils) - 1:
-                # Last peril in period gets remaining SI
-                allocated_si = period_si_remaining
-            else:
-                # Allocate portion of remaining SI
-                allocation_ratio = trial.suggest_float(f"si_allocation_{period_idx}_{peril_idx}", 0.2, 0.8)
-                allocated_si = period_si_remaining * allocation_ratio
-            
-            # Ensure reasonable allocation
-            allocated_si = max(allocated_si, 10.0)  # Minimum $10
-            allocated_si = min(allocated_si, period_si_remaining)
-            
-            period_perils.append({
+            # max_payout is set to allocated_si
+            max_payout = allocated_si
+            trial_periods.append({
                 "peril_type": peril_type,
                 "trigger": trigger,
                 "duration": duration,
                 "unit_payout": unit_payout,
                 "max_payout": max_payout,
-                "allocated_si": allocated_si
+                "allocated_si": allocated_si,
+                "start_day": base_period.get("start_day", 0),
+                "end_day": base_period.get("end_day", 364)
             })
-            
-            total_allocated += allocated_si
-            period_si_remaining -= allocated_si
-        
-        trial_periods.extend(period_perils)
-    
     return trial_periods
 
 def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float, sum_insured: float, loss_ratio: float) -> float:
@@ -279,39 +288,52 @@ def extract_best_configurations(study: optuna.Study, commune: str, province: str
 def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
     """
     Reconstruct the full configuration from a trial.
+    Uses the same SI split and allocation logic as generate_trial_configuration.
     """
+    # Determine which indexes are present and how many periods each has
+    index_periods = {}
+    for period in base_periods:
+        for peril in period.get("perils", []):
+            idx = peril["type"]
+            if idx not in index_periods:
+                index_periods[idx] = []
+            index_periods[idx].append(period)
+    indexes = list(index_periods.keys())
+    n_indexes = len(indexes)
+    # SI split logic (must match generate_trial_configuration)
+    si_split = {}
+    if n_indexes == 1:
+        si_split[indexes[0]] = 1.0
+    elif n_indexes == 2:
+        split_options = [0.4, 0.5, 0.6]
+        lri_split = trial.params["lri_si_split"]
+        eri_split = 1.0 - lri_split
+        if "LRI" in indexes and "ERI" in indexes:
+            si_split["LRI"] = lri_split
+            si_split["ERI"] = eri_split
+        else:
+            si_split[indexes[0]] = lri_split
+            si_split[indexes[1]] = eri_split
+    else:
+        for idx in indexes:
+            si_split[idx] = 1.0 / n_indexes
+    index_period_count = {idx: len(index_periods[idx]) for idx in indexes}
+    index_period_si = {idx: (sum_insured * si_split[idx]) / index_period_count[idx] for idx in indexes}
     trial_periods = []
-    total_allocated = 0.0
-    
     for period_idx, base_period in enumerate(base_periods):
         perils = base_period.get("perils", [])
-        period_si_remaining = sum_insured - total_allocated
-        
         for peril_idx, peril in enumerate(perils):
             peril_type = peril["type"]
-            
-            # Extract parameters from trial
+            allocated_si = index_period_si[peril_type]
             if peril_type == "LRI":
                 trigger = trial.params[f"lri_trigger_{period_idx}_{peril_idx}"]
                 duration = trial.params[f"lri_duration_{period_idx}_{peril_idx}"]
                 unit_payout = trial.params[f"lri_unit_payout_{period_idx}_{peril_idx}"]
-                max_payout = trial.params[f"lri_max_payout_{period_idx}_{peril_idx}"]
             else:  # ERI
                 trigger = trial.params[f"eri_trigger_{period_idx}_{peril_idx}"]
                 duration = trial.params[f"eri_duration_{period_idx}_{peril_idx}"]
                 unit_payout = trial.params[f"eri_unit_payout_{period_idx}_{peril_idx}"]
-                max_payout = trial.params[f"eri_max_payout_{period_idx}_{peril_idx}"]
-            
-            # Reconstruct SI allocation
-            if peril_idx == len(perils) - 1:
-                allocated_si = period_si_remaining
-            else:
-                allocation_ratio = trial.params[f"si_allocation_{period_idx}_{peril_idx}"]
-                allocated_si = period_si_remaining * allocation_ratio
-            
-            allocated_si = max(allocated_si, 10.0)
-            allocated_si = min(allocated_si, period_si_remaining)
-            
+            max_payout = allocated_si
             trial_periods.append({
                 "peril_type": peril_type,
                 "trigger": trigger,
@@ -322,10 +344,6 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
                 "start_day": base_period.get("start_day", 0),
                 "end_day": base_period.get("end_day", 364)
             })
-            
-            total_allocated += allocated_si
-            period_si_remaining -= allocated_si
-    
     return trial_periods
 
 def format_periods_for_output(trial_periods: List[Dict], base_periods: List[Dict]) -> List[Dict]:

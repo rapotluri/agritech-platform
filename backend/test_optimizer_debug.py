@@ -1,13 +1,16 @@
 from services.insure_smart_optimizer import optimize_insure_smart
 from services.insure_smart_premium_calc import calculate_insure_smart_premium
 from pprint import pprint
+from services.insure_smart_premium_calc import clear_weather_data_cache
 import time
 import cProfile
 import pstats
 
+
 # Test with a single, simple configuration first
 def test_single_calculation():
     print("=== Testing Single Premium Calculation ===")
+    clear_weather_data_cache()
     
     # Simple test case
     test_periods = [
