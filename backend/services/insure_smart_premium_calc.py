@@ -1,0 +1,141 @@
+import os
+import pandas as pd
+from typing import List, Dict, Any
+from datetime import datetime, timedelta
+
+# Helper: Map index type
+INDEX_TYPE_MAP = {"LRI": "Low Rainfall Index", "ERI": "Excess Rainfall Index"}
+
+# Main function
+
+def calculate_insure_smart_premium(
+    commune: str,
+    province: str,
+    periods: List[Dict[str, Any]],
+    weather_data_period: int = 30,
+    data_type: str = "precipitation"
+) -> Dict[str, Any]:
+    """
+    Calculate premium and risk metrics for Insure Smart optimization.
+    Args:
+        commune: Commune name
+        province: Province name
+        periods: List of dicts, each with keys:
+            - peril_type ("LRI" or "ERI")
+            - trigger (float)
+            - duration (int)
+            - unit_payout (float)
+            - max_payout (float)
+            - allocated_si (float)
+            - start_day (int, optional)
+            - end_day (int, optional)
+        weather_data_period: Number of years (default 30)
+        data_type: "precipitation" (default)
+    Returns:
+        Dict with all metrics needed for scoring and constraints
+    """
+    # 1. Load weather data
+    province = province.replace(" ", "")
+    file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
+    if not os.path.exists(file_path):
+        raise ValueError(f"Weather data file not found for province '{province}' and data type '{data_type}'.")
+    df = pd.read_excel(file_path, parse_dates=['Date'])
+    if commune not in df.columns:
+        raise ValueError(f"Commune '{commune}' not found in data. Available: {df.columns.tolist()}")
+
+    # 2. Get available years
+    years = sorted(df['Date'].dt.year.unique())[-weather_data_period:]
+    if len(years) < weather_data_period:
+        raise ValueError(f"Not enough years of data for {commune} in {province}.")
+
+    # 3. For each year, for each period, calculate payout
+    yearly_results = []
+    for year in years:
+        year_result = {"year": year, "periods": [], "total_payout": 0.0}
+        for period in periods:
+            # Get period window (start_day, end_day) or use full year
+            start_day = period.get("start_day", 0)
+            end_day = period.get("end_day", 364)
+            # Get date range for this year
+            year_start = datetime(year, 1, 1) + timedelta(days=start_day)
+            year_end = datetime(year, 1, 1) + timedelta(days=end_day)
+            period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune]
+            if len(period_data) < period["duration"]:
+                # Not enough data for this period
+                payout = 0.0
+                trigger_met = False
+            else:
+                # Slide window for consecutive days
+                rolling = period_data.rolling(window=period["duration"])
+                if period["peril_type"] == "LRI":
+                    # LRI: payout if min(rolling sum) < trigger
+                    rolling_sum = rolling.sum().dropna()
+                    min_rain = rolling_sum.min()
+                    trigger_met = min_rain < period["trigger"]
+                    if trigger_met:
+                        payout = min((period["trigger"] - min_rain) * period["unit_payout"], period["max_payout"], period["allocated_si"])
+                    else:
+                        payout = 0.0
+                else:
+                    # ERI: payout if max(rolling sum) > trigger
+                    rolling_sum = rolling.sum().dropna()
+                    max_rain = rolling_sum.max()
+                    trigger_met = max_rain > period["trigger"]
+                    if trigger_met:
+                        payout = min((max_rain - period["trigger"]) * period["unit_payout"], period["max_payout"], period["allocated_si"])
+                    else:
+                        payout = 0.0
+            year_result["periods"].append({
+                "peril_type": period["peril_type"],
+                "trigger": period["trigger"],
+                "duration": period["duration"],
+                "unit_payout": period["unit_payout"],
+                "max_payout": period["max_payout"],
+                "allocated_si": period["allocated_si"],
+                "trigger_met": trigger_met,
+                "payout": payout
+            })
+            year_result["total_payout"] += payout
+        yearly_results.append(year_result)
+
+    # 4. Summarize payouts and calculate metrics
+    payouts = [y["total_payout"] for y in yearly_results]
+    avg_payout = sum(payouts) / len(payouts)
+    max_payout = max(payouts)
+    payout_years = sum(1 for p in payouts if p > 0)
+    coverage_score = payout_years / len(payouts)
+    payout_stability = pd.Series(payouts).std() if len(payouts) > 1 else 0.0
+    premium = avg_payout / max_payout if max_payout > 0 else 0.0
+    # No scaling by sum insured; optimizer will handle this
+    premium_utilization = None  # Not calculated here
+    loss_ratio = None  # Not calculated here
+
+    # 5. Prepare breakdowns
+    period_breakdown = []
+    for idx, period in enumerate(periods):
+        period_payouts = [y["periods"][idx]["payout"] for y in yearly_results]
+        period_avg = sum(period_payouts) / len(period_payouts)
+        period_breakdown.append({
+            "peril_type": period["peril_type"],
+            "trigger": period["trigger"],
+            "duration": period["duration"],
+            "unit_payout": period["unit_payout"],
+            "max_payout": period["max_payout"],
+            "allocated_si": period["allocated_si"],
+            "avg_payout": period_avg,
+            "payout_years": sum(1 for p in period_payouts if p > 0)
+        })
+
+    # 6. Return all metrics
+    return {
+        "premium_rate": premium,  # This is the premium as a fraction of total SI (optimizer will scale)
+        "avg_payout": avg_payout,
+        "max_payout": max_payout,
+        "payout_years": payout_years,
+        "coverage_score": coverage_score,
+        "payout_stability_score": 1.0 / (1.0 + payout_stability),
+        "period_breakdown": period_breakdown,
+        "yearly_results": yearly_results,
+        "valid": all(p["payout_years"] >= 1 for p in period_breakdown),
+        "message": "OK"
+    } 
