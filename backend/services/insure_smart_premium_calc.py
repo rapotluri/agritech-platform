@@ -14,7 +14,9 @@ def calculate_insure_smart_premium(
     periods: List[Dict[str, Any]],
     sum_insured: float,
     weather_data_period: int = 30,
-    data_type: str = "precipitation"
+    data_type: str = "precipitation",
+    admin_loading: float = 0.15,
+    profit_loading: float = 0.075
 ) -> Dict[str, Any]:
     """
     Calculate premium and risk metrics for Insure Smart optimization.
@@ -33,6 +35,8 @@ def calculate_insure_smart_premium(
         sum_insured: Product-level sum insured (cap on total payout per year)
         weather_data_period: Number of years (default 30)
         data_type: "precipitation" (default)
+        admin_loading: Admin cost loading (default 0.15)
+        profit_loading: Profit loading (default 0.075)
     Returns:
         Dict with all metrics needed for scoring and constraints
     """
@@ -107,7 +111,6 @@ def calculate_insure_smart_premium(
         yearly_results.append(year_result)
 
     # 4. Summarize payouts and calculate metrics
-    # Cap total payout for any year at the sum insured
     yearly_total_payouts = [min(y["total_payout"], sum_insured) for y in yearly_results]
     Etotal = sum(yearly_total_payouts) / len(yearly_total_payouts) if yearly_total_payouts else 0.0
     max_payout_across_years = max(yearly_total_payouts) if yearly_total_payouts else 0.0
@@ -117,6 +120,8 @@ def calculate_insure_smart_premium(
     
     # Premium calculation: expected payout as % of sum insured
     premium_rate = Etotal / sum_insured if sum_insured > 0 else 0.0
+    loaded_premium = Etotal * (1 + admin_loading + profit_loading)
+    loss_ratio = Etotal / loaded_premium if loaded_premium > 0 else 0.0
     
     # 5. Prepare breakdowns
     period_breakdown = []
@@ -136,7 +141,7 @@ def calculate_insure_smart_premium(
 
     # 6. Return all metrics
     return {
-        "premium_rate": premium_rate,  # This is the premium as a fraction of total SI (optimizer will scale)
+        "premium_rate": premium_rate,  # This is the pure premium as a fraction of total SI
         "avg_payout": Etotal,
         "max_payout": max_payout_across_years,
         "payout_years": payout_years,
@@ -145,5 +150,7 @@ def calculate_insure_smart_premium(
         "period_breakdown": period_breakdown,
         "yearly_results": yearly_results,
         "valid": all(p["payout_years"] >= 1 for p in period_breakdown),
-        "message": "OK"
+        "message": "OK",
+        "loaded_premium": loaded_premium,
+        "loss_ratio": loss_ratio
     } 

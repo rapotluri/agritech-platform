@@ -49,25 +49,30 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 commune=commune,
                 province=province,
                 periods=trial_periods,
-                sum_insured=sum_insured
+                sum_insured=sum_insured,
+                admin_loading=0.15,
+                profit_loading=0.075
             )
             
             if not result["valid"]:
                 print(f"Trial {trial.number}: Invalid configuration - {result.get('message', 'No message')}")
                 return -float('inf')  # Invalid configuration
             
-            # Calculate premium cost
-            premium_cost = result["premium_rate"] * sum_insured
+            # Use loaded premium for premium cost
+            loaded_premium_cost = result["loaded_premium"]
             
             # Check premium cap constraint
-            if premium_cost > premium_cap:
-                print(f"Trial {trial.number}: Premium cost ${premium_cost:.2f} exceeds cap ${premium_cap}")
+            if loaded_premium_cost > premium_cap:
+                print(f"Trial {trial.number}: Loaded premium cost ${loaded_premium_cost:.2f} exceeds cap ${premium_cap}")
                 return -float('inf')  # Exceeds premium cap
             
-            # Calculate composite score
-            score = calculate_composite_score(result, premium_cost, sum_insured)
+            # Use loss ratio from result
+            loss_ratio = result["loss_ratio"]
             
-            print(f"Trial {trial.number}: Valid! Premium=${premium_cost:.2f}, Score={score:.4f}")
+            # Calculate composite score (use loaded premium)
+            score = calculate_composite_score(result, loaded_premium_cost, sum_insured, loss_ratio)
+            
+            print(f"Trial {trial.number}: Valid! Loaded Premium=${loaded_premium_cost:.2f}, Score={score:.4f}")
             return score
             
         except Exception as e:
@@ -128,6 +133,7 @@ def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
 def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
     """
     Generate a trial configuration by sampling parameters for each period and peril.
+    Constrain max_payout to be between 20% and 100% of sum insured.
     """
     trial_periods = []
     total_allocated = 0.0
@@ -148,18 +154,23 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
         
         for peril_idx, peril in enumerate(perils):
             peril_type = peril["type"]  # "ERI" or "LRI"
+
+            # Constrain max_payout to 20%-100% of sum insured
+            min_max_payout = 0.2 * sum_insured
+            max_max_payout = 1.0 * sum_insured
             
             # Sample parameters for this peril
             if peril_type == "LRI":
                 trigger = trial.suggest_float(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
                 duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", 5, 30)
                 unit_payout = trial.suggest_float(f"lri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
-                max_payout = trial.suggest_float(f"lri_max_payout_{period_idx}_{peril_idx}", 50, 300)
+                max_payout = trial.suggest_float(f"lri_max_payout_{period_idx}_{peril_idx}", min_max_payout, max_max_payout)
             else:  # ERI
                 trigger = trial.suggest_float(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
                 duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", 1, 5)
                 unit_payout = trial.suggest_float(f"eri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
-                max_payout = trial.suggest_float(f"eri_max_payout_{period_idx}_{peril_idx}", 50, 300)
+                max_payout = trial.suggest_float(f"eri_max_payout_{period_idx}_{peril_idx}", min_max_payout, max_max_payout)
+            
             
             # Allocate SI for this peril
             if peril_idx == len(perils) - 1:
@@ -190,15 +201,14 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
     
     return trial_periods
 
-def calculate_composite_score(result: Dict[str, Any], premium_cost: float, sum_insured: float) -> float:
+def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float, sum_insured: float, loss_ratio: float) -> float:
     """
-    Calculate composite score based on the scoring function.
+    Calculate composite score based on the scoring function, using loaded premium and loss ratio.
     """
     # Premium utilization score (how close to premium cap)
-    premium_utilization_score = min(premium_cost / (premium_cost + 1), 1.0)  # Normalized
+    premium_utilization_score = min(loaded_premium_cost / (loaded_premium_cost + 1), 1.0)  # Normalized
     
     # Loss ratio score (lower is better, so invert)
-    loss_ratio = result["avg_payout"] / premium_cost if premium_cost > 0 else 0
     loss_ratio_score = max(0, 1 - loss_ratio)  # Inverted, capped at 1
     
     # Payout stability score
@@ -239,19 +249,22 @@ def extract_best_configurations(study: optuna.Study, commune: str, province: str
             commune=commune,
             province=province,
             periods=trial_periods,
-            sum_insured=sum_insured
+            sum_insured=sum_insured,
+            admin_loading=0.15,
+            profit_loading=0.075
         )
         
-        premium_cost = result["premium_rate"] * sum_insured
+        # Use loaded premium for premium cost
+        loaded_premium_cost = result["loaded_premium"]
         
         # Format the result to match frontend expectations
         config = {
-            "lossRatio": result["avg_payout"] / premium_cost if premium_cost > 0 else 0,
+            "lossRatio": result["loss_ratio"],
             "expectedPayout": result["avg_payout"],
             "premiumRate": result["premium_rate"],
-            "premiumCost": premium_cost,
+            "premiumCost": result["loaded_premium"],
             "triggers": format_triggers_for_frontend(trial_periods, base_periods),
-            "riskLevel": determine_risk_level(result["avg_payout"] / premium_cost if premium_cost > 0 else 0),
+            "riskLevel": determine_risk_level(result["loss_ratio"]),
             "score": trial.value,
             "periods": format_periods_for_output(trial_periods, base_periods)
         }
