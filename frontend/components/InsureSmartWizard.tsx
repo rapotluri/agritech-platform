@@ -52,6 +52,21 @@ export default function InsureSmartWizard() {
   const [optimizing, setOptimizing] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
 
+  // Function to clear results when navigating back
+  const clearResults = () => {
+    setResults(null);
+    setOptimizing(false);
+  };
+
+  // Function to navigate to a specific step
+  const navigateToStep = (newStep: number) => {
+    if (newStep < step) {
+      // Going back - clear results
+      clearResults();
+    }
+    setStep(newStep);
+  };
+
   // useForm hooks are only called once
   const productFormMethods = useForm({
     resolver: zodResolver(productSchema),
@@ -154,7 +169,7 @@ export default function InsureSmartWizard() {
             </Button>
           )}
           <div className="flex justify-between mt-8">
-            <Button type="button" variant="secondary" onClick={() => setStep(0)}>
+            <Button type="button" variant="secondary" onClick={() => navigateToStep(0)}>
               Back: Product Details
             </Button>
             <Button type="submit" disabled={fields.length === 0}>
@@ -179,19 +194,35 @@ export default function InsureSmartWizard() {
         };
         // POST to backend
         const { data } = await apiClient.post("/api/insure-smart/optimize", payload);
+        console.log("Initial optimization response:", data);
+        
         const taskId = data.task_id;
+        if (!taskId) {
+          throw new Error("No task_id received from backend");
+        }
+        console.log("Starting to poll for task:", taskId);
         // Poll for result
         async function pollStatus() {
-          const { data: statusData } = await apiClient.get(`/api/insure-smart/status/${taskId}`);
-          if (statusData.status === "PENDING" || statusData.status === "Pending") {
-            setTimeout(pollStatus, 1500);
-          } else if (statusData.status === "SUCCESS") {
-            setResults(statusData.result);
+          try {
+            const { data: statusData } = await apiClient.get(`/api/insure-smart/status/${taskId}`);
+            console.log("Polling response:", statusData);
+            
+            if (statusData.status === "PENDING" || statusData.status === "Pending" || statusData.status === "STARTED") {
+              console.log("Task still pending/running, polling again...");
+              setTimeout(pollStatus, 1500);
+            } else if (statusData.status === "SUCCESS") {
+              console.log("Task completed successfully:", statusData.result);
+              setResults(statusData.result);
+              setOptimizing(false);
+            } else {
+              console.error("Task failed with status:", statusData.status, "Result:", statusData.result);
+              setOptimizing(false);
+              alert(`Optimization failed: ${statusData.result || 'Unknown error'}`);
+            }
+          } catch (error) {
+            console.error("Error polling status:", error);
             setOptimizing(false);
-          } else {
-            setResults(null);
-            setOptimizing(false);
-            alert("Optimization failed. Please try again.");
+            alert("Error checking optimization status. Please try again.");
           }
         }
         pollStatus();
@@ -295,7 +326,7 @@ export default function InsureSmartWizard() {
             <button
               key={title}
               className={`text-sm font-semibold pb-1 border-b-2 transition-colors ${step === idx ? 'border-green-600 text-green-700' : 'border-transparent text-gray-400'}`}
-              onClick={() => idx < step ? setStep(idx) : undefined}
+              onClick={() => navigateToStep(idx)}
               disabled={idx > step}
             >
               {title}

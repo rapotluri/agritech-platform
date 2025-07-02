@@ -69,6 +69,7 @@ def premium_task(request_dict):
 @celery_app.task(name="insure_smart_optimize_task")
 def insure_smart_optimize_task(request_dict):
     try:
+        print(f"Starting insure_smart_optimize_task with request: {request_dict}")
         result = optimize_insure_smart(request_dict)
         return result
     except Exception as e:
