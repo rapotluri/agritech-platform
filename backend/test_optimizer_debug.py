@@ -11,7 +11,7 @@ import pstats
 def test_single_calculation():
     print("=== Testing Single Premium Calculation ===")
     clear_weather_data_cache()
-    
+
     # Simple test case
     test_periods = [
         {
@@ -73,7 +73,7 @@ def test_optimizer_with_debug():
             "commune": "KampongCham",
             "province": "KampongCham",
             "sumInsured": 250,
-            "premiumCap": 55  # More generous
+            "premiumCap": 10  # More generous
         },
         "periods": [
             {
@@ -83,6 +83,27 @@ def test_optimizer_with_debug():
             }
         ]
     }
+
+    # payload = {
+    #     "product": {
+    #         "commune": "KampongCham",
+    #         "province": "KampongCham",
+    #         "sumInsured": 250,
+    #         "premiumCap": 55  # Slightly more flexible than $10
+    #     },
+    #     "periods": [
+    #         {
+    #             "startDate": "2023-07-01T00:00:00Z",
+    #             "endDate": "2023-08-15T00:00:00Z",
+    #             "perilType": "Both"
+    #         },
+    #         {
+    #             "startDate": "2023-08-16T00:00:00Z",
+    #             "endDate": "2023-09-30T00:00:00Z",
+    #             "perilType": "LRI"
+    #         }
+    #     ]
+    # }
     
     profiler = cProfile.Profile()
     profiler.enable()

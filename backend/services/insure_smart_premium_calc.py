@@ -17,6 +17,7 @@ def _get_weather_data(province, data_type):
     key = (province, data_type)
     if key in _weather_data_cache:
         return _weather_data_cache[key]
+    print(f"Loading weather data from disk for {province}, {data_type}")
     file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
     df = pd.read_excel(file_path, parse_dates=['Date'])
     _weather_data_cache[key] = df
@@ -132,8 +133,8 @@ def calculate_insure_smart_premium(
     payout_stability = pd.Series(yearly_total_payouts).std() if len(yearly_total_payouts) > 1 else 0.0
     
     # Premium calculation: expected payout as % of sum insured
-    premium_rate = Etotal / sum_insured if sum_insured > 0 else 0.0
     loaded_premium = Etotal * (1 + admin_loading + profit_loading)
+    premium_rate = loaded_premium / sum_insured if sum_insured > 0 else 0.0
     loss_ratio = Etotal / loaded_premium if loaded_premium > 0 else 0.0
     
     # 5. Prepare breakdowns
