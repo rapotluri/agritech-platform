@@ -34,7 +34,7 @@ export function SelectForm({ control, classname, name, placeholder, label, ...pr
       render={({ field }) => (
         <FormItem className={cn(classname)}>
           <FormLabel>{label}</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder} />
