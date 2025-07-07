@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
-import { InputForm } from "@/components/ui/InputForm";
 import { SelectForm } from "@/components/ui/SelectForm";
 import { DatePicker } from "@/components/ui/datepicker";
 import { Button } from "@/components/ui/button";
 import { SelectItem } from "@/components/ui/select";
 import provincesCommunesData from "../data/cambodia_provinces_communes.json";
 import apiClient from "@/lib/apiClient";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form";
+import { FormItem } from "@/components/ui/form";
+import { FormLabel } from "@/components/ui/form";
+import { FormControl } from "@/components/ui/form";
+import { FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Calendar, MapPin, Plus, Trash2, TrendingDown, TrendingUp, Zap, CheckCircle } from "lucide-react";
+import React from "react";
 
 const provincesCommunes = provincesCommunesData as Record<string, string[]>;
 
@@ -33,24 +44,50 @@ const periodSchema = z.object({
 
 const wizardSteps = ["Product Details", "Coverage Periods", "Optimization"];
 
-// Initialize useForm hooks ONCE at the top level
-const defaultProductValues = {
-  productName: "",
-  province: Object.keys(provincesCommunes)[0],
-  commune: provincesCommunes[Object.keys(provincesCommunes)[0]][0],
-  cropDuration: "",
-  sumInsured: "",
-  premiumCap: "",
-  notes: "",
-};
-const defaultPeriodsValues = { periods: [] };
-
 export default function InsureSmartWizard() {
   const [step, setStep] = useState(0);
-  const [productForm, setProductForm] = useState<any>(null);
-  const [periods, setPeriods] = useState<any[]>([]);
   const [optimizing, setOptimizing] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
+  
+  // Separate state for each step
+  const [productData, setProductData] = useState<any>(null);
+  const [periodsData, setPeriodsData] = useState<any[]>([]);
+
+  // Define default values as plain strings (never undefined/null)
+  const provinceKeys = Object.keys(provincesCommunes);
+  const defaultProvince = provinceKeys[0] || "";
+  const defaultCommune = (provincesCommunes[defaultProvince] && provincesCommunes[defaultProvince][0]) || "";
+
+  const defaultProductValues = {
+    productName: "",
+    province: defaultProvince,
+    commune: defaultCommune,
+    cropDuration: "",
+    sumInsured: "",
+    premiumCap: "",
+    notes: "",
+  };
+
+  const defaultPeriodsValues = {
+    periods: [],
+  };
+
+  // Separate form instances for each step
+  const productForm = useForm({
+    resolver: zodResolver(productSchema),
+    defaultValues: defaultProductValues,
+    mode: "onChange",
+  });
+
+  const periodsForm = useForm({
+    defaultValues: { periods: periodsData },
+    mode: "onChange",
+  });
+
+  const { fields, append, remove } = useFieldArray<any>({
+    control: periodsForm.control,
+    name: "periods",
+  });
 
   // Function to clear results when navigating back
   const clearResults = () => {
@@ -58,126 +95,318 @@ export default function InsureSmartWizard() {
     setOptimizing(false);
   };
 
-  // Function to navigate to a specific step
-  const navigateToStep = (newStep: number) => {
-    if (newStep < step) {
-      // Going back - clear results
-      clearResults();
-    }
-    setStep(newStep);
+  const getStepProgress = () => {
+    return ((step + 1) / 3) * 100;
   };
 
-  // useForm hooks are only called once
-  const productFormMethods = useForm({
-    resolver: zodResolver(productSchema),
-    defaultValues: defaultProductValues,
-    mode: "onChange",
-  });
-  const periodsFormMethods = useForm({
-    defaultValues: defaultPeriodsValues,
-    mode: "onChange",
-  });
-  const { control: periodsControl } = periodsFormMethods;
-  const { fields, append, remove } = useFieldArray({
-    control: periodsControl,
-    name: "periods",
-  });
+  const getPerilIcon = (peril: string) => {
+    switch (peril) {
+      case "LRI":
+        return <TrendingDown className="h-4 w-4" />;
+      case "ERI":
+        return <TrendingUp className="h-4 w-4" />;
+      case "Both":
+        return <Zap className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
+  const getPerilLabel = (peril: string) => {
+    switch (peril) {
+      case "LRI":
+        return "Low Rainfall";
+      case "ERI":
+        return "High Rainfall";
+      case "Both":
+        return "Both (LRI + ERI)";
+      default:
+        return peril;
+    }
+  };
+
+  const getRiskScoreColor = (score: string) => {
+    switch (score) {
+      case "LOW":
+        return "bg-green-100 text-green-800";
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-800";
+      case "HIGH":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   // Step 1: Product Details UI
-  function ProductDetailsStep({ formMethods }: { formMethods: typeof productFormMethods }) {
-    const province = formMethods.watch("province");
+  function ProductDetailsStep() {
+    const province = productForm.watch("province");
+    
+    const handleSubmit = useCallback((data: any) => {
+      setProductData(data);
+      setStep(1);
+    }, []);
+
+    // If productData exists (navigating back), reset the form with it
+    // This effect runs only when productData changes and step is 0
+    // (prevents reset on every render)
+    useEffect(() => {
+      if (step === 0 && productData) {
+        productForm.reset(productData);
+      }
+    }, [step, productData, productForm]);
+    
     return (
-      <Form {...formMethods}>
-        <form
-          className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-green-100 p-12 space-y-8"
-          onSubmit={formMethods.handleSubmit((data) => {
-            setProductForm(data);
-            setStep(1);
-          })}
-        >
-          <h2 className="text-2xl font-bold text-green-700 mb-2">Create New Product</h2>
-          <p className="text-gray-500 mb-6">Define the high-level details for your weather insurance product</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <InputForm control={formMethods.control} name="productName" label="Product Name *" placeholder="e.g., July Rice Crop – Kampong Speu" />
-            <SelectForm control={formMethods.control} name="commune" label="Commune/Location *" placeholder="Select commune">
-              {provincesCommunes[province].map((commune) => (
-                <SelectItem key={commune} value={commune}>{commune}</SelectItem>
-              ))}
-            </SelectForm>
-            <SelectForm control={formMethods.control} name="province" label="Province *" placeholder="Select province">
-              {Object.keys(provincesCommunes).map((prov) => (
-                <SelectItem key={prov} value={prov}>{prov}</SelectItem>
-              ))}
-            </SelectForm>
-            <InputForm control={formMethods.control} name="cropDuration" label="Total Crop Duration" placeholder="e.g., 120 days" />
-            <InputForm control={formMethods.control} name="sumInsured" label="Total Sum Insured (USD) *" placeholder="250" />
-            <InputForm control={formMethods.control} name="premiumCap" label="Total Premium Cap (USD) *" placeholder="10" />
-          </div>
-          <InputForm control={formMethods.control} name="notes" label="Notes" placeholder="Optional notes for internal use..." />
-          <div className="flex justify-end">
-            <Button type="submit" className="w-full md:w-auto">Next: Add Coverage Periods</Button>
-          </div>
-        </form>
-      </Form>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Create New Product
+          </CardTitle>
+          <CardDescription>Define the high-level details for your weather insurance product</CardDescription>
+        </CardHeader>
+        <Form {...productForm}>
+          <form onSubmit={productForm.handleSubmit(handleSubmit)}>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <FormField
+                    control={productForm.control}
+                    name="productName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., July Rice Crop – Kampong Speu" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <SelectForm control={productForm.control} name="province" label="Province *" placeholder="Select province">
+                    {Object.keys(provincesCommunes).map((prov) => (
+                      <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                    ))}
+                  </SelectForm>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <SelectForm control={productForm.control} name="commune" label="Commune/Location *" placeholder="Select commune">
+                    {provincesCommunes[province].map((commune) => (
+                      <SelectItem key={commune} value={commune}>{commune}</SelectItem>
+                    ))}
+                  </SelectForm>
+                </div>
+                <div className="space-y-2">
+                  <FormField
+                    control={productForm.control}
+                    name="cropDuration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Crop Duration</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 120 days" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-gray-500">Optional - for reference only</p>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <FormField
+                    control={productForm.control}
+                    name="sumInsured"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Sum Insured (USD) *</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="250" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormField
+                    control={productForm.control}
+                    name="premiumCap"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Premium Cap (USD) *</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="10" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <FormField
+                  control={productForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <textarea
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Optional notes for internal use..."
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  Next: Add Coverage Periods
+                </Button>
+              </div>
+            </CardContent>
+          </form>
+        </Form>
+      </Card>
     );
   }
 
   // Step 2: Coverage Periods UI
-  function CoveragePeriodsStep({ formMethods }: { formMethods: typeof periodsFormMethods }) {
+  function CoveragePeriodsStep() {
+    const handleSubmit = useCallback((data: any) => {
+      setPeriodsData(data.periods);
+      setStep(2);
+    }, []);
+
+    // If periodsData exists (navigating back), reset the form with it
+    useEffect(() => {
+      if (step === 1 && periodsData && periodsData.length > 0) {
+        periodsForm.reset({ periods: periodsData });
+      }
+    }, [step, periodsData, periodsForm]);
+    
     return (
-      <Form {...formMethods}>
-        <form
-          className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-green-100 p-12 space-y-8"
-          onSubmit={formMethods.handleSubmit((data) => {
-            setPeriods(data.periods);
-            setStep(2);
-          })}
-        >
-          <h2 className="text-2xl font-bold text-green-700 mb-2">Add Coverage Periods</h2>
-          <p className="text-gray-500 mb-6">Define risk windows within your crop duration. Each period represents a time window where weather risk is evaluated.</p>
-          {fields.length === 0 && (
-            <div className="flex flex-col items-center py-10">
-              <span className="text-5xl text-gray-300 mb-4">📅</span>
-              <div className="text-gray-400 mb-4">No coverage periods added yet</div>
-              <Button type="button" onClick={() => append({ startDate: undefined, endDate: undefined, perilType: "LRI" })}>
-                + Add First Coverage Period
-              </Button>
-            </div>
-          )}
-          {fields.map((field, idx) => (
-            <div key={field.id} className="border rounded-lg p-6 mb-8 bg-green-50 w-full">
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-semibold text-green-700 text-lg">Period {idx + 1}</span>
-                <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
-                  Remove
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <DatePicker control={formMethods.control} name={`periods.${idx}.startDate`} label="Start Date *" />
-                <DatePicker control={formMethods.control} name={`periods.${idx}.endDate`} label="End Date *" />
-                <SelectForm control={formMethods.control} name={`periods.${idx}.perilType`} label="Peril Type *" placeholder="Select peril type">
-                  <SelectItem value="LRI">Low Rainfall (LRI)</SelectItem>
-                  <SelectItem value="ERI">High Rainfall (ERI)</SelectItem>
-                  <SelectItem value="Both">Both (LRI + ERI)</SelectItem>
-                </SelectForm>
-              </div>
-            </div>
-          ))}
-          {fields.length > 0 && (
-            <Button type="button" variant="outline" onClick={() => append({ startDate: undefined, endDate: undefined, perilType: "LRI" })}>
-              + Add Another Period
-            </Button>
-          )}
-          <div className="flex justify-between mt-8">
-            <Button type="button" variant="secondary" onClick={() => navigateToStep(0)}>
-              Back: Product Details
-            </Button>
-            <Button type="submit" disabled={fields.length === 0}>
-              Next: Optimize Product
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Add Coverage Periods
+            </CardTitle>
+            <CardDescription>
+              Define risk windows within your crop duration. Each period represents a time window where weather risk
+              is evaluated.
+            </CardDescription>
+          </CardHeader>
+          <Form {...periodsForm}>
+            <form onSubmit={periodsForm.handleSubmit(handleSubmit)}>
+              <CardContent>
+                {fields.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No coverage periods added yet</p>
+                    <Button type="button" onClick={() => append({ startDate: undefined, endDate: undefined, perilType: "LRI" })}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Coverage Period
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <Card key={field.id} className="border-l-4 border-l-green-500">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">Period {index + 1}</CardTitle>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => remove(index)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <FormLabel>Start Date *</FormLabel>
+                              <DatePicker control={periodsForm.control} name={`periods.${index}.startDate` as any} />
+                            </div>
+                            <div className="space-y-2">
+                              <FormLabel>End Date *</FormLabel>
+                              <DatePicker control={periodsForm.control} name={`periods.${index}.endDate` as any} />
+                            </div>
+                            <div className="space-y-2">
+                              <FormLabel>Peril Type *</FormLabel>
+                              <SelectForm control={periodsForm.control} name={`periods.${index}.perilType`} placeholder="Select peril type">
+                                <SelectItem value="LRI">
+                                  <div className="flex items-center gap-2">
+                                    <TrendingDown className="h-4 w-4" />
+                                    Low Rainfall (LRI)
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="ERI">
+                                  <div className="flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4" />
+                                    High Rainfall (ERI)
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Both">
+                                  <div className="flex items-center gap-2">
+                                    <Zap className="h-4 w-4" />
+                                    Both (LRI + ERI)
+                                  </div>
+                                </SelectItem>
+                              </SelectForm>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    <Button type="button" variant="outline" onClick={() => append({ startDate: undefined, endDate: undefined, perilType: "LRI" })} className="w-full bg-transparent">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Another Period
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </form>
+          </Form>
+        </Card>
+
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => {
+            clearResults();
+            setStep(0);
+          }}>
+            Back: Product Details
+          </Button>
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            onClick={periodsForm.handleSubmit(handleSubmit)}
+            disabled={fields.length === 0}
+          >
+            Next: Optimize Product
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -187,40 +416,31 @@ export default function InsureSmartWizard() {
       setOptimizing(true);
       setResults(null);
       try {
-        // Prepare payload
+        // Use the stored data from previous steps
         const payload = {
-          product: productForm,
-          periods: periods,
+          product: productData,
+          periods: periodsData,
         };
         // POST to backend
         const { data } = await apiClient.post("/api/insure-smart/optimize", payload);
-        console.log("Initial optimization response:", data);
-        
         const taskId = data.task_id;
         if (!taskId) {
           throw new Error("No task_id received from backend");
         }
-        console.log("Starting to poll for task:", taskId);
         // Poll for result
         async function pollStatus() {
           try {
             const { data: statusData } = await apiClient.get(`/api/insure-smart/status/${taskId}`);
-            console.log("Polling response:", statusData);
-            
             if (statusData.status === "PENDING" || statusData.status === "Pending" || statusData.status === "STARTED") {
-              console.log("Task still pending/running, polling again...");
               setTimeout(pollStatus, 1500);
             } else if (statusData.status === "SUCCESS") {
-              console.log("Task completed successfully:", statusData.result);
               setResults(statusData.result);
               setOptimizing(false);
             } else {
-              console.error("Task failed with status:", statusData.status, "Result:", statusData.result);
               setOptimizing(false);
               alert(`Optimization failed: ${statusData.result || 'Unknown error'}`);
             }
           } catch (error) {
-            console.error("Error polling status:", error);
             setOptimizing(false);
             alert("Error checking optimization status. Please try again.");
           }
@@ -231,112 +451,230 @@ export default function InsureSmartWizard() {
         alert("Failed to start optimization. Please try again.");
       }
     }
+
     return (
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-green-100 p-12 space-y-8">
-        <h2 className="text-2xl font-bold text-green-700 mb-2">Product Optimization</h2>
-        <p className="text-gray-500 mb-6">Run optimization to find the best trigger values and payout structure based on 30 years of historical weather data</p>
-        <div className="bg-blue-50 rounded-lg p-4 mb-6 text-center">
-          <div className="font-semibold text-blue-700 mb-1">Ready to Optimize</div>
-          <div className="text-gray-700 text-sm">
-            <div>Product: <span className="font-semibold">{productForm?.productName}</span></div>
-            <div>Location: <span className="font-semibold">{productForm?.commune?.toLowerCase()}</span></div>
-            <div>Coverage Periods: <span className="font-semibold">{periods.length}</span></div>
-            <div>Budget: <span className="font-semibold">${productForm?.sumInsured} (Premium Cap: ${productForm?.premiumCap})</span></div>
-          </div>
-        </div>
-        {!results ? (
-          <div className="flex flex-col items-center">
-            <Button onClick={runOptimization} disabled={optimizing} className="mb-4">
-              {optimizing ? "Optimizing..." : "Run Optimization"}
-            </Button>
-            {optimizing && <div className="text-gray-500 text-sm">Running optimization, please wait...</div>}
-          </div>
-        ) : (
-          <div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-green-700 font-semibold">
-              Optimization Complete<br />Found {results.length} optimized configurations that meet your criteria
-            </div>
-            {results.map((result: any, idx: number) => (
-              <div key={idx} className="mb-6 border rounded-lg p-4 bg-gray-50">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold text-lg">Configuration {idx + 1}</span>
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${result.riskLevel.includes('LOW') ? 'bg-green-100 text-green-800' : result.riskLevel.includes('MEDIUM') ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{result.riskLevel}</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
-                  <div>
-                    <div className="text-gray-500 text-xs">Loss Ratio</div>
-                    <div className="font-bold text-green-700 text-lg">{(result.lossRatio * 100).toFixed(1)}%</div>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Product Optimization
+            </CardTitle>
+            <CardDescription>
+              Run optimization to find the best trigger values and payout structure based on 30 years of historical
+              weather data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!results ? (
+              <div className="text-center py-8">
+                <div className="space-y-4">
+                  <div className="bg-green-50 p-6 rounded-lg">
+                    <h3 className="font-semibold text-green-900 mb-2">Ready to Optimize</h3>
+                    <p className="text-green-700 text-sm mb-4">
+                      Product: {productData?.productName}
+                      <br />
+                      Location: {productData?.commune?.toLowerCase()}
+                      <br />
+                      Coverage Periods: {periodsData?.length}
+                      <br />
+                      Budget: ${productData?.sumInsured} (Premium Cap: ${productData?.premiumCap})
+                    </p>
                   </div>
-                  <div>
-                    <div className="text-gray-500 text-xs">Expected Payout</div>
-                    <div className="font-bold text-blue-700 text-lg">${result.expectedPayout.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 text-xs">Premium Rate</div>
-                    <div className="font-bold text-green-700 text-lg">{(result.premiumRate * 100).toFixed(1)}%</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 text-xs">Premium Cost</div>
-                    <div className="font-bold text-green-700 text-lg">${result.premiumCost.toFixed(2)}</div>
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <div className="font-semibold mb-1">Trigger Values & Payouts</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {result.triggers.map((t: any, i: number) => (
-                      <div key={i} className={`rounded p-2 ${t.type.includes('Low') ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                        <span className="font-semibold">{t.type} Trigger:</span> {t.value} <span className="font-semibold">{t.payout} payout</span>
-                      </div>
-                    ))}
-                  </div>
+
+                  {optimizing ? (
+                    <div className="space-y-4">
+                      <div className="animate-spin h-8 w-8 border-4 border-green-600 border-t-transparent rounded-full mx-auto"></div>
+                      <p className="text-gray-600">Running optimization...</p>
+                      <p className="text-sm text-gray-500">
+                        Analyzing 30 years of rainfall data and testing thousands of combinations
+                      </p>
+                    </div>
+                  ) : (
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={runOptimization} size="lg">
+                      <Zap className="h-4 w-4 mr-2" />
+                      Run Optimization
+                    </Button>
+                  )}
                 </div>
               </div>
-            ))}
-            <div className="flex justify-between mt-6">
-              <Button variant="secondary" onClick={() => setStep(1)}>
-                Back: Coverage Periods
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-semibold">Optimization Complete</span>
+                  </div>
+                  <p className="text-green-700 text-sm mt-1">
+                    Found {results.length} optimized configurations that meet your criteria
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  {results.map((result: any, index: number) => {
+                    if (result.error) {
+                      return (
+                        <Card key={index} className="bg-red-50 border-red-200">
+                          <CardContent>
+                            <p className="text-red-700 font-semibold">Error: {result.error}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    return (
+                      <Card key={index} className="cursor-pointer transition-all hover:border-gray-300">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">Configuration {index + 1}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <Badge className={getRiskScoreColor(result.riskLevel)}>{result.riskLevel} RISK</Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                              <p className="text-sm text-gray-600">Loss Ratio</p>
+                              <p className="text-lg font-semibold">
+                                {typeof result.lossRatio === 'number' ? `${(result.lossRatio * 100).toFixed(1)}%` : 'N/A'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Expected Payout</p>
+                              <p className="text-lg font-semibold">
+                                {typeof result.expectedPayout === 'number' ? `$${result.expectedPayout.toFixed(2)}` : 'N/A'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Premium Rate</p>
+                              <p className="text-lg font-semibold">
+                                {typeof result.premiumRate === 'number' ? `${(result.premiumRate * 100).toFixed(1)}%` : 'N/A'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Premium Cost</p>
+                              <p className="text-lg font-semibold">
+                                {typeof result.premiumCost === 'number' ? `$${result.premiumCost.toFixed(2)}` : 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                          <Separator className="my-4" />
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-gray-900">Trigger Values & Payouts</h4>
+                            <div className="grid gap-3">
+                              {result.triggers && result.triggers.map((t: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between bg-green-50 p-3 rounded">
+                                  <div className="flex items-center gap-2">
+                                    {t.type && t.type.includes('Low') ? (
+                                      <TrendingDown className="h-4 w-4 text-red-600" />
+                                    ) : (
+                                      <TrendingUp className="h-4 w-4 text-green-600" />
+                                    )}
+                                    <span className="text-sm font-medium">{t.type} Trigger</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm text-gray-600">{t.value}</p>
+                                    <p className="font-semibold">{t.payout} payout</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* --- BEGIN: Trigger Details Table --- */}
+                          <div className="mt-6">
+                            <h4 className="font-medium text-gray-900 mb-2">Trigger Details</h4>
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full text-sm border rounded">
+                                <thead>
+                                  <tr className="bg-gray-100">
+                                    <th className="px-3 py-2 text-left font-semibold">Period</th>
+                                    <th className="px-3 py-2 text-left font-semibold">Peril</th>
+                                    <th className="px-3 py-2 text-left font-semibold">Trigger</th>
+                                    <th className="px-3 py-2 text-left font-semibold">Duration (days)</th>
+                                    <th className="px-3 py-2 text-left font-semibold">Unit Payout</th>
+                                    <th className="px-3 py-2 text-left font-semibold">Max Payout</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {result.periods && result.periods.map((period: any, pIdx: number) => (
+                                    period.perils.map((peril: any, perilIdx: number) => (
+                                      <tr key={pIdx + '-' + perilIdx} className="border-t">
+                                        <td className="px-3 py-2">{period.period_name || `Period ${pIdx + 1}`}</td>
+                                        <td className="px-3 py-2">{peril.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}</td>
+                                        <td className="px-3 py-2">{peril.peril_type === 'LRI' ? `≤ ${peril.trigger}` : `≥ ${peril.trigger}`}</td>
+                                        <td className="px-3 py-2">{peril.duration}</td>
+                                        <td className="px-3 py-2">{typeof peril.unit_payout === 'number' ? `$${peril.unit_payout.toFixed(2)} / mm` : 'N/A'}</td>
+                                        <td className="px-3 py-2">{typeof peril.max_payout === 'number' ? `$${peril.max_payout.toFixed(0)}` : 'N/A'}</td>
+                                      </tr>
+                                    ))
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                          {/* --- END: Trigger Details Table --- */}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => {
+            clearResults();
+            setStep(1);
+          }}>
+            Back: Coverage Periods
+          </Button>
+          {results && results.length > 0 && (
+            <div className="flex gap-2">
+              <Button variant="outline">Save as Draft</Button>
+              <Button className="bg-green-600 hover:bg-green-700">
+                Finalize Product
               </Button>
-              <Button onClick={() => alert('Finalize Product (not implemented)')}>Finalize Product</Button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
 
-  // Progress bar
-  const progress = ((step + 1) / 3) * 100;
-
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-green-50 to-white py-8">
-      <div className="w-full max-w-4xl mb-8">
-        <div className="flex items-center mb-2">
-          <span className="text-3xl font-extrabold text-green-700 mr-3">InsureSmart</span>
-          <span className="text-gray-500 text-lg">Weather Insurance Product Designer</span>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">InsureSmart</h1>
+              <p className="text-gray-600">Weather Insurance Product Designer</p>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Step {step + 1} of 3</span>
+              <span>{Math.round(getStepProgress())}% Complete</span>
+            </div>
+            <Progress value={getStepProgress()} className="h-2" />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span className={step >= 0 ? "text-green-600 font-medium" : ""}>Product Details</span>
+              <span className={step >= 1 ? "text-green-600 font-medium" : ""}>Coverage Periods</span>
+              <span className={step >= 2 ? "text-green-600 font-medium" : ""}>Optimization</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-500">Step {step + 1} of 3</span>
-          <span className="text-sm text-gray-500">{progress.toFixed(0)}% Complete</span>
-        </div>
-        <div className="w-full h-2 bg-gray-200 rounded mb-4">
-          <div className="h-2 bg-green-500 rounded transition-all" style={{ width: `${progress}%` }} />
-        </div>
-        <div className="flex space-x-8 mb-6">
-          {wizardSteps.map((title, idx) => (
-            <button
-              key={title}
-              className={`text-sm font-semibold pb-1 border-b-2 transition-colors ${step === idx ? 'border-green-600 text-green-700' : 'border-transparent text-gray-400'}`}
-              onClick={() => navigateToStep(idx)}
-              disabled={idx > step}
-            >
-              {title}
-            </button>
-          ))}
-        </div>
+
+        {/* Step Content */}
+        {step === 0 && <ProductDetailsStep />}
+        {step === 1 && <CoveragePeriodsStep />}
+        {step === 2 && <OptimizationStep />}
       </div>
-      {step === 0 && <div className="w-full max-w-4xl"><ProductDetailsStep formMethods={productFormMethods} /></div>}
-      {step === 1 && <div className="w-full max-w-4xl"><CoveragePeriodsStep formMethods={periodsFormMethods} /></div>}
-      {step === 2 && <div className="w-full max-w-4xl"><OptimizationStep /></div>}
     </div>
   );
 } 
