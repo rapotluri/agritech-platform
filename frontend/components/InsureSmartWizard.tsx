@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, MapPin, Plus, Trash2, TrendingDown, TrendingUp, Zap, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { SimpleDatePicker } from "@/components/ui/SimpleDatePicker";
 import provincesCommunesData from "../data/cambodia_provinces_communes.json";
 import apiClient from "@/lib/apiClient";
 
@@ -45,6 +46,16 @@ interface OptimizationResult {
     eri?: { threshold: number; payout: number };
   };
   riskScore: "LOW" | "MEDIUM" | "HIGH";
+  periods: {
+    period_name: string;
+    perils: {
+      peril_type: string;
+      trigger: number;
+      duration: number;
+      unit_payout: number | null;
+      max_payout: number | null;
+    }[];
+  }[];
 }
 
 export default function InsureSmartWizard() {
@@ -134,6 +145,7 @@ export default function InsureSmartWizard() {
               premiumCost: r.premiumCost,
               triggers: r.triggers,
               riskScore: r.riskLevel,
+              periods: r.periods,
             }));
             setOptimizationResults(results);
             setIsOptimizing(false);
@@ -209,6 +221,14 @@ export default function InsureSmartWizard() {
 
   // Province/commune options
   const communeOptions = provincesCommunes[product.province] || [];
+
+  // Add a helper to clear optimization state
+  const clearOptimizationState = () => {
+    setOptimizationResults([]);
+    setError(null);
+    setIsOptimizing(false);
+    setSelectedResult(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -385,19 +405,19 @@ export default function InsureSmartWizard() {
                         <CardContent className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label>Start Date *</Label>
-                              <Input
-                                type="date"
+                              <SimpleDatePicker
+                                label="Start Date *"
                                 value={period.startDate}
-                                onChange={(e) => updateCoveragePeriod(period.id, "startDate", e.target.value)}
+                                onChange={(value) => updateCoveragePeriod(period.id, "startDate", value)}
+                                placeholder="Select start date"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>End Date *</Label>
-                              <Input
-                                type="date"
+                              <SimpleDatePicker
+                                label="End Date *"
                                 value={period.endDate}
-                                onChange={(e) => updateCoveragePeriod(period.id, "endDate", e.target.value)}
+                                onChange={(value) => updateCoveragePeriod(period.id, "endDate", value)}
+                                placeholder="Select end date"
                               />
                             </div>
                             <div className="space-y-2">
@@ -452,7 +472,7 @@ export default function InsureSmartWizard() {
               </CardContent>
             </Card>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep(1)}>
+              <Button variant="outline" onClick={() => { clearOptimizationState(); setCurrentStep(1); }}>
                 Back: Product Details
               </Button>
               <Button
@@ -551,7 +571,7 @@ export default function InsureSmartWizard() {
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600">Expected Payout</p>
-                                <p className="text-lg font-semibold">${result.expectedPayout}</p>
+                                <p className="text-lg font-semibold">${Number(result.expectedPayout).toFixed(2)}</p>
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600">Premium Rate</p>
@@ -567,32 +587,55 @@ export default function InsureSmartWizard() {
                             <Separator className="my-4" />
                             <div className="space-y-3">
                               <h4 className="font-medium text-gray-900">Trigger Values & Payouts</h4>
-                              <div className="grid gap-3">
-                                {result.triggers.lri && (
-                                  <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-                                    <div className="flex items-center gap-2">
+                              {/* Table for trigger details */}
+                              {result.periods && result.periods.length > 0 && (
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full text-sm border rounded">
+                                    <thead>
+                                      <tr className="bg-gray-100">
+                                        <th className="px-3 py-2 text-left font-semibold">Period</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Peril</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Trigger</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Duration (days)</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Unit Payout</th>
+                                        <th className="px-3 py-2 text-left font-semibold">Max Payout</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {result.periods.map((period, pIdx) => (
+                                        period.perils.map((peril, perilIdx) => (
+                                          <tr key={pIdx + '-' + perilIdx} className="border-t">
+                                            <td className="px-3 py-2">{period.period_name || `Period ${pIdx + 1}`}</td>
+                                            <td className="px-3 py-2">{peril.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}</td>
+                                            <td className="px-3 py-2">{peril.peril_type === 'LRI' ? `≤ ${peril.trigger}` : `≥ ${peril.trigger}`}</td>
+                                            <td className="px-3 py-2">{peril.duration}</td>
+                                            <td className="px-3 py-2">{typeof peril.unit_payout === 'number' ? `$${peril.unit_payout.toFixed(2)} / mm` : 'N/A'}</td>
+                                            <td className="px-3 py-2">{typeof peril.max_payout === 'number' ? `$${peril.max_payout.toFixed(0)}` : 'N/A'}</td>
+                                          </tr>
+                                        ))
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                            <div className="grid gap-3 mt-4">
+                              {result.triggers && result.triggers.map((t, i) => (
+                                <div key={i} className="flex items-center justify-between bg-green-50 p-3 rounded">
+                                  <div className="flex items-center gap-2">
+                                    {t.type && t.type.includes('Low') ? (
                                       <TrendingDown className="h-4 w-4 text-red-600" />
-                                      <span className="text-sm font-medium">Low Rainfall Trigger</span>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-sm text-gray-600">≤ {result.triggers.lri.threshold}mm</p>
-                                      <p className="font-semibold">${result.triggers.lri.payout} payout</p>
-                                    </div>
-                                  </div>
-                                )}
-                                {result.triggers.eri && (
-                                  <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-                                    <div className="flex items-center gap-2">
+                                    ) : (
                                       <TrendingUp className="h-4 w-4 text-green-600" />
-                                      <span className="text-sm font-medium">High Rainfall Trigger</span>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-sm text-gray-600">≥ {result.triggers.eri.threshold}mm</p>
-                                      <p className="font-semibold">${result.triggers.eri.payout} payout</p>
-                                    </div>
+                                    )}
+                                    <span className="text-sm font-medium">{t.type} Trigger</span>
                                   </div>
-                                )}
-                              </div>
+                                  <div className="text-right">
+                                    <p className="text-sm text-gray-600">{t.value}</p>
+                                    <p className="font-semibold">{t.payout} payout</p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </CardContent>
                         </Card>
@@ -603,7 +646,7 @@ export default function InsureSmartWizard() {
               </CardContent>
             </Card>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep(2)}>
+              <Button variant="outline" onClick={() => { clearOptimizationState(); setCurrentStep(2); }}>
                 Back: Coverage Periods
               </Button>
               {optimizationResults.length > 0 && (
