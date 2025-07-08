@@ -9,11 +9,12 @@ from utils.gee_utils_local import initialize_gee_local
 from utils.gee_utils import initialize_gee
 from utils.settings import origins
 from api.premium import router as premium_router
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
+from api.insure_smart import router as insure_smart_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # load_dotenv()
+    load_dotenv()
     if os.getenv("ENV") == "LOCAL":
         initialize_gee_local()
     else:
@@ -43,6 +44,7 @@ app.include_router(climate_data_router)
 app.include_router(serve_file_router)
 app.include_router(task_router)
 app.include_router(premium_router)
+app.include_router(insure_smart_router)
 
 @app.get("/")
 async def root():

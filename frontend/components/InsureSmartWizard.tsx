@@ -559,8 +559,8 @@ export default function InsureSmartWizard() {
                               </div>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-sm">Expected Payout</p>
-                              <p className="font-semibold text-xl text-green-600">${Number(result.expectedPayout).toFixed(2)}</p>
+                              <p className="text-gray-600 text-sm">Premium Cost</p>
+                              <p className="font-semibold text-xl text-green-600">{result.premiumCost !== undefined ? `$${Number(result.premiumCost).toFixed(2)}` : '-'}</p>
                             </div>
                             {selectedResult === result.id && (
                               <Badge variant="default" className="w-full justify-center">
@@ -602,8 +602,8 @@ export default function InsureSmartWizard() {
                                       <p className="text-2xl font-bold text-orange-600">{selected.max_payout !== undefined ? `$${Number(selected.max_payout).toFixed(2)}` : '-'}</p>
                                     </div>
                                     <div className="bg-gray-50 p-4 rounded-lg text-center">
-                                      <p className="text-sm text-gray-700 font-medium mb-1">Premium Cost</p>
-                                      <p className="text-2xl font-bold text-gray-900">{selected.premiumCost !== undefined ? `$${Number(selected.premiumCost).toFixed(2)}` : '-'}</p>
+                                      <p className="text-sm text-gray-700 font-medium mb-1">Expected Payout</p>
+                                      <p className="text-2xl font-bold text-gray-900">{selected.expectedPayout !== undefined ? `$${Number(selected.expectedPayout).toFixed(2)}` : '-'}</p>
                                     </div>
                                   </div>
                                 </CardContent>
@@ -708,7 +708,7 @@ export default function InsureSmartWizard() {
                                         }</p>
                                       </div>
                                       <div className="text-center">
-                                        <p className="text-sm text-gray-600">Success Rate</p>
+                                        <p className="text-sm text-gray-600">Trigger Rate</p>
                                         <p className="text-lg font-bold text-green-600">{
                                           (
                                             (selected.yearly_results.filter((yr: any) =>
