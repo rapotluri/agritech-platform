@@ -745,24 +745,26 @@ export default function InsureSmartWizard() {
                                         <tbody className="divide-y divide-gray-200">
                                           {selected.yearly_results && selected.yearly_results.length > 0 ? (
                                             selected.yearly_results.map((yr: any, yIdx: number) => (
-                                              yr.periods.map((p: any, pIdx: number) => (
-                                                <tr key={yIdx + '-' + pIdx}>
-                                                  <td className="px-4 py-3 text-sm font-medium">{yr.year}</td>
-                                                  <td className="px-4 py-3 text-sm">Period {pIdx + 1}</td>
-                                                  <td className="px-4 py-3 text-sm">
-                                                    <Badge variant="outline" className="text-xs">
-                                                      {p.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}
-                                                    </Badge>
-                                                  </td>
-                                                  <td className="px-4 py-3 text-sm">{p.peril_type === 'LRI' ? `≤${p.trigger}` : `≥${p.trigger}`}</td>
-                                                  <td className="px-4 py-3 text-sm">
-                                                    {p.payout > 0 ? (
-                                                      <span className="font-semibold text-green-600">${Number(p.payout).toFixed(2)}</span>
-                                                    ) : (
-                                                      <span className="text-gray-400">$0.00</span>
-                                                    )}
-                                                  </td>
-                                                </tr>
+                                              yr.periods.map((period: any, periodIdx: number) => (
+                                                period.perils.map((peril: any, perilIdx: number) => (
+                                                  <tr key={`${yIdx}-${periodIdx}-${perilIdx}`}>
+                                                    <td className="px-4 py-3 text-sm font-medium">{yr.year}</td>
+                                                    <td className="px-4 py-3 text-sm">Period {periodIdx + 1}</td>
+                                                    <td className="px-4 py-3 text-sm">
+                                                      <Badge variant="outline" className="text-xs">
+                                                        {peril.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}
+                                                      </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm">{peril.peril_type === 'LRI' ? `≤${peril.trigger}` : `≥${peril.trigger}`}</td>
+                                                    <td className="px-4 py-3 text-sm">
+                                                      {peril.payout > 0 ? (
+                                                        <span className="font-semibold text-green-600">${Number(peril.payout).toFixed(2)}</span>
+                                                      ) : (
+                                                        <span className="text-gray-400">$0.00</span>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                ))
                                               ))
                                             ))
                                           ) : (

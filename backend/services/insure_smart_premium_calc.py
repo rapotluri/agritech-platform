@@ -72,56 +72,68 @@ def calculate_insure_smart_premium(
     yearly_results = []
     for year in years:
         year_result = {"year": year, "periods": [], "total_payout": 0.0}
-        for period in periods:
-            # Get period window (start_day, end_day) or use full year
-            start_day = period.get("start_day", 0)
-            end_day = period.get("end_day", 364)
-            # Get date range for this year
-            year_start = datetime(year, 1, 1) + timedelta(days=start_day)
-            year_end = datetime(year, 1, 1) + timedelta(days=end_day)
-            period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune]
-            if len(period_data) < period["duration"]:
-                # Not enough data for this period
-                payout = 0.0
-                trigger_met = False
-            else:
-                # Optimized rolling window calculation
-                if len(period_data) >= period["duration"]:
-                    # Use numpy for faster rolling sum
-                    import numpy as np
-                    rolling_sums = np.convolve(period_data.values, np.ones(period["duration"]), mode='valid')
-                    
-                    if period["peril_type"] == "LRI":
-                        # LRI: payout if min(rolling sum) < trigger
-                        min_rain = rolling_sums.min()
-                        trigger_met = min_rain < period["trigger"]
-                        if trigger_met:
-                            payout = min((period["trigger"] - min_rain) * period["unit_payout"], period["max_payout"], period["allocated_si"])
-                        else:
+        period_idx = 0
+        while period_idx < len(periods):
+            # Group all perils for this period
+            base_period = periods[period_idx]
+            # Find all perils for this period (could be 1 or 2)
+            perils = []
+            # Always at least one peril per period
+            for peril_offset in range(2):
+                idx = period_idx + peril_offset
+                if idx < len(periods):
+                    p = periods[idx]
+                    # If start_day and end_day match, it's the same period (multi-peril)
+                    if p.get("start_day", 0) == base_period.get("start_day", 0) and p.get("end_day", 364) == base_period.get("end_day", 364):
+                        # Get period window (start_day, end_day) or use full year
+                        start_day = p.get("start_day", 0)
+                        end_day = p.get("end_day", 364)
+                        year_start = datetime(year, 1, 1) + timedelta(days=start_day)
+                        year_end = datetime(year, 1, 1) + timedelta(days=end_day)
+                        period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune]
+                        if len(period_data) < p["duration"]:
                             payout = 0.0
+                            trigger_met = False
+                        else:
+                            import numpy as np
+                            rolling_sums = np.convolve(period_data.values, np.ones(p["duration"]), mode='valid')
+                            if p["peril_type"] == "LRI":
+                                min_rain = rolling_sums.min()
+                                trigger_met = min_rain < p["trigger"]
+                                if trigger_met:
+                                    payout = min((p["trigger"] - min_rain) * p["unit_payout"], p["max_payout"], p["allocated_si"])
+                                else:
+                                    payout = 0.0
+                            else:
+                                max_rain = rolling_sums.max()
+                                trigger_met = max_rain > p["trigger"]
+                                if trigger_met:
+                                    payout = min((max_rain - p["trigger"]) * p["unit_payout"], p["max_payout"], p["allocated_si"])
+                                else:
+                                    payout = 0.0
+                        perils.append({
+                            "peril_type": p["peril_type"],
+                            "trigger": p["trigger"],
+                            "duration": p["duration"],
+                            "unit_payout": p["unit_payout"],
+                            "max_payout": p["max_payout"],
+                            "allocated_si": p["allocated_si"],
+                            "trigger_met": trigger_met,
+                            "payout": payout
+                        })
                     else:
-                        # ERI: payout if max(rolling sum) > trigger
-                        max_rain = rolling_sums.max()
-                        trigger_met = max_rain > period["trigger"]
-                        if trigger_met:
-                            payout = min((max_rain - period["trigger"]) * period["unit_payout"], period["max_payout"], period["allocated_si"])
-                        else:
-                            payout = 0.0
+                        break
                 else:
-                    # Not enough data for this period
-                    payout = 0.0
-                    trigger_met = False
+                    break
+            # Add period with all perils
             year_result["periods"].append({
-                "peril_type": period["peril_type"],
-                "trigger": period["trigger"],
-                "duration": period["duration"],
-                "unit_payout": period["unit_payout"],
-                "max_payout": period["max_payout"],
-                "allocated_si": period["allocated_si"],
-                "trigger_met": trigger_met,
-                "payout": payout
+                "start_day": base_period.get("start_day", 0),
+                "end_day": base_period.get("end_day", 364),
+                "perils": perils
             })
-            year_result["total_payout"] += payout
+            # Add payouts for all perils in this period
+            year_result["total_payout"] += sum(peril["payout"] for peril in perils)
+            period_idx += len(perils)
         yearly_results.append(year_result)
 
     # 4. Summarize payouts and calculate metrics
@@ -140,7 +152,16 @@ def calculate_insure_smart_premium(
     # 5. Prepare breakdowns
     period_breakdown = []
     for idx, period in enumerate(periods):
-        period_payouts = [y["periods"][idx]["payout"] for y in yearly_results]
+        period_payouts = []
+        for y in yearly_results:
+            matching = next(
+                (p for p in y["periods"] if p["start_day"] == period.get("start_day", 0) and p["end_day"] == period.get("end_day", 364)),
+                None
+            )
+            if matching:
+                period_payouts.append(sum(peril["payout"] for peril in matching["perils"]))
+            else:
+                period_payouts.append(0.0)
         period_avg = sum(period_payouts) / len(period_payouts)
         period_breakdown.append({
             "peril_type": period["peril_type"],
