@@ -54,31 +54,25 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 profit_loading=0.075
             )
             
-            if not result["valid"]:
-                print(f"Trial {trial.number}: Invalid configuration - {result.get('message', 'No message')}")
-                return -float('inf')  # Invalid configuration
-            
-            # Use loaded premium for premium cost
+            # Check premium cap constraint (keep this as it's a business requirement)
             loaded_premium_cost = result["loaded_premium"]
-            
-            # Check premium cap constraint
             if loaded_premium_cost > premium_cap:
                 print(f"Trial {trial.number}: Loaded premium cost ${loaded_premium_cost:.2f} exceeds cap ${premium_cap}")
                 return -float('inf')  # Exceeds premium cap
             
+            # Check payout frequency constraint to prevent over-optimization
+            payout_years = result["payout_years"]
+            if payout_years > 25:  # Allow up to 25 payout years out of 30
+                print(f"Trial {trial.number}: Too many payout years ({payout_years}/30) - over-optimized")
+                return -float('inf')  # Too many payouts
+            
             # Use loss ratio from result
             loss_ratio = result["loss_ratio"]
             
-            # Payout frequency filter
-            payout_years = result["coverage_score"] * 30  # 30 years assumed
-            if payout_years < 2 or payout_years > 20:
-                print(f"Trial {trial.number}: Invalid payout frequency ({payout_years:.0f} years with payout)")
-                return -float('inf')
-            
-            # Calculate composite score (use loaded premium)
+            # Calculate composite score with coverage penalty
             score = calculate_composite_score(result, loaded_premium_cost, sum_insured, loss_ratio)
             
-            print(f"Trial {trial.number}: Valid! Loaded Premium=${loaded_premium_cost:.2f}, Score={score:.4f}")
+            print(f"Trial {trial.number}: Valid! Loaded Premium=${loaded_premium_cost:.2f}, Score={score:.4f}, Coverage Penalty={result.get('coverage_penalty', 0):.3f}")
             return score
             
         except Exception as e:
@@ -212,13 +206,15 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
 
 def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float, sum_insured: float, loss_ratio: float) -> float:
     """
-    Calculate composite score based on the scoring function, using loaded premium and loss ratio.
+    Calculate composite score based on the scoring function, using loaded premium and SI utilization.
+    Now includes coverage penalty to heavily penalize configurations with low-coverage periods.
     """
     # Premium utilization score (how close to premium cap)
     premium_utilization_score = min(loaded_premium_cost / (loaded_premium_cost + 1), 1.0)  # Normalized
     
-    # Loss ratio score (lower is better, so invert)
-    loss_ratio_score = max(0, 1 - loss_ratio)  # Inverted, capped at 1
+    # SI utilization score (how effectively sum insured is used)
+    max_payout = result.get("max_payout", 0)
+    si_utilization_score = max_payout / sum_insured if sum_insured > 0 else 0.0
     
     # Payout stability score
     payout_stability_score = result["payout_stability_score"]
@@ -226,12 +222,16 @@ def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float
     # Coverage score
     coverage_score = result["coverage_score"]
     
-    # Composite score
+    # Coverage penalty - heavily penalize configurations with periods that never trigger
+    coverage_penalty = result.get("coverage_penalty", 0)
+    
+    # Composite score with strong coverage penalty
     composite_score = (
         0.4 * premium_utilization_score +
-        0.3 * loss_ratio_score +
+        0.3 * si_utilization_score +
         0.2 * payout_stability_score +
-        0.1 * coverage_score
+        0.1 * coverage_score -
+        0.5 * coverage_penalty  # Heavy penalty for low coverage
     )
     
     return composite_score
@@ -297,6 +297,8 @@ def extract_best_configurations(study: optuna.Study, commune: str, province: str
             "payout_years": result.get("payout_years"),
             "coverage_score": result.get("coverage_score"),
             "payout_stability_score": result.get("payout_stability_score"),
+            "coverage_penalty": result.get("coverage_penalty", 0),
+            "periods_with_no_payouts": result.get("periods_with_no_payouts", 0)
         }
         
         best_configs.append(to_python_type(config))

@@ -50,6 +50,10 @@ interface OptimizationResult {
   max_payout?: number;
   period_breakdown?: any[];
   yearly_results?: any[];
+  coverage_score?: number;
+  payout_stability_score?: number;
+  coverage_penalty?: number;
+  periods_with_no_payouts?: number;
 }
 
 export default function InsureSmartWizard() {
@@ -124,7 +128,7 @@ export default function InsureSmartWizard() {
       const taskId = data.task_id;
       if (!taskId) throw new Error("No task_id received from backend");
       // Poll for result
-      async function pollStatus() {
+      const pollStatus = async () => {
         try {
           const { data: statusData } = await apiClient.get(`/api/insure-smart/status/${taskId}`);
           if (["PENDING", "Pending", "STARTED"].includes(statusData.status)) {
@@ -145,7 +149,7 @@ export default function InsureSmartWizard() {
           setIsOptimizing(false);
           setError("Error checking optimization status. Please try again.");
         }
-      }
+      };
       pollStatus();
     } catch (err: any) {
       setIsOptimizing(false);
@@ -557,8 +561,8 @@ export default function InsureSmartWizard() {
                                 <p className="text-gray-600">Premium Rate</p>
                                 <p className="font-semibold text-lg">{(result.premiumRate * 100).toFixed(1)}%</p>
                               </div>
-                            </div>
-                            <div>
+                              </div>
+                              <div>
                               <p className="text-gray-600 text-sm">Premium Cost</p>
                               <p className="font-semibold text-xl text-green-600">{result.premiumCost !== undefined ? `$${Number(result.premiumCost).toFixed(2)}` : '-'}</p>
                             </div>
@@ -638,7 +642,7 @@ export default function InsureSmartWizard() {
                                                 : `Day ${period.start_day + 1} to ${period.end_day + 1}`}
                                             </div>
                                           </div>
-                                          <div className="space-y-3">
+                            <div className="space-y-3">
                                             {period.perils.map((peril: any, perilIdx: number) => (
                                               <div
                                                 key={perilIdx}
@@ -667,7 +671,7 @@ export default function InsureSmartWizard() {
                                                   </div>
                                                   <div>
                                                     <p className="text-gray-600">Unit Payout</p>
-                                                    <p className="font-semibold">${peril.unit_payout !== undefined ? Number(peril.unit_payout).toFixed(0) : '-'}</p>
+                                                    <p className="font-semibold">${peril.unit_payout !== undefined ? Number(peril.unit_payout).toFixed(2) : '-'}</p>
                                                   </div>
                                                   <div>
                                                     <p className="text-gray-600">Max Payout</p>
@@ -676,8 +680,8 @@ export default function InsureSmartWizard() {
                                                 </div>
                                               </div>
                                             ))}
-                                          </div>
-                                        </div>
+                                </div>
+                            </div>
                                       ))
                                     ) : (
                                       <div className="text-center text-gray-400 py-4">No trigger configuration data available.</div>
@@ -773,7 +777,7 @@ export default function InsureSmartWizard() {
                             </div>
                           )
                         })()}
-                      </div>
+                    </div>
                     )}
                   </div>
                 )}
