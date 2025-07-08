@@ -40,22 +40,16 @@ interface OptimizationResult {
   lossRatio: number;
   expectedPayout: number;
   premiumRate: number;
-  premiumCost: number;
+  premiumCost?: number;
   triggers: {
     lri?: { threshold: number; payout: number };
     eri?: { threshold: number; payout: number };
   };
   riskScore: "LOW" | "MEDIUM" | "HIGH";
-  periods: {
-    period_name: string;
-    perils: {
-      peril_type: string;
-      trigger: number;
-      duration: number;
-      unit_payout: number | null;
-      max_payout: number | null;
-    }[];
-  }[];
+  periods?: any[];
+  max_payout?: number;
+  period_breakdown?: any[];
+  yearly_results?: any[];
 }
 
 export default function InsureSmartWizard() {
@@ -136,16 +130,10 @@ export default function InsureSmartWizard() {
           if (["PENDING", "Pending", "STARTED"].includes(statusData.status)) {
             setTimeout(pollStatus, 1500);
           } else if (statusData.status === "SUCCESS") {
-            // Map backend result to UI format
+            // Map backend result to UI format and add id
             const results = (statusData.result || []).map((r: any, idx: number) => ({
+              ...r,
               id: String(idx + 1),
-              lossRatio: r.lossRatio,
-              expectedPayout: r.expectedPayout,
-              premiumRate: r.premiumRate,
-              premiumCost: r.premiumCost,
-              triggers: r.triggers,
-              riskScore: r.riskLevel,
-              periods: r.periods,
             }));
             setOptimizationResults(results);
             setIsOptimizing(false);
@@ -495,12 +483,10 @@ export default function InsureSmartWizard() {
                   Product Optimization
                 </CardTitle>
                 <CardDescription>
-                  Run optimization to find the best trigger values and payout structure based on 30 years of historical
-                  weather data
+                  Run optimization to find the best trigger values and payout structure based on 30 years of historical weather data
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {error && <div className="text-red-600 mb-4">{error}</div>}
                 {optimizationResults.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="space-y-4">
@@ -543,104 +529,252 @@ export default function InsureSmartWizard() {
                         Found {optimizationResults.length} optimized configurations that meet your criteria
                       </p>
                     </div>
-                    <div className="grid gap-4">
+                    {/* Configuration Cards - Horizontal Layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {optimizationResults.map((result, index) => (
                         <Card
                           key={result.id}
                           className={`cursor-pointer transition-all ${
                             selectedResult === result.id
-                              ? "ring-2 ring-green-500 border-green-500"
+                              ? "ring-2 ring-green-500 border-green-500 bg-green-50"
                               : "hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedResult(result.id)}
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">Configuration {index + 1}</CardTitle>
-                              <div className="flex items-center gap-2">
-                                <Badge className={getRiskScoreColor(result.riskScore)}>{result.riskScore} RISK</Badge>
-                                {selectedResult === result.id && <Badge variant="default">Selected</Badge>}
-                              </div>
+                              <CardTitle className="text-lg">Option {index + 1}</CardTitle>
+                              <Badge className={getRiskScoreColor(result.riskScore)}>{result.riskScore}</Badge>
                             </div>
                           </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <CardContent className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
-                                <p className="text-sm text-gray-600">Loss Ratio</p>
-                                <p className="text-lg font-semibold">{(result.lossRatio * 100).toFixed(1)}%</p>
+                                <p className="text-gray-600">Loss Ratio</p>
+                                <p className="font-semibold text-lg">{(result.lossRatio * 100).toFixed(1)}%</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">Expected Payout</p>
-                                <p className="text-lg font-semibold">${Number(result.expectedPayout).toFixed(2)}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Premium Rate</p>
-                                <p className="text-lg font-semibold">{(result.premiumRate * 100).toFixed(1)}%</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Premium Cost</p>
-                                <p className="text-lg font-semibold">
-                                  ${product.sumInsured && result.premiumRate ? (Number.parseFloat(product.sumInsured) * result.premiumRate).toFixed(2) : "-"}
-                                </p>
+                                <p className="text-gray-600">Premium Rate</p>
+                                <p className="font-semibold text-lg">{(result.premiumRate * 100).toFixed(1)}%</p>
                               </div>
                             </div>
-                            <Separator className="my-4" />
-                            <div className="space-y-3">
-                              <h4 className="font-medium text-gray-900">Trigger Values & Payouts</h4>
-                              {/* Table for trigger details */}
-                              {result.periods && result.periods.length > 0 && (
-                                <div className="overflow-x-auto">
-                                  <table className="min-w-full text-sm border rounded">
-                                    <thead>
-                                      <tr className="bg-gray-100">
-                                        <th className="px-3 py-2 text-left font-semibold">Period</th>
-                                        <th className="px-3 py-2 text-left font-semibold">Peril</th>
-                                        <th className="px-3 py-2 text-left font-semibold">Trigger</th>
-                                        <th className="px-3 py-2 text-left font-semibold">Duration (days)</th>
-                                        <th className="px-3 py-2 text-left font-semibold">Unit Payout</th>
-                                        <th className="px-3 py-2 text-left font-semibold">Max Payout</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {result.periods.map((period, pIdx) => (
-                                        period.perils.map((peril, perilIdx) => (
-                                          <tr key={pIdx + '-' + perilIdx} className="border-t">
-                                            <td className="px-3 py-2">{period.period_name || `Period ${pIdx + 1}`}</td>
-                                            <td className="px-3 py-2">{peril.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}</td>
-                                            <td className="px-3 py-2">{peril.peril_type === 'LRI' ? `≤ ${peril.trigger}` : `≥ ${peril.trigger}`}</td>
-                                            <td className="px-3 py-2">{peril.duration}</td>
-                                            <td className="px-3 py-2">{typeof peril.unit_payout === 'number' ? `$${peril.unit_payout.toFixed(2)} / mm` : 'N/A'}</td>
-                                            <td className="px-3 py-2">{typeof peril.max_payout === 'number' ? `$${peril.max_payout.toFixed(0)}` : 'N/A'}</td>
-                                          </tr>
-                                        ))
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
+                            <div>
+                              <p className="text-gray-600 text-sm">Expected Payout</p>
+                              <p className="font-semibold text-xl text-green-600">${Number(result.expectedPayout).toFixed(2)}</p>
                             </div>
-                            <div className="grid gap-3 mt-4">
-                              {result.triggers && result.triggers.map((t, i) => (
-                                <div key={i} className="flex items-center justify-between bg-green-50 p-3 rounded">
-                                  <div className="flex items-center gap-2">
-                                    {t.type && t.type.includes('Low') ? (
-                                      <TrendingDown className="h-4 w-4 text-red-600" />
-                                    ) : (
-                                      <TrendingUp className="h-4 w-4 text-green-600" />
-                                    )}
-                                    <span className="text-sm font-medium">{t.type} Trigger</span>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm text-gray-600">{t.value}</p>
-                                    <p className="font-semibold">{t.payout} payout</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            {selectedResult === result.id && (
+                              <Badge variant="default" className="w-full justify-center">
+                                Selected
+                              </Badge>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
                     </div>
+                    {/* Detailed Analysis - Shows when a configuration is selected */}
+                    {selectedResult && (
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-1 w-8 bg-green-500 rounded"></div>
+                          <h2 className="text-xl font-semibold text-gray-900">
+                            Configuration Analysis - Option {optimizationResults.findIndex((r) => r.id === selectedResult) + 1}
+                          </h2>
+                        </div>
+                        {(() => {
+                          const selected = optimizationResults.find((r) => r.id === selectedResult)
+                          if (!selected) return null
+                          return (
+                            <div className="grid gap-6">
+                              {/* Premium Calculation Result */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Premium Calculation Result</CardTitle>
+                                  <CardDescription>Key financial metrics for this configuration</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="bg-green-50 p-4 rounded-lg text-center">
+                                      <p className="text-sm text-green-700 font-medium mb-1">Premium Rate</p>
+                                      <p className="text-2xl font-bold text-green-600">{selected.premiumRate ? (selected.premiumRate * 100).toFixed(2) + '%' : '-'}</p>
+                                    </div>
+                                    <div className="bg-orange-50 p-4 rounded-lg text-center">
+                                      <p className="text-sm text-orange-700 font-medium mb-1">Maximum Payout</p>
+                                      <p className="text-2xl font-bold text-orange-600">{selected.max_payout !== undefined ? `$${Number(selected.max_payout).toFixed(2)}` : '-'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                      <p className="text-sm text-gray-700 font-medium mb-1">Premium Cost</p>
+                                      <p className="text-2xl font-bold text-gray-900">{selected.premiumCost !== undefined ? `$${Number(selected.premiumCost).toFixed(2)}` : '-'}</p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                              {/* Trigger Configuration */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Trigger Configuration</CardTitle>
+                                  <CardDescription>Individual trigger details by coverage period</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-3">
+                                    {selected.periods && selected.periods.length > 0 ? (
+                                      selected.periods.map((period: any, idx: number) => (
+                                        <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-2 bg-white">
+                                          <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                              {getPerilIcon(
+                                                period.perils.length === 2 ? 'BOTH' : period.perils[0]?.peril_type
+                                              )}
+                                              <span className="font-medium">Period {idx + 1}</span>
+                                              <Badge variant="outline">
+                                                {period.perils.length === 2
+                                                  ? 'Both (LRI + ERI)'
+                                                  : getPerilLabel(period.perils[0]?.peril_type)}
+                                              </Badge>
+                                            </div>
+                                            <div className="text-sm text-gray-600">
+                                              {/* If you have start/end dates, show them here. Otherwise, show day-of-year as fallback */}
+                                              {coveragePeriods[idx]?.startDate && coveragePeriods[idx]?.endDate
+                                                ? `${coveragePeriods[idx].startDate} to ${coveragePeriods[idx].endDate}`
+                                                : `Day ${period.start_day + 1} to ${period.end_day + 1}`}
+                                            </div>
+                                          </div>
+                                          <div className="space-y-3">
+                                            {period.perils.map((peril: any, perilIdx: number) => (
+                                              <div
+                                                key={perilIdx}
+                                                className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2"
+                                              >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  {peril.peril_type === 'LRI' ? (
+                                                    <TrendingDown className="h-4 w-4 text-gray-600" />
+                                                  ) : (
+                                                    <TrendingUp className="h-4 w-4 text-gray-600" />
+                                                  )}
+                                                  <span className="font-medium text-gray-900">
+                                                    {peril.peril_type === 'LRI' ? 'Low Rainfall Trigger' : 'High Rainfall Trigger'}
+                                                  </span>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-4 mt-2 text-sm">
+                                                  <div>
+                                                    <p className="text-gray-600">Trigger</p>
+                                                    <p className="font-semibold">
+                                                      {peril.peril_type === 'LRI' ? '≤' : '≥'} {Number(peril.trigger).toFixed(0)}mm
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-gray-600">Duration Days</p>
+                                                    <p className="font-semibold">{peril.duration}</p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-gray-600">Unit Payout</p>
+                                                    <p className="font-semibold">${peril.unit_payout !== undefined ? Number(peril.unit_payout).toFixed(0) : '-'}</p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-gray-600">Max Payout</p>
+                                                    <p className="font-semibold">${peril.max_payout !== undefined ? Number(peril.max_payout).toFixed(0) : '-'}</p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="text-center text-gray-400 py-4">No trigger configuration data available.</div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                              {/* Historical Trigger Events */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Historical Trigger Events</CardTitle>
+                                  <CardDescription>30-year analysis of trigger activations and payouts</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  {/* Quick facts row */}
+                                  {selected.yearly_results && selected.yearly_results.length > 0 && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg mb-4">
+                                      <div className="text-center">
+                                        <p className="text-sm text-gray-600">Total Events</p>
+                                        <p className="text-lg font-bold">{selected.yearly_results.length}</p>
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="text-sm text-gray-600">Triggered Years</p>
+                                        <p className="text-lg font-bold text-red-600">{
+                                          selected.yearly_results.filter((yr: any) =>
+                                            yr.periods.some((p: any) => p.trigger_met)
+                                          ).length
+                                        }</p>
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="text-sm text-gray-600">Success Rate</p>
+                                        <p className="text-lg font-bold text-green-600">{
+                                          (
+                                            (selected.yearly_results.filter((yr: any) =>
+                                              yr.periods.some((p: any) => p.trigger_met)
+                                            ).length / selected.yearly_results.length) * 100
+                                          ).toFixed(0)
+                                        }%</p>
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="text-sm text-gray-600">Avg. Payout</p>
+                                        <p className="text-lg font-bold">${
+                                          (selected.yearly_results.reduce((acc: number, yr: any) => acc + yr.total_payout, 0) /
+                                            selected.yearly_results.length).toFixed(0)
+                                        }</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                    <div className="max-h-80 overflow-y-auto">
+                                      <table className="w-full">
+                                        <thead className="bg-gray-50 sticky top-0">
+                                          <tr>
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Year</th>
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Period</th>
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Index Type</th>
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Trigger</th>
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payout</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                          {selected.yearly_results && selected.yearly_results.length > 0 ? (
+                                            selected.yearly_results.map((yr: any, yIdx: number) => (
+                                              yr.periods.map((p: any, pIdx: number) => (
+                                                <tr key={yIdx + '-' + pIdx}>
+                                                  <td className="px-4 py-3 text-sm font-medium">{yr.year}</td>
+                                                  <td className="px-4 py-3 text-sm">Period {pIdx + 1}</td>
+                                                  <td className="px-4 py-3 text-sm">
+                                                    <Badge variant="outline" className="text-xs">
+                                                      {p.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}
+                                                    </Badge>
+                                                  </td>
+                                                  <td className="px-4 py-3 text-sm">{p.peril_type === 'LRI' ? `≤${p.trigger}` : `≥${p.trigger}`}</td>
+                                                  <td className="px-4 py-3 text-sm">
+                                                    {p.payout > 0 ? (
+                                                      <span className="font-semibold text-green-600">${Number(p.payout).toFixed(2)}</span>
+                                                    ) : (
+                                                      <span className="text-gray-400">$0.00</span>
+                                                    )}
+                                                  </td>
+                                                </tr>
+                                              ))
+                                            ))
+                                          ) : (
+                                            <tr><td colSpan={5} className="text-center text-gray-400 py-4">No historical trigger event data available.</td></tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

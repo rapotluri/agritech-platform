@@ -236,6 +236,20 @@ def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float
     
     return composite_score
 
+def to_python_type(obj):
+    if isinstance(obj, dict):
+        return {k: to_python_type(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_python_type(v) for v in obj]
+    elif isinstance(obj, (np.integer, np.int32, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
+    else:
+        return obj
+
 def extract_best_configurations(study: optuna.Study, commune: str, province: str, 
                               base_periods: List[Dict], sum_insured: float) -> List[Dict[str, Any]]:
     """
@@ -275,10 +289,17 @@ def extract_best_configurations(study: optuna.Study, commune: str, province: str
             "triggers": format_triggers_for_frontend(trial_periods, base_periods),
             "riskLevel": determine_risk_level(result["loss_ratio"]),
             "score": trial.value,
-            "periods": format_periods_for_output(trial_periods, base_periods)
+            "periods": format_periods_for_output(trial_periods, base_periods),
+            # Add detailed breakdowns for frontend analysis
+            "period_breakdown": result.get("period_breakdown", []),
+            "yearly_results": result.get("yearly_results", []),
+            "max_payout": result.get("max_payout"),
+            "payout_years": result.get("payout_years"),
+            "coverage_score": result.get("coverage_score"),
+            "payout_stability_score": result.get("payout_stability_score"),
         }
         
-        best_configs.append(config)
+        best_configs.append(to_python_type(config))
     
     if not best_configs:
         return [{"error": "No valid configurations found within constraints"}]
