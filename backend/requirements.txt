@@ -11,3 +11,4 @@ pymongo
 flower
 tk
 optuna
+python-dotenv
