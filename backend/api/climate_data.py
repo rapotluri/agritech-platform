@@ -1,4 +1,5 @@
 from uuid import uuid4
+import time
 from fastapi import APIRouter, HTTPException
 from countries.cambodia import get_communes_geodataframe
 from celery_worker import data_task
@@ -42,7 +43,8 @@ async def get_climate_data(
     uuid = uuid4()
     file_name = f"{province}_{data_type}_data_{uuid}.xlsx"
 
-    task = data_task.delay(province, start_date, end_date, data_type, file_name)  # type: ignore
+    # Use delay() method which is more reliable for simple task calls
+    task = data_task.delay(province, start_date, end_date, data_type, file_name)
 
     return {
         "message": f"{data_type.capitalize()} data retrieval has been initiated.",
