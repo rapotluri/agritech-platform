@@ -5,12 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SelectForm } from "@/components/ui/SelectForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, MapPin, Plus, Trash2, TrendingDown, TrendingUp, Zap, CheckCircle } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { SimpleDatePicker } from "@/components/ui/SimpleDatePicker";
 import provincesCommunesData from "../data/cambodia_provinces_communes.json";
 import apiClient from "@/lib/apiClient";
@@ -71,7 +69,6 @@ export default function InsureSmartWizard() {
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResult[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // Update commune options when province changes
   const handleProvinceChange = (province: string) => {
@@ -104,7 +101,6 @@ export default function InsureSmartWizard() {
 
   const runOptimization = async () => {
     setIsOptimizing(true);
-    setError(null);
     setOptimizationResults([]);
     setSelectedResult(null);
     try {
@@ -143,17 +139,14 @@ export default function InsureSmartWizard() {
             setIsOptimizing(false);
           } else {
             setIsOptimizing(false);
-            setError(`Optimization failed: ${statusData.result || "Unknown error"}`);
           }
-        } catch (err) {
+        } catch {
           setIsOptimizing(false);
-          setError("Error checking optimization status. Please try again.");
         }
       };
       pollStatus();
-    } catch (err: any) {
+    } catch {
       setIsOptimizing(false);
-      setError(err.message || "Failed to start optimization. Please try again.");
     }
   };
 
@@ -217,7 +210,6 @@ export default function InsureSmartWizard() {
   // Add a helper to clear optimization state
   const clearOptimizationState = () => {
     setOptimizationResults([]);
-    setError(null);
     setIsOptimizing(false);
     setSelectedResult(null);
   };

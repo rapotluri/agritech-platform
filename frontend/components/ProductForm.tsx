@@ -149,7 +149,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
     }
   });
 
-  const { control, watch, setValue, getValues, formState } = form;
+  const { control, watch, setValue, formState } = form;
   const { fields: indexes, append: addIndex, remove: removeIndex } = useFieldArray({
     control,
     name: "indexes"
