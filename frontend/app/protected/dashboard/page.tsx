@@ -35,6 +35,12 @@ export default async function DashboardPage() {
           <p className="text-gray-600 mb-4">Develop and manage insurance products.</p>
           <span className="inline-block mt-2 text-green-700 font-semibold group-hover:underline">Go to Products &rarr;</span>
         </Link>
+        {/* Insure Smart Card */}
+        <Link href="/protected/insure-smart" className="group block p-8 rounded-2xl shadow-xl border border-green-100 bg-white hover:bg-green-50 transition-all duration-200 hover:scale-[1.03] relative overflow-hidden">
+          <h2 className="text-2xl font-bold mb-2 text-green-700 group-hover:text-green-800 transition">Insure Smart</h2>
+          <p className="text-gray-600 mb-4">Design and optimize weather insurance products with a step-by-step wizard.</p>
+          <span className="inline-block mt-2 text-green-700 font-semibold group-hover:underline">Go to Insure Smart &rarr;</span>
+        </Link>
       </div>
     </div>
   );

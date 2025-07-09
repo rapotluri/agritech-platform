@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 from typing import Dict, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from schemas.premium_schema import PremiumRequest
 from fastapi import HTTPException
 
@@ -17,11 +17,11 @@ def map_index_type(frontend_type: str) -> str:
     }
     return type_mapping.get(frontend_type, frontend_type)
 
-def get_aligned_dates(base_date: datetime, year: int, sos_start: int, sos_end: int) -> tuple:
+def get_aligned_dates(base_date: datetime, year: int, phase_start_date: date, phase_end_date: date) -> tuple:
     """Get the start and end dates aligned to the historical year"""
-    historical_date = base_date.replace(year=year)
-    start_date = historical_date + timedelta(days=sos_start)
-    end_date = historical_date + timedelta(days=sos_end)
+    # Convert phase dates to datetime for the historical year
+    start_date = datetime.combine(phase_start_date.replace(year=year), datetime.min.time())
+    end_date = datetime.combine(phase_end_date.replace(year=year), datetime.min.time())
     return start_date, end_date
 
 def analyze_phase_data(
@@ -177,7 +177,7 @@ def calculate_premium(request: PremiumRequest) -> Dict:
             raise ValueError(f"Commune '{request.commune}' not found in data. Available communes: {df.columns.tolist()}")
         
         # Calculate year range based on weather data period
-        end_year = 2023
+        end_year = 2024
         start_year = end_year - request.weatherDataPeriod + 1  # Add +1 to include the current year in the count
         
         # Log the analysis period
@@ -198,7 +198,7 @@ def calculate_premium(request: PremiumRequest) -> Dict:
             for idx in request.indexes:
                 # Get date range for this phase in the historical year
                 phase_start, phase_end = get_aligned_dates(
-                    planting_date, year, idx.sosStart, idx.sosEnd
+                    planting_date, year, idx.phaseStartDate, idx.phaseEndDate
                 )
                 
                 trigger_met, critical_value = analyze_phase_data(

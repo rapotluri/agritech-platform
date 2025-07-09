@@ -4,9 +4,8 @@ from datetime import date
 
 class Index(BaseModel):
     phaseName: str
-    length: int
-    sosStart: int
-    sosEnd: int
+    phaseStartDate: date
+    phaseEndDate: date
     type: str
     trigger: float
     exit: float
