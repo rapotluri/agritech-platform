@@ -18,10 +18,24 @@ def _get_weather_data(province, data_type):
     if key in _weather_data_cache:
         return _weather_data_cache[key]
     print(f"Loading weather data from disk for {province}, {data_type}")
-    file_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
-    df = pd.read_excel(file_path, parse_dates=['Date'])
-    _weather_data_cache[key] = df
-    return df
+    
+    # Try Parquet first (new format)
+    parquet_path = os.path.join(os.getcwd(), "climate_data", data_type, "Cambodia", f"{province}.parquet")
+    if os.path.exists(parquet_path):
+        print(f"Loading Parquet file: {parquet_path}")
+        df = pd.read_parquet(parquet_path)
+        _weather_data_cache[key] = df
+        return df
+    
+    # Fallback to Excel (old format)
+    excel_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
+    if os.path.exists(excel_path):
+        print(f"Loading Excel file (fallback): {excel_path}")
+        df = pd.read_excel(excel_path, parse_dates=['Date'])
+        _weather_data_cache[key] = df
+        return df
+    
+    raise FileNotFoundError(f"No weather data file found for {province}. Tried: {parquet_path} and {excel_path}")
 
 # Main function
 
