@@ -30,12 +30,18 @@ os.makedirs(os.path.join(os.getcwd(), "files"), exist_ok=True)
 
 @worker_process_init.connect
 def init_worker(**kwargs):
-    initialize_gee_local()
+    if os.getenv("ENV") == "LOCAL":
+        initialize_gee_local()
+    else:
+        initialize_gee()
 
 @celery_app.task(name="data_task")
 def data_task(province, start_date, end_date, data_type, file_name):
     if not ee.data._credentials:  # type: ignore
-        initialize_gee_local()
+        if os.getenv("ENV") == "LOCAL":
+            initialize_gee_local()
+        else:
+            initialize_gee()
 
     # Filter for the specified province
     province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
