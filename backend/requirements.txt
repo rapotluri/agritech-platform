@@ -12,3 +12,4 @@ flower
 tk
 optuna
 python-dotenv
+pyarrow
