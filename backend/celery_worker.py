@@ -30,13 +30,26 @@ os.makedirs(os.path.join(os.getcwd(), "files"), exist_ok=True)
 
 @worker_process_init.connect
 def init_worker(**kwargs):
+    print(f"[DEBUG] Worker process init triggered with kwargs: {kwargs}")
+    print(f"[DEBUG] Current ENV: {os.getenv('ENV')}")
+    
     if os.getenv("ENV") == "LOCAL":
+        print("[DEBUG] Initializing GEE with local credentials")
         initialize_gee_local()
     else:
+        print("[DEBUG] Initializing GEE with production credentials")
         initialize_gee()
+    
+    print("[DEBUG] Worker initialization completed")
 
 @celery_app.task(name="data_task")
 def data_task(province, start_date, end_date, data_type, file_name):
+    # Log task execution for debugging
+    import uuid
+    task_id = str(uuid.uuid4())[:8]  # Generate a short task ID for logging
+    print(f"[INFO] Starting data_task: {task_id} for {province}, {data_type}")
+    print(f"[DEBUG] Task args: province={province}, start_date={start_date}, end_date={end_date}, data_type={data_type}, file_name={file_name}")
+    
     if not ee.data._credentials:  # type: ignore
         if os.getenv("ENV") == "LOCAL":
             initialize_gee_local()
@@ -62,6 +75,11 @@ def data_task(province, start_date, end_date, data_type, file_name):
 
 @celery_app.task(name="premium_task")
 def premium_task(request_dict):
+    # Log task execution for debugging
+    import uuid
+    task_id = str(uuid.uuid4())[:8]  # Generate a short task ID for logging
+    print(f"[INFO] Starting premium_task: {task_id}")
+    
     try:
         # Convert dict to PremiumRequest
         request = PremiumRequest(**request_dict)
@@ -74,6 +92,11 @@ def premium_task(request_dict):
 
 @celery_app.task(name="insure_smart_optimize_task")
 def insure_smart_optimize_task(request_dict):
+    # Log task execution for debugging
+    import uuid
+    task_id = str(uuid.uuid4())[:8]  # Generate a short task ID for logging
+    print(f"[INFO] Starting insure_smart_optimize_task: {task_id}")
+    
     try:
         print(f"Starting insure_smart_optimize_task with request: {request_dict}")
         result = optimize_insure_smart(request_dict)
