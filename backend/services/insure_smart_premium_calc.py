@@ -94,11 +94,13 @@ def calculate_insure_smart_premium(
                         if len(period_data) < p["duration"]:
                             payout = 0.0
                             trigger_met = False
+                            actual_rainfall = None
                         else:
                             import numpy as np
                             rolling_sums = np.convolve(period_data.values, np.ones(p["duration"]), mode='valid')
                             if p["peril_type"] == "LRI":
                                 min_rain = rolling_sums.min()
+                                actual_rainfall = float(min_rain)
                                 trigger_met = min_rain < p["trigger"]
                                 if trigger_met:
                                     payout = min((p["trigger"] - min_rain) * p["unit_payout"], p["max_payout"], p["allocated_si"])
@@ -106,6 +108,7 @@ def calculate_insure_smart_premium(
                                     payout = 0.0
                             else:
                                 max_rain = rolling_sums.max()
+                                actual_rainfall = float(max_rain)
                                 trigger_met = max_rain > p["trigger"]
                                 if trigger_met:
                                     payout = min((max_rain - p["trigger"]) * p["unit_payout"], p["max_payout"], p["allocated_si"])
@@ -119,7 +122,8 @@ def calculate_insure_smart_premium(
                             "max_payout": p["max_payout"],
                             "allocated_si": p["allocated_si"],
                             "trigger_met": trigger_met,
-                            "payout": payout
+                            "payout": payout,
+                            "actual_rainfall": actual_rainfall
                         })
                     else:
                         break
