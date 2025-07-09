@@ -70,7 +70,6 @@ export default function InsureSmartWizard() {
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResult[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
-  const [showTermSheet, setShowTermSheet] = useState(false);
 
   // Update commune options when province changes
   const handleProvinceChange = (province: string) => {
@@ -165,10 +164,6 @@ export default function InsureSmartWizard() {
     );
   };
 
-  const canProceedToStep4 = () => {
-    return selectedResult && optimizationResults.length > 0;
-  };
-
   const getPerilIcon = (peril: string) => {
     switch (peril) {
       case "LRI":
@@ -218,7 +213,6 @@ export default function InsureSmartWizard() {
     setOptimizationResults([]);
     setIsOptimizing(false);
     setSelectedResult(null);
-    setShowTermSheet(false);
   };
 
   return (
@@ -959,7 +953,7 @@ export default function InsureSmartWizard() {
                                 html2canvas: { scale: 2 },
                                 jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
                               };
-                              // @ts-ignore
+                              // @ts-expect-error - html2pdf.js module import for PDF generation
                               import('html2pdf.js').then(module => {
                                 const html2pdf = module.default;
                                 html2pdf().set(opt).from(element).save();
