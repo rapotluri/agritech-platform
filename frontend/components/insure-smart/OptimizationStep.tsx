@@ -45,10 +45,10 @@ export default function OptimizationStep({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            Product Optimization
+            Product Design
           </CardTitle>
           <CardDescription>
-            Run optimization to find the best trigger values and payout structure based on 30 years of historical weather data
+            Design your product by finding the best trigger values and payout structure based on 30 years of historical weather data
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,7 +56,7 @@ export default function OptimizationStep({
             <div className="text-center py-8">
               <div className="space-y-4">
                 <div className="bg-green-50 p-6 rounded-lg">
-                  <h3 className="font-semibold text-green-900 mb-2">Ready to Optimize</h3>
+                  <h3 className="font-semibold text-green-900 mb-2">Ready to Design</h3>
                   <p className="text-green-700 text-sm mb-4">
                     Product: {product.name}
                     <br />
@@ -70,7 +70,7 @@ export default function OptimizationStep({
                 {isOptimizing ? (
                   <div className="space-y-4">
                     <div className="animate-spin h-8 w-8 border-4 border-green-600 border-t-transparent rounded-full mx-auto"></div>
-                    <p className="text-gray-600">Running optimization...</p>
+                    <p className="text-gray-600">Designing product...</p>
                     <p className="text-sm text-gray-500">
                       Analyzing 30 years of rainfall data and testing thousands of combinations
                     </p>
@@ -78,7 +78,7 @@ export default function OptimizationStep({
                 ) : (
                   <Button className="bg-green-600 hover:bg-green-700" onClick={runOptimization} size="lg">
                     <Zap className="h-4 w-4 mr-2" />
-                    Run Optimization
+                    Design Product
                   </Button>
                 )}
               </div>
@@ -88,7 +88,7 @@ export default function OptimizationStep({
               <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                 <div className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="h-5 w-5" />
-                  <span className="font-semibold">Optimization Complete</span>
+                  <span className="font-semibold">Product Design Complete</span>
                 </div>
                 <p className="text-green-700 text-sm mt-1">
                   Found {optimizationResults.length} optimized configurations that meet your criteria

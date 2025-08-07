@@ -24,7 +24,7 @@ export default function InsureSmartHeader({ currentStep, getStepProgress }: Insu
         <div className="flex justify-between text-xs text-gray-500">
           <span className={currentStep >= 1 ? "text-green-600 font-medium" : ""}>Product Details</span>
           <span className={currentStep >= 2 ? "text-green-600 font-medium" : ""}>Coverage Periods</span>
-          <span className={currentStep >= 3 ? "text-green-600 font-medium" : ""}>Optimization</span>
+          <span className={currentStep >= 3 ? "text-green-600 font-medium" : ""}>Product Design</span>
           <span className={currentStep >= 4 ? "text-green-600 font-medium" : ""}>Term Sheet</span>
         </div>
       </div>

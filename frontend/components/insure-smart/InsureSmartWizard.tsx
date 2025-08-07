@@ -207,7 +207,7 @@ export default function InsureSmartWizard() {
           />
         )}
         
-        {/* Step 3: Optimization */}
+        {/* Step 3: Product Design */}
         {currentStep === 3 && (
           <OptimizationStep
             product={product}

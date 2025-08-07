@@ -211,7 +211,7 @@ export default function TermSheetStep({
       </Card>
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
-          Back: Optimization
+          Back: Product Design
         </Button>
         <div className="flex gap-2">
           <Button variant="outline">Save as Draft</Button>
