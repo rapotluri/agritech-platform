@@ -17,6 +17,10 @@ export interface CoveragePeriod {
 
 export interface OptimizationResult {
   id: string;
+  optionType?: "most_affordable" | "best_coverage" | "premium_choice";
+  label?: string;
+  description?: string;
+  premiumIncrease?: string;
   lossRatio: number;
   expectedPayout: number;
   premiumRate: number;

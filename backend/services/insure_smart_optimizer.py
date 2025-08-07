@@ -2,10 +2,12 @@ import optuna
 import numpy as np
 from typing import List, Dict, Any, Tuple
 from services.insure_smart_premium_calc import calculate_insure_smart_premium, clear_weather_data_cache
+import concurrent.futures
+import threading
 
 def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    Optimize Insure Smart product using Optuna.
+    Optimize Insure Smart product using Optuna with 3 different optimization strategies.
     
     Args:
         request_data: Dict containing:
@@ -13,7 +15,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             - periods: List[Dict] with startDate, endDate, perilType
     
     Returns:
-        List of up to 3 best configurations with full details
+        List of 3 best configurations: Most Affordable, Best Coverage, Premium Choice
     """
     # Extract data from frontend format
     product = request_data["product"]
@@ -22,7 +24,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     commune = product["commune"]
     province = product["province"]
     sum_insured = float(product["sumInsured"])
-    premium_cap = float(product["premiumCap"])
+    user_premium_cap = float(product["premiumCap"])
     
     # Convert periods to optimizer format
     periods = convert_periods_format(periods_data)
@@ -31,6 +33,103 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not periods:
         return [{"error": "No coverage periods specified"}]
     
+    # Calculate premium cap ranges
+    user_premium_ratio = user_premium_cap / sum_insured
+    
+    # Most Affordable: 2% to (user_cap - 0.5%)
+    most_affordable_min = 0.02
+    most_affordable_max = max(0.02, user_premium_ratio - 0.005)
+    
+    # Best Coverage: Fixed at user's cap
+    best_coverage_cap = user_premium_cap
+    
+    # Premium Choice: (user_cap + 0.5%) to 15%
+    premium_choice_min = user_premium_ratio + 0.005
+    premium_choice_max = 0.15
+    
+    # Ensure valid ranges
+    if most_affordable_max <= most_affordable_min:
+        most_affordable_max = most_affordable_min + 0.01  # Add small range if needed
+    
+    if premium_choice_min >= premium_choice_max:
+        premium_choice_min = premium_choice_max - 0.01  # Reduce range if needed
+    
+    # Run 3 optimizations in parallel
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        # Submit all 3 optimization tasks
+        future_most_affordable = executor.submit(
+            run_optimization, 
+            "most_affordable", 
+            commune, 
+            province, 
+            periods, 
+            sum_insured, 
+            most_affordable_min, 
+            most_affordable_max,
+            user_premium_cap
+        )
+        
+        future_best_coverage = executor.submit(
+            run_optimization, 
+            "best_coverage", 
+            commune, 
+            province, 
+            periods, 
+            sum_insured, 
+            best_coverage_cap, 
+            best_coverage_cap,
+            user_premium_cap
+        )
+        
+        future_premium_choice = executor.submit(
+            run_optimization, 
+            "premium_choice", 
+            commune, 
+            province, 
+            periods, 
+            sum_insured, 
+            premium_choice_min, 
+            premium_choice_max,
+            user_premium_cap
+        )
+        
+        # Collect results
+        try:
+            most_affordable_result = future_most_affordable.result(timeout=300)  # 5 minute timeout
+            if most_affordable_result:
+                results.append(most_affordable_result)
+        except Exception as e:
+            print(f"Most Affordable optimization failed: {str(e)}")
+        
+        try:
+            best_coverage_result = future_best_coverage.result(timeout=300)
+            if best_coverage_result:
+                results.append(best_coverage_result)
+        except Exception as e:
+            print(f"Best Coverage optimization failed: {str(e)}")
+        
+        try:
+            premium_choice_result = future_premium_choice.result(timeout=300)
+            if premium_choice_result:
+                results.append(premium_choice_result)
+        except Exception as e:
+            print(f"Premium Choice optimization failed: {str(e)}")
+    
+    # Clear weather data cache to free up memory
+    clear_weather_data_cache()
+    
+    # If no results, return error
+    if not results:
+        return [{"error": "No valid configurations found within constraints"}]
+    
+    return results
+
+def run_optimization(option_type: str, commune: str, province: str, periods: List[Dict], 
+                    sum_insured: float, min_premium_cap: float, max_premium_cap: float, user_premium_cap: float = None) -> Dict[str, Any]:
+    """
+    Run a single optimization with specified premium cap range.
+    """
     # Create optimization study
     study = optuna.create_study(
         direction="maximize",
@@ -41,6 +140,14 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     # Define objective function
     def objective(trial):
         try:
+            # For Most Affordable and Premium Choice, optimize premium cap
+            if option_type in ["most_affordable", "premium_choice"]:
+                premium_cap_ratio = trial.suggest_float("premium_cap_ratio", min_premium_cap, max_premium_cap)
+                premium_cap = sum_insured * premium_cap_ratio
+            else:
+                # Best Coverage uses fixed premium cap
+                premium_cap = min_premium_cap
+            
             # Generate trial configuration
             trial_periods = generate_trial_configuration(trial, periods, sum_insured)
             
@@ -54,41 +161,92 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 profit_loading=0.075
             )
             
-            # Check premium cap constraint (keep this as it's a business requirement)
+            # Check premium cap constraint
             loaded_premium_cost = result["loaded_premium"]
             if loaded_premium_cost > premium_cap:
-                print(f"Trial {trial.number}: Loaded premium cost ${loaded_premium_cost:.2f} exceeds cap ${premium_cap}")
                 return -float('inf')  # Exceeds premium cap
             
             # Check payout frequency constraint to prevent over-optimization
             payout_years = result["payout_years"]
             if payout_years > 25:  # Allow up to 25 payout years out of 30
-                print(f"Trial {trial.number}: Too many payout years ({payout_years}/30) - over-optimized")
                 return -float('inf')  # Too many payouts
             
-            # Use loss ratio from result
-            loss_ratio = result["loss_ratio"]
+            # Use the same composite scoring function for all options
+            score = calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"])
             
-            # Calculate composite score with coverage penalty
-            score = calculate_composite_score(result, loaded_premium_cost, sum_insured, loss_ratio)
-            
-            print(f"Trial {trial.number}: Valid! Loaded Premium=${loaded_premium_cost:.2f}, Score={score:.4f}, Coverage Penalty={result.get('coverage_penalty', 0):.3f}")
             return score
             
         except Exception as e:
-            print(f"Trial {trial.number}: Exception - {str(e)}")
             return -float('inf')
     
     # Run optimization
-    study.optimize(objective, n_trials=200, n_jobs=-1)  # Single job for Celery compatibility
+    study.optimize(objective, n_trials=200, n_jobs=1)  # Single job for threading compatibility
     
-    # Extract best configurations
-    best_configs = extract_best_configurations(study, commune, province, periods, sum_insured)
+    # Extract best configuration
+    if study.best_trial.value == -float('inf'):
+        return None
     
-    # Clear weather data cache to free up memory
-    clear_weather_data_cache()
+    # Reconstruct the configuration
+    trial_periods = reconstruct_configuration(study.best_trial, periods, sum_insured)
     
-    return best_configs
+    # Recalculate metrics for this configuration
+    result = calculate_insure_smart_premium(
+        commune=commune,
+        province=province,
+        periods=trial_periods,
+        sum_insured=sum_insured,
+        admin_loading=0.15,
+        profit_loading=0.075
+    )
+    
+    # Format the result
+    config = {
+        "optionType": option_type,
+        "label": get_option_label(option_type),
+        "description": get_option_description(option_type),
+        "lossRatio": result["loss_ratio"],
+        "expectedPayout": result["avg_payout"],
+        "premiumRate": result["premium_rate"],
+        "premiumCost": result["loaded_premium"],
+        "triggers": format_triggers_for_frontend(trial_periods, periods),
+        "riskLevel": determine_risk_level(result["loss_ratio"]),
+        "score": study.best_trial.value,
+        "periods": format_periods_for_output(trial_periods, periods),
+        "period_breakdown": result.get("period_breakdown", []),
+        "yearly_results": result.get("yearly_results", []),
+        "max_payout": result.get("max_payout"),
+        "payout_years": result.get("payout_years"),
+        "coverage_score": result.get("coverage_score"),
+        "payout_stability_score": result.get("payout_stability_score"),
+        "coverage_penalty": result.get("coverage_penalty", 0),
+        "periods_with_no_payouts": result.get("periods_with_no_payouts", 0)
+    }
+    
+    # Add premium increase info for Premium Choice
+    if option_type == "premium_choice" and user_premium_cap is not None:
+        premium_increase = result["loaded_premium"] - user_premium_cap
+        premium_increase_percent = (result["loaded_premium"] / sum_insured) - (user_premium_cap / sum_insured)
+        config["premiumIncrease"] = f"+${premium_increase:.0f} ({(premium_increase_percent * 100):.1f}% vs {(user_premium_cap / sum_insured * 100):.1f}%)"
+    
+    return to_python_type(config)
+
+def get_option_label(option_type: str) -> str:
+    """Get user-friendly label for option type."""
+    labels = {
+        "most_affordable": "Most Affordable",
+        "best_coverage": "Best Coverage", 
+        "premium_choice": "Premium Choice"
+    }
+    return labels.get(option_type, option_type)
+
+def get_option_description(option_type: str) -> str:
+    """Get description for option type."""
+    descriptions = {
+        "most_affordable": "Optimized for lowest cost within your budget",
+        "best_coverage": "Balanced optimization for best overall value",
+        "premium_choice": "Enhanced coverage with slightly higher premium"
+    }
+    return descriptions.get(option_type, "")
 
 def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
     """
@@ -253,63 +411,7 @@ def to_python_type(obj):
     else:
         return obj
 
-def extract_best_configurations(study: optuna.Study, commune: str, province: str, 
-                              base_periods: List[Dict], sum_insured: float) -> List[Dict[str, Any]]:
-    """
-    Extract the best configurations from the optimization study.
-    """
-    best_configs = []
-    
-    # Get top trials
-    top_trials = sorted(study.trials, key=lambda t: t.value, reverse=True)[:3]
-    
-    for trial in top_trials:
-        if trial.value == -float('inf'):
-            continue  # Skip invalid trials
-            
-        # Reconstruct the configuration
-        trial_periods = reconstruct_configuration(trial, base_periods, sum_insured)
-        
-        # Recalculate metrics for this configuration
-        result = calculate_insure_smart_premium(
-            commune=commune,
-            province=province,
-            periods=trial_periods,
-            sum_insured=sum_insured,
-            admin_loading=0.15,
-            profit_loading=0.075
-        )
-        
-        # Use loaded premium for premium cost
-        loaded_premium_cost = result["loaded_premium"]
-        
-        # Format the result to match frontend expectations
-        config = {
-            "lossRatio": result["loss_ratio"],
-            "expectedPayout": result["avg_payout"],
-            "premiumRate": result["premium_rate"],
-            "premiumCost": result["loaded_premium"],
-            "triggers": format_triggers_for_frontend(trial_periods, base_periods),
-            "riskLevel": determine_risk_level(result["loss_ratio"]),
-            "score": trial.value,
-            "periods": format_periods_for_output(trial_periods, base_periods),
-            # Add detailed breakdowns for frontend analysis
-            "period_breakdown": result.get("period_breakdown", []),
-            "yearly_results": result.get("yearly_results", []),
-            "max_payout": result.get("max_payout"),
-            "payout_years": result.get("payout_years"),
-            "coverage_score": result.get("coverage_score"),
-            "payout_stability_score": result.get("payout_stability_score"),
-            "coverage_penalty": result.get("coverage_penalty", 0),
-            "periods_with_no_payouts": result.get("periods_with_no_payouts", 0)
-        }
-        
-        best_configs.append(to_python_type(config))
-    
-    if not best_configs:
-        return [{"error": "No valid configurations found within constraints"}]
-    
-    return best_configs
+
 
 def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
     """
