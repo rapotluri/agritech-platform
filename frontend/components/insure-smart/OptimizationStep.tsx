@@ -72,7 +72,7 @@ export default function OptimizationStep({
                     <div className="animate-spin h-8 w-8 border-4 border-green-600 border-t-transparent rounded-full mx-auto"></div>
                     <p className="text-gray-600">Designing product...</p>
                     <p className="text-sm text-gray-500">
-                      Analyzing 30 years of rainfall data and testing thousands of combinations
+                      Analyzing 30 years of rainfall data and designing product parameters
                     </p>
                   </div>
                 ) : (
