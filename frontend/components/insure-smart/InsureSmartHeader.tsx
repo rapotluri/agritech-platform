@@ -17,7 +17,7 @@ export default function InsureSmartHeader({ currentStep, getStepProgress }: Insu
       {/* Progress Bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-gray-600">
-          <span>Step {currentStep} of 3</span>
+          <span>Step {currentStep} of 4</span>
           <span>{Math.round(getStepProgress())}% Complete</span>
         </div>
         <Progress value={getStepProgress()} className="h-2" />
