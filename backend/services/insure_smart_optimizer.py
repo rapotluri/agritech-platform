@@ -1,7 +1,7 @@
 import optuna
 import numpy as np
 from typing import List, Dict, Any, Tuple
-from services.insure_smart_premium_calc import calculate_insure_smart_premium
+from services.insure_smart_premium_calc import calculate_insure_smart_premium, clear_weather_data_cache
 
 def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
@@ -84,6 +84,9 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     # Extract best configurations
     best_configs = extract_best_configurations(study, commune, province, periods, sum_insured)
+    
+    # Clear weather data cache to free up memory
+    clear_weather_data_cache()
     
     return best_configs
 
