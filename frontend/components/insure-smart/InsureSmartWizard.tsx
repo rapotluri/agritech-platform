@@ -174,10 +174,25 @@ export default function InsureSmartWizard() {
     setSelectedResult(null);
   };
 
+  // Handle step navigation
+  const handleStepNavigation = (targetStep: number) => {
+    // Only allow navigation to accessible steps
+    if (targetStep > currentStep) {
+      return; // Don't allow navigation to future steps
+    }
+
+    // Clear optimization results when navigating to previous steps
+    if (targetStep < currentStep && optimizationResults.length > 0) {
+      clearOptimizationState();
+    }
+
+    setCurrentStep(targetStep);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
-        <InsureSmartHeader currentStep={currentStep} getStepProgress={getStepProgress} />
+        <InsureSmartHeader currentStep={currentStep} getStepProgress={getStepProgress} onStepClick={handleStepNavigation} />
         
         {/* Step 1: Product Details */}
         {currentStep === 1 && (
