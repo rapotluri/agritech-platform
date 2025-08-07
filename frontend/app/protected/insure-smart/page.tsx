@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const InsureSmartWizard = dynamic(() => import("@/components/InsureSmartWizard"), { ssr: false });
+const InsureSmartWizard = dynamic(() => import("@/components/insure-smart/InsureSmartWizard"), { ssr: false });
 
 export default async function InsureSmartPage() {
   const supabase = await createClient();
