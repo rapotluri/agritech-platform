@@ -142,8 +142,14 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         try:
             # For Most Affordable and Premium Choice, optimize premium cap
             if option_type in ["most_affordable", "premium_choice"]:
-                premium_cap_ratio = trial.suggest_float("premium_cap_ratio", min_premium_cap, max_premium_cap)
-                premium_cap = sum_insured * premium_cap_ratio
+                # Use discrete values for premium_cap_ratio to ensure 4 decimal places
+                # Create options from min to max in 0.001 steps (0.1% increments)
+                step_size = 0.001
+                num_steps = int((max_premium_cap - min_premium_cap) / step_size) + 1
+                premium_cap_options = [round(min_premium_cap + i * step_size, 4) for i in range(num_steps)]
+                premium_cap_options = [x for x in premium_cap_options if x <= max_premium_cap]
+                premium_cap_ratio = trial.suggest_categorical("premium_cap_ratio", premium_cap_options)
+                premium_cap = round(sum_insured * premium_cap_ratio, 2)
             else:
                 # Best Coverage uses fixed premium cap
                 premium_cap = min_premium_cap
@@ -162,7 +168,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
             )
             
             # Check premium cap constraint
-            loaded_premium_cost = result["loaded_premium"]
+            loaded_premium_cost = round(result["loaded_premium"], 2)
             if loaded_premium_cost > premium_cap:
                 return -float('inf')  # Exceeds premium cap
             
@@ -172,7 +178,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
                 return -float('inf')  # Too many payouts
             
             # Use the same composite scoring function for all options
-            score = calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"])
+            score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"]), 4)
             
             return score
             
@@ -199,34 +205,33 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         profit_loading=0.075
     )
     
-    # Format the result
+    # Format the result with consistent precision
     config = {
         "optionType": option_type,
         "label": get_option_label(option_type),
         "description": get_option_description(option_type),
-        "lossRatio": result["loss_ratio"],
-        "expectedPayout": result["avg_payout"],
-        "premiumRate": result["premium_rate"],
-        "premiumCost": result["loaded_premium"],
+        "lossRatio": round(result["loss_ratio"], 4),
+        "expectedPayout": round(result["avg_payout"], 2),
+        "premiumRate": round(result["premium_rate"], 4),
+        "premiumCost": round(result["loaded_premium"], 2),
         "triggers": format_triggers_for_frontend(trial_periods, periods),
         "riskLevel": determine_risk_level(result["loss_ratio"]),
-        "score": study.best_trial.value,
+        "score": round(study.best_trial.value, 4),
         "periods": format_periods_for_output(trial_periods, periods),
         "period_breakdown": result.get("period_breakdown", []),
         "yearly_results": result.get("yearly_results", []),
-        "max_payout": result.get("max_payout"),
+        "max_payout": round(result.get("max_payout", 0), 2),
         "payout_years": result.get("payout_years"),
-        "coverage_score": result.get("coverage_score"),
-        "payout_stability_score": result.get("payout_stability_score"),
-        "coverage_penalty": result.get("coverage_penalty", 0),
+        "coverage_score": round(result.get("coverage_score", 0), 4),
+        "payout_stability_score": round(result.get("payout_stability_score", 0), 4),
+        "coverage_penalty": round(result.get("coverage_penalty", 0), 4),
         "periods_with_no_payouts": result.get("periods_with_no_payouts", 0)
     }
     
     # Add premium increase info for Premium Choice
     if option_type == "premium_choice" and user_premium_cap is not None:
-        premium_increase = result["loaded_premium"] - user_premium_cap
-        premium_increase_percent = (result["loaded_premium"] / sum_insured) - (user_premium_cap / sum_insured)
-        config["premiumIncrease"] = f"+${premium_increase:.0f} ({(premium_increase_percent * 100):.1f}% vs {(user_premium_cap / sum_insured * 100):.1f}%)"
+        premium_increase = round(result["loaded_premium"], 2) - user_premium_cap
+        config["premiumIncrease"] = f"+${premium_increase:.0f} ({(round(result['loaded_premium'], 2) / sum_insured * 100):.1f}% vs {(user_premium_cap / sum_insured * 100):.1f}%)"
     
     return to_python_type(config)
 
@@ -344,15 +349,19 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
             allocated_si = index_period_si[peril_type]
             # Optimize trigger, duration, unit_payout
             if peril_type == "LRI":
-                trigger = trial.suggest_float(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
+                trigger = trial.suggest_int(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
                 duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", 5, 30)
-                unit_payout = trial.suggest_float(f"lri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
+                # Use discrete values for unit_payout to ensure 2 decimal places
+                unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
+                unit_payout = trial.suggest_categorical(f"lri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             else:  # ERI
-                trigger = trial.suggest_float(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
+                trigger = trial.suggest_int(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
                 duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", 1, 5)
-                unit_payout = trial.suggest_float(f"eri_unit_payout_{period_idx}_{peril_idx}", 0.5, 3.0)
+                # Use discrete values for unit_payout to ensure 2 decimal places
+                unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
+                unit_payout = trial.suggest_categorical(f"eri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             # max_payout is set to allocated_si
-            max_payout = allocated_si
+            max_payout = round(allocated_si, 2)
             trial_periods.append({
                 "peril_type": peril_type,
                 "trigger": trigger,
@@ -395,7 +404,7 @@ def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float
         0.5 * coverage_penalty  # Heavy penalty for low coverage
     )
     
-    return composite_score
+    return round(composite_score, 4)
 
 def to_python_type(obj):
     if isinstance(obj, dict):
@@ -454,14 +463,14 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
             peril_type = peril["type"]
             allocated_si = index_period_si[peril_type]
             if peril_type == "LRI":
-                trigger = trial.params[f"lri_trigger_{period_idx}_{peril_idx}"]
-                duration = trial.params[f"lri_duration_{period_idx}_{peril_idx}"]
-                unit_payout = trial.params[f"lri_unit_payout_{period_idx}_{peril_idx}"]
+                trigger = int(trial.params[f"lri_trigger_{period_idx}_{peril_idx}"])
+                duration = int(trial.params[f"lri_duration_{period_idx}_{peril_idx}"])
+                unit_payout = float(trial.params[f"lri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             else:  # ERI
-                trigger = trial.params[f"eri_trigger_{period_idx}_{peril_idx}"]
-                duration = trial.params[f"eri_duration_{period_idx}_{peril_idx}"]
-                unit_payout = trial.params[f"eri_unit_payout_{period_idx}_{peril_idx}"]
-            max_payout = allocated_si
+                trigger = int(trial.params[f"eri_trigger_{period_idx}_{peril_idx}"])
+                duration = int(trial.params[f"eri_duration_{period_idx}_{peril_idx}"])
+                unit_payout = float(trial.params[f"eri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
+            max_payout = round(allocated_si, 2)
             trial_periods.append({
                 "peril_type": peril_type,
                 "trigger": trigger,
@@ -494,11 +503,11 @@ def format_periods_for_output(trial_periods: List[Dict], base_periods: List[Dict
                     
                     period_perils.append({
                         "peril_type": trial_peril["peril_type"],
-                        "trigger": trial_peril["trigger"],
-                        "duration": trial_peril["duration"],
-                        "unit_payout": trial_peril["unit_payout"],
-                        "max_payout": trial_peril["max_payout"],
-                        "allocated_si": trial_peril["allocated_si"]
+                        "trigger": int(trial_peril["trigger"]),
+                        "duration": int(trial_peril["duration"]),
+                        "unit_payout": round(trial_peril["unit_payout"], 2),
+                        "max_payout": round(trial_peril["max_payout"], 2),
+                        "allocated_si": round(trial_peril["allocated_si"], 2)
                     })
                     break
         
@@ -527,14 +536,14 @@ def format_triggers_for_frontend(trial_periods: List[Dict], base_periods: List[D
         if peril_type == "LRI":
             triggers.append({
                 "type": "Low Rainfall",
-                "value": f"≤ {trigger:.0f}mm",
-                "payout": f"${max_payout:.0f}"
+                "value": f"≤ {int(trigger)}mm",
+                "payout": f"${round(max_payout, 2):.2f}"
             })
         else:  # ERI
             triggers.append({
                 "type": "High Rainfall", 
-                "value": f"≥ {trigger:.0f}mm",
-                "payout": f"${max_payout:.0f}"
+                "value": f"≥ {int(trigger)}mm",
+                "payout": f"${round(max_payout, 2):.2f}"
             })
     
     return triggers
