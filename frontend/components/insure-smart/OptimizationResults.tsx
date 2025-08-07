@@ -29,9 +29,14 @@ export default function OptimizationResults({
         >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Option {index + 1}</CardTitle>
+              <CardTitle className="text-lg">
+                {result.label || `Option ${index + 1}`}
+              </CardTitle>
               <Badge className={getRiskScoreColor(result.riskScore)}>{result.riskScore}</Badge>
             </div>
+            {result.description && (
+              <p className="text-sm text-gray-600 mt-1">{result.description}</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -49,6 +54,9 @@ export default function OptimizationResults({
               <p className="font-semibold text-xl text-green-600">
                 {result.premiumCost !== undefined ? `$${Number(result.premiumCost).toFixed(2)}` : '-'}
               </p>
+              {result.premiumIncrease && (
+                <p className="text-sm text-blue-600 mt-1">{result.premiumIncrease}</p>
+              )}
             </div>
             {selectedResult === result.id && (
               <Badge variant="default" className="w-full justify-center">
