@@ -1,12 +1,13 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
-import { PlusIcon, UploadIcon, DownloadIcon, UsersIcon } from "lucide-react"
+import { UploadIcon, DownloadIcon, UsersIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SearchFilters } from "@/components/farmers/SearchFilters"
 import { FarmerTable, type Farmer } from "@/components/farmers/FarmerTable"
+import { FarmerDialog } from "@/components/farmers/FarmerDialog"
 import { mockFarmers, filterFarmers, sortFarmers } from "@/components/farmers/mockData"
 
 
@@ -99,10 +100,7 @@ export default function FarmersPage() {
           <p className="text-gray-600 mt-2">Manage farmer enrollments and profiles</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Farmer
-          </Button>
+          <FarmerDialog />
           <Button variant="outline">
             <UploadIcon className="h-5 w-5 mr-2" />
             Batch Upload
