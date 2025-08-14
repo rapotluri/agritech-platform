@@ -1,0 +1,2086 @@
+{
+  "BanteayMeanchey": {
+    "Malai": [
+      "BoengBeng",
+      "Malai",
+      "OuSampoar",
+      "OuSralau",
+      "TaKong",
+      "TuolPongro"
+    ],
+    "MongkolBorei": [
+      "BanteayNeang",
+      "BatTrang",
+      "Chamnaom",
+      "KoukBallangk",
+      "KoyMaeng",
+      "OuPrasat",
+      "PhnumTouch",
+      "RohatTuek",
+      "RuesseiKraok",
+      "Sambuor",
+      "Soea",
+      "SrahReang",
+      "TaLam"
+    ],
+    "OuChrov": [
+      "Changha",
+      "Koub",
+      "Kuttasat",
+      "OuBeichoan",
+      "Samraong",
+      "Soengh",
+      "Souphi"
+    ],
+    "PaoyPaet": [
+      "Nimitt",
+      "PaoyPaet",
+      "PhsarKandal"
+    ],
+    "PhnumSrok": [
+      "NamTau",
+      "PhnumDei",
+      "Ponley",
+      "PoyChar",
+      "SpeanSraeng",
+      "SrahChik"
+    ],
+    "PreahNetrPreah": [
+      "BosSbov",
+      "ChnuorMeanChey",
+      "ChobVari",
+      "PhnumLieb",
+      "Prasat",
+      "PreakNetrPreah",
+      "Rohal",
+      "TeanKam",
+      "TuekChour"
+    ],
+    "SereiSaophoan": [
+      "KampongSvay",
+      "KaohPongSatv",
+      "Mkak",
+      "OuAmbel",
+      "Phniet",
+      "PreahPonlea",
+      "TuekThla"
+    ],
+    "SvayChek": [
+      "Phkoam",
+      "Roluos",
+      "Sarongk",
+      "SlaKram",
+      "SvayChek",
+      "TaBaen",
+      "TaPhou",
+      "Treas"
+    ],
+    "ThmaPuok": [
+      "BanteayChhmar",
+      "KoukKakthen",
+      "KoukRomiet",
+      "Kumru",
+      "PhumThmei",
+      "ThmaPuok"
+    ]
+  },
+  "Batdambang": {
+    "AekPhnum": [
+      "KaohChiveang",
+      "PeamAek",
+      "PreaekKhpob",
+      "PreaekLuong",
+      "PreaekNorint",
+      "PreyChas",
+      "SamraongKnong"
+    ],
+    "Banan": [
+      "BayDamram",
+      "ChaengMeanChey",
+      "ChheuTeal",
+      "KantueuMuoy",
+      "KantueuPir",
+      "PhnumSampov",
+      "Snoeng",
+      "TaKream"
+    ],
+    "Battambang": [
+      "ChomkarSomraong",
+      "KdolDounTeav",
+      "OMal",
+      "OuChar",
+      "PrekPreahSdach",
+      "Rottanak",
+      "SlaKet",
+      "SvayPor",
+      "TuolTaEk",
+      "watKor"
+    ],
+    "Bavel": [
+      "AmpilPramDaeum",
+      "Bavel",
+      "BoeungPram",
+      "KdolTaHaen",
+      "KhlaengMeas",
+      "KhnachRomeas",
+      "Lvea",
+      "PreyKhpos"
+    ],
+    "Kamrieng": [
+      "BoengReang",
+      "Kamrieng",
+      "OuDa",
+      "TaKrei",
+      "TaSaen",
+      "Trang"
+    ],
+    "KoasKrala": [
+      "ChhnalMoan",
+      "DounBa",
+      "Hab",
+      "KaosKrala",
+      "PreahPhos",
+      "Thipakdei"
+    ],
+    "MoungRuessei": [
+      "Chrey",
+      "Kakaoh",
+      "Kear",
+      "Moung",
+      "PreySvay",
+      "PreyTouch",
+      "RobasMongkol",
+      "RuesseiKrang",
+      "TaLoas"
+    ],
+    "PhnumProek": [
+      "BarangThleak",
+      "Bour",
+      "OuRumduol",
+      "PechChenda",
+      "PhnumProek"
+    ],
+    "RotonakMondol": [
+      "AndaeukHaeb",
+      "PhlovMeas",
+      "ReaksmeiSongha",
+      "Sdau",
+      "Traeng"
+    ],
+    "RukhKiri": [
+      "Basak",
+      "MukhReah",
+      "PreaekChik",
+      "PreyTralach",
+      "SdokPravoek"
+    ],
+    "Samlout": [
+      "KampongLpov",
+      "MeanChey",
+      "OuSamril",
+      "Samlout",
+      "Sung",
+      "TaSanh",
+      "TaTaok"
+    ],
+    "SampovLun": [
+      "AngkorBan",
+      "ChreySeima",
+      "SampovLun",
+      "Santepheap",
+      "SereiMeanChey",
+      "TaSda"
+    ],
+    "Sangkae": [
+      "AnlongVil",
+      "KampongPreah",
+      "KampongPrieng",
+      "Norea",
+      "OuDambangMuoy",
+      "OuDambangPir",
+      "ReangKesei",
+      "Roka",
+      "TaPon",
+      "VaotTaMuem"
+    ],
+    "ThmaKoul": [
+      "AnlongRun",
+      "BansayTraeng",
+      "BoengPring",
+      "Chrey",
+      "ChrouySdau",
+      "KoukKhmum",
+      "OuTaKi",
+      "RungChrey",
+      "TaMeun",
+      "TaPung"
+    ],
+    "TonléSap": [
+      "TonléSap"
+    ]
+  },
+  "KampongCham": {
+    "Batheay": [
+      "Batheay",
+      "ChbarAmpov",
+      "Chealea",
+      "CheungPrey",
+      "MePring",
+      "Ph'av",
+      "Sambour",
+      "Sandaek",
+      "TangKrang",
+      "TangKrasang",
+      "Trab",
+      "Tumnob"
+    ],
+    "ChamkarLeu": [
+      "BosKhnor",
+      "ChamkarAndoung",
+      "Cheyyou",
+      "LveaLeu",
+      "Spueu",
+      "SvayTeab",
+      "TaOng",
+      "TaProk"
+    ],
+    "CheungPrey": [
+      "KhnorDambang",
+      "KoukRovieng",
+      "PdauChum",
+      "PreyChar",
+      "PringChrum",
+      "SampongChey",
+      "SdaeungChey",
+      "Soutib",
+      "Sramar",
+      "TrapeangKor"
+    ],
+    "KampongCham": [
+      "BoengKok",
+      "KampongCham",
+      "SambuorMeas",
+      "VealVong"
+    ],
+    "KampongSiem": [
+      "Ampil",
+      "Hanchey",
+      "KaohMitt",
+      "KaohRoka",
+      "KaohSamraong",
+      "KaohTontuem",
+      "KienChrey",
+      "Kokor",
+      "Krala",
+      "OuSvay",
+      "Ro'ang",
+      "Rumchek",
+      "Srak",
+      "Trean",
+      "VihearThum"
+    ],
+    "KangMeas": [
+      "AngkorBan",
+      "KangTaNoeng",
+      "Khchau",
+      "PeamChiKang",
+      "PreaekKoy",
+      "PreaekKrabau",
+      "ReayPay",
+      "RokaAr",
+      "RokaKoy",
+      "Sdau",
+      "SourKong"
+    ],
+    "KaohSoutin": [
+      "KampongReab",
+      "KaohSotin",
+      "Lve",
+      "MohaKhnhoung",
+      "MohaLeaph",
+      "PeamPrathnuoh",
+      "Pongro",
+      "PreaekTaNong"
+    ],
+    "PreyChhor": [
+      "Baray",
+      "BoengNay",
+      "ChreyVien",
+      "KhvetThum",
+      "Kor",
+      "Krouch",
+      "Lvea",
+      "Mien",
+      "PreyChhor",
+      "Samraong",
+      "SourSaen",
+      "Sragnae",
+      "ThmaPun",
+      "TongRong",
+      "TrapeangPreah"
+    ],
+    "SreiSanthor": [
+      "Baray",
+      "ChiBal",
+      "KaohAndaet",
+      "KhnarSa",
+      "MeanChey",
+      "PhteahKandal",
+      "PramYam",
+      "PreaekDambouk",
+      "PreaekPou",
+      "PreaekRumdeng",
+      "RuesseiSrok",
+      "SvayKhsachPhnum",
+      "SvayPou",
+      "TongTralach"
+    ],
+    "StuengTrang": [
+      "AreaksTnot",
+      "DangKdar",
+      "KhpobTaNguon",
+      "MeSarChrey",
+      "OuMlu",
+      "PeamKaohSnar",
+      "PreaekBak",
+      "PreahAndoung",
+      "PreakKak",
+      "Soupheas",
+      "TuolPreahKhleang",
+      "TuolSambuor"
+    ]
+  },
+  "KampongChhnang": {
+    "Baribour": [
+      "AnhchanhRung",
+      "Chak",
+      "ChhnokTru",
+      "KampongPreahKokir",
+      "KhonRang",
+      "Melum",
+      "PechChangvar",
+      "Phsar",
+      "Ponley",
+      "Popel",
+      "TrapeangChan"
+    ],
+    "CholKiri": [
+      "CholSar",
+      "KampongOus",
+      "KaohThkov",
+      "PeamChhkaok",
+      "PreyKri"
+    ],
+    "KampongChhnang": [
+      "B'er",
+      "KampongChhnang",
+      "Khsam",
+      "PhsarChhnang"
+    ],
+    "KampongLeaeng": [
+      "Chranouk",
+      "Dar",
+      "KampongHau",
+      "PhlovTuk",
+      "Pou",
+      "PralayMeas",
+      "SamraongSaen",
+      "SvayRumpear",
+      "Trangel"
+    ],
+    "KampongTralach": [
+      "AmpilTuek",
+      "ChhukSa",
+      "Chres",
+      "KampongTralach",
+      "Longveaek",
+      "OuRuessei",
+      "Peani",
+      "Saeb",
+      "TaChes",
+      "ThmaEdth"
+    ],
+    "RoleaBier": [
+      "AndoungSnay",
+      "BanteayPreal",
+      "CheungKreav",
+      "ChreyBak",
+      "KoukBanteay",
+      "KrangLeav",
+      "Pongro",
+      "Prasnoeb",
+      "PreyMul",
+      "RoleaB'ier",
+      "SraeThmei",
+      "SvayChrum",
+      "TuekHout"
+    ],
+    "SameakkiMeanChey": [
+      "ChheanLaeung",
+      "KhnarChhmar",
+      "KrangLvea",
+      "Peam",
+      "Sedthei",
+      "Svay",
+      "SvayChuk",
+      "TbaengKhpos",
+      "ThlokVien"
+    ],
+    "TonléSap": [
+      "TonléSap"
+    ],
+    "TuekPhos": [
+      "Akphivoadth",
+      "ChaongMaong",
+      "Chieb",
+      "KbalTuek",
+      "KhlongPopok",
+      "KrangSkear",
+      "TangKrasang",
+      "TuolKhpos"
+    ]
+  },
+  "KampongSpoe": {
+    "Aoral": [
+      "HaongSamnam",
+      "ReaksmeiSameakki",
+      "SangkaeSatob",
+      "TaSal",
+      "TrapeangChour"
+    ],
+    "Basedth": [
+      "Basedth",
+      "Kak",
+      "KatPhluk",
+      "Nitean",
+      "Pheakdei",
+      "PheariMeanChey",
+      "Phong",
+      "PouAngkrang",
+      "PouChamraeun",
+      "PouMreal",
+      "PreahKhae",
+      "SvayChacheb",
+      "SvayRumpear",
+      "TuolAmpil",
+      "TuolSala"
+    ],
+    "ChbarMon": [
+      "ChbarMon",
+      "KandaolDom",
+      "RokarThum",
+      "SopoarTep",
+      "SvayKravan"
+    ],
+    "KongPisei": [
+      "AngkPopel",
+      "Chongruk",
+      "MohaRuessei",
+      "PechrMuni",
+      "PreahNipean",
+      "PreyNheat",
+      "PreyVihear",
+      "RokaKaoh",
+      "Sdok",
+      "SnamKrapeu",
+      "Srang",
+      "TuekL'ak",
+      "Veal"
+    ],
+    "Odongk": [
+      "ChanSaen",
+      "CheungRoas",
+      "ChumpuProeks",
+      "DamnakReang",
+      "KhsemKhsant",
+      "KrangChek",
+      "MeanChey",
+      "PeangLvea",
+      "PhnomTouch",
+      "PreahSrae",
+      "PreyKrasang",
+      "TrachTong",
+      "VealPong",
+      "VeangChas",
+      "YutthSameakki"
+    ],
+    "PhnumSruoch": [
+      "Chambak",
+      "ChoamSangkae",
+      "DamboukRung",
+      "KiriVoan",
+      "KrangDeiVay",
+      "MohaSang",
+      "Ou",
+      "PreyKmeng",
+      "PreyRumduol",
+      "TangSamraong",
+      "TangSya",
+      "TraengTrayueng"
+    ],
+    "SamraongTong": [
+      "Kahaeng",
+      "KhtumKrang",
+      "KrangAmpil",
+      "Pneay",
+      "RoleangChak",
+      "RoleangKreul",
+      "SaenDei",
+      "Sambour",
+      "SamrongTong",
+      "Skuh",
+      "TangKrouch",
+      "ThummodaAr",
+      "TrapeangKong",
+      "TumpoarMeas",
+      "VoaSar"
+    ],
+    "Thpong": [
+      "Amleang",
+      "Monourom",
+      "PrambeiMum",
+      "RungRoeang",
+      "ToapMean",
+      "VealPon",
+      "YeaAngk"
+    ]
+  },
+  "KampongThum": {
+    "Baray": [
+      "AndoungPou",
+      "BakSna",
+      "Ballangk",
+      "Baray",
+      "Boeng",
+      "ChaeungDaeung",
+      "ChhukKhsach",
+      "ChongDoung",
+      "Chraneang",
+      "Chrolong",
+      "KokirThum",
+      "Krava",
+      "Pongro",
+      "SouYoung",
+      "Sralau",
+      "SvayPhleung",
+      "TnaotChum",
+      "Triel"
+    ],
+    "KampongSvay": [
+      "Chey",
+      "DamreiSlab",
+      "KampongKou",
+      "KampongSvay",
+      "KdeiDoung",
+      "Nipech",
+      "PhatSanday",
+      "PreyKuy",
+      "SanKor",
+      "Tbaeng",
+      "TrapeangRuessei"
+    ],
+    "PrasatBallangk": [
+      "Doung",
+      "Kraya",
+      "PhanNheum",
+      "Sakream",
+      "SalaVisai",
+      "Sameakki",
+      "TuolKreul"
+    ],
+    "PrasatSambour": [
+      "Chhuk",
+      "Koul",
+      "Sambour",
+      "Sraeung",
+      "TangKrasau"
+    ],
+    "Sandan": [
+      "ChheuTeal",
+      "DangKambet",
+      "Klaeng",
+      "MeanChey",
+      "MeanRith",
+      "Ngan",
+      "Sandan",
+      "Sochet",
+      "TumRing"
+    ],
+    "Santuk": [
+      "BoengLvea",
+      "Chroab",
+      "Kakaoh",
+      "KampongThma",
+      "Kraya",
+      "Pnov",
+      "Prasat",
+      "TangKrasang",
+      "TboungKrapeu",
+      "TiPou"
+    ],
+    "Stoung": [
+      "BanteayStoung",
+      "ChamnaKraom",
+      "ChamnaLeu",
+      "KampongChenCheung",
+      "KampongChenTboung",
+      "MsaKrang",
+      "PeamBang",
+      "Popok",
+      "Pralay",
+      "PreahDamrei",
+      "RungRoeang",
+      "Samprouch",
+      "Trea"
+    ],
+    "StuengSaen": [
+      "AcharLeak",
+      "DamreiChoanKhla",
+      "KampongKrabau",
+      "KampongRoteh",
+      "KampongThum",
+      "OuKanthor",
+      "PreyTaHu",
+      "Srayov"
+    ],
+    "TonléSap": [
+      "TonléSap"
+    ]
+  },
+  "Kampot": {
+    "AngkorChey": [
+      "AngkPhnumTouch",
+      "AnkorChey",
+      "Champei",
+      "DaeumDoung",
+      "DamboukKhpos",
+      "DanKoum",
+      "Mroum",
+      "PhnumKong",
+      "Praphnum",
+      "Samlanh",
+      "Tani"
+    ],
+    "BanteayMeas": [
+      "BanteayMeasKhang*",
+      "PreyTonle",
+      "SamraongKraom",
+      "SamraongLeu",
+      "SdachKongKhangCh*",
+      "SdachKongKhangle*",
+      "SdachKongKhangTb*",
+      "TnoatChongSrang",
+      "TrapeangSalaKhang*",
+      "TukMeasKhangKaeut",
+      "TukMeasKhangLech",
+      "VoatAngkKhangChe*",
+      "VoatAngkKhangTbo*"
+    ],
+    "Chhuk": [
+      "Baniev",
+      "BoengNimol",
+      "Chhuk",
+      "DechouAkphivoadth",
+      "DounYay",
+      "KrangSbov",
+      "KrangSnay",
+      "Lbaeuk",
+      "MeanChey",
+      "Neareay",
+      "SatvPong",
+      "Takaen",
+      "Tramaeng",
+      "TrapeangBei",
+      "TrapeangPhleang"
+    ],
+    "ChumKiri": [
+      "Chres",
+      "ChumpuVoan",
+      "SnayAnhchit",
+      "SraeChaeng",
+      "SraeKnong",
+      "SraeSamraong",
+      "TrapeangReang"
+    ],
+    "DangTong": [
+      "AngkRomeas",
+      "DamnakSokram",
+      "DangTong",
+      "KhcheayKhangCheung",
+      "KhcheayKhangTboung",
+      "L'ang",
+      "MeanRitth",
+      "SraeCheaKhangChe*",
+      "SraeCheaKhangTbo*",
+      "Totung"
+    ],
+    "KampongTrach": [
+      "AngSophy",
+      "BoengSalaKhangCh*",
+      "BoengSalaKhangTb*",
+      "DamnakKantuotKhan*",
+      "KampongTrachKhang*",
+      "PhnomPrasat",
+      "PrasatPhnomKhyang",
+      "PreaekKroes",
+      "RuesseiSrokKhang*",
+      "SvayTongKhangChe*",
+      "SvayTongKhangTbo*"
+    ],
+    "Kampot": [
+      "AndoungKhmer",
+      "KampongBay",
+      "KampongKandal",
+      "KrangAmpil",
+      "TraeuyKaoh"
+    ],
+    "TuekChhou": [
+      "BoengTuk",
+      "ChumKriel",
+      "KampongKraeng",
+      "KampongSamraong",
+      "Kandaol",
+      "KaohTouch",
+      "KounSatv",
+      "Makprang",
+      "PreaekTnoat",
+      "PreyKhmum",
+      "PreyThnang",
+      "StuengKaev",
+      "Thmei",
+      "TrapeangPring",
+      "TrapeangSangkae",
+      "TrapeangThum"
+    ]
+  },
+  "Kandal": {
+    "AngkSnuol": [
+      "BaekChan",
+      "ChhakChheuNeang",
+      "DamnakAmpil",
+      "KrangMkak",
+      "Lumhach",
+      "Mkak",
+      "Peuk",
+      "PreyPuoch",
+      "SamraongLeu",
+      "TuolPrech"
+    ],
+    "KandalStueng": [
+      "AmpovPrey",
+      "AnlongRomiet",
+      "Barku",
+      "BoengKhyang",
+      "CheungKaeub",
+      "DaeumRues",
+      "Kandaok",
+      "KoukTrab",
+      "PreaekRoka",
+      "PreaekSlaeng",
+      "PreahPutth",
+      "Roka",
+      "RoleangKaen",
+      "SiemReab",
+      "Tbaeng",
+      "Thmei",
+      "TrapeangVeaeng",
+      "Trea"
+    ],
+    "KaohThum": [
+      "ChheuKmau",
+      "ChrouyTaKaev",
+      "KampongKong",
+      "KaohThumKa",
+      "KaohThumKha",
+      "LeukDaek",
+      "PouthiBan",
+      "Prea​ekChrey",
+      "PreaekSdei",
+      "PreaekThmei",
+      "SampeouPoun"
+    ],
+    "KhsachKandal": [
+      "BakDav",
+      "CheyThum",
+      "KampongChamlang",
+      "KaohChouram",
+      "KaohOknhaTei",
+      "PreaekAmpil",
+      "PreaekLuong",
+      "PreaekTakov",
+      "PreaekTaMeak",
+      "PreahPrasab",
+      "PukRuessei",
+      "RokaChonlueng",
+      "Sanlung",
+      "Sithor",
+      "SvayChrum",
+      "SvayRomiet",
+      "TaAek",
+      "VihearSuork"
+    ],
+    "KienSvay": [
+      "BanteayDaek",
+      "ChheuTeal",
+      "DeiEdth",
+      "KampongSvay",
+      "Kokir",
+      "KokirThum",
+      "PhumThum",
+      "SamraongThum"
+    ],
+    "LeukDaek": [
+      "K'amSamnar",
+      "KampongPhnum",
+      "KhpobAteav",
+      "PeamReang",
+      "PreaekDach",
+      "PreaekTonloab",
+      "Sandar"
+    ],
+    "LveaAem": [
+      "AkreiyKsatr",
+      "Barong",
+      "BoengKrum",
+      "KaohKaev",
+      "KaohReah",
+      "LveaSar",
+      "PeamOknhaOng",
+      "PhumThum",
+      "PreaekKmeng",
+      "PreaekRey",
+      "PreaekRuessei",
+      "Sambuor",
+      "Sarikakaev",
+      "ThmaKor",
+      "TuekKhleang"
+    ],
+    "MukhKampul": [
+      "PreaekAnhchanh",
+      "PreaekDambang",
+      "RokaKongTiMuoy",
+      "RokaKongTiPir",
+      "RuesseiChrouy",
+      "SambuorMeas",
+      "SvayAmpear"
+    ],
+    "PonheaLueu": [
+      "Chhveang",
+      "ChreyLoas",
+      "KampongLuong",
+      "KampongOs",
+      "KaohChen",
+      "PhnumBat",
+      "PhsarDaek",
+      "PonheaLueu",
+      "PreaekTaTeaen",
+      "TumnobThum",
+      "VihearLuong"
+    ],
+    "Sang": [
+      "KaohAnlongChen",
+      "KaohKhael",
+      "KaohKhsachTonlea",
+      "Khpob",
+      "KrangYov",
+      "Prasat",
+      "PreaekAmbel",
+      "PreaekKoy",
+      "RokaKhpos",
+      "S'angPhnum",
+      "Setbou",
+      "SvayPrateal",
+      "SvayRolum",
+      "TaLon",
+      "TraeuySla",
+      "TuekVil"
+    ],
+    "TaKhmau": [
+      "DoeumMien",
+      "KampongSamnanh",
+      "PrekHo",
+      "PrekRuessey",
+      "TaKdol",
+      "TaKhmao"
+    ]
+  },
+  "KaohKong": {
+    "BotumSakor": [
+      "AndoungTuek",
+      "Kandaol",
+      "TaNoun",
+      "ThmaSa"
+    ],
+    "KaohKong": [
+      "ChrouyPras",
+      "KaohKapi",
+      "TaTaiKraom",
+      "TrapeangRung"
+    ],
+    "KhemaraPhoumin": [
+      "DangTong",
+      "SmachMeanChey",
+      "StuengVeaeng"
+    ],
+    "KiriSakor": [
+      "KaohSdach",
+      "PhnhiMeas",
+      "PreaekKhsach"
+    ],
+    "MondolSeima": [
+      "PakKhlang",
+      "PeamKrasaob",
+      "TuolKokir"
+    ],
+    "SraeAmbel": [
+      "BoengPreav",
+      "ChiKhaKraom",
+      "ChikhaLeu",
+      "ChrouySvay",
+      "DangPeaeng",
+      "SraeAmbel"
+    ],
+    "ThmaBang": [
+      "ChiPhat",
+      "Chumnoab",
+      "Pralay",
+      "RuesseiChrum",
+      "TaTeyLeu",
+      "ThmaDounPov"
+    ]
+  },
+  "Kep": {
+    "DamnakChangaeur": [
+      "Angkaol",
+      "PongTuek"
+    ],
+    "Kaeb": [
+      "Kaeb",
+      "OuKrasar",
+      "PreyThum"
+    ]
+  },
+  "Kracheh": {
+    "ChetrBorei": [
+      "BosLeav",
+      "Changkrang",
+      "Dar",
+      "Kantuot",
+      "KaohChraeng",
+      "KouLoab",
+      "Sambok",
+      "ThmaAndaeuk",
+      "ThmaKreae",
+      "Thmei"
+    ],
+    "Chhloung": [
+      "Chhloung",
+      "DamreiPhong",
+      "HanChey",
+      "KampongDamrei",
+      "Kanhchor",
+      "KhsachAndeth",
+      "Pongro",
+      "PreaekSaman"
+    ],
+    "Kracheh": [
+      "KaohTrong",
+      "Kracheh",
+      "Krakor",
+      "OuRuessei",
+      "RokaKandal"
+    ],
+    "PrekPrasab": [
+      "Chambâk",
+      "ChrouyBanteay",
+      "KampongKor",
+      "KohTaSuy",
+      "PreaekPrasab",
+      "RusseyKeo",
+      "Saob",
+      "TaMao"
+    ],
+    "Sambour": [
+      "BoengChar",
+      "KampongCham",
+      "KaohKhnhaer",
+      "KbalDamrei",
+      "OuKrieng",
+      "RoluosMeanChey",
+      "Sambour",
+      "Sandan",
+      "SraeChis",
+      "Voadthonak"
+    ],
+    "Snuol": [
+      "Khsuem",
+      "PirThnu",
+      "Snuol",
+      "SraeChar",
+      "SvayChreah"
+    ]
+  },
+  "KrongPailin": {
+    "Pailin": [
+      "BarYakha",
+      "OuTaVau",
+      "Pailin",
+      "TuolLvea"
+    ],
+    "SalaKrau": [
+      "OuAndoung",
+      "SalaKrau",
+      "StuengKach",
+      "StuengTrang"
+    ]
+  },
+  "KrongPreahSihanouk": {
+    "KampongSeila": [
+      "ChamkarLuong",
+      "KampongSeila",
+      "OuBakRoteh",
+      "StuengChhay"
+    ],
+    "PreahSihanouk": [
+      "Bei",
+      "Buon",
+      "KaohRung",
+      "lekMuoy",
+      "Pir"
+    ],
+    "PreyNob": [
+      "AndoungThma",
+      "BetTrang",
+      "BoengTaPrum",
+      "CheungKou",
+      "OuChrov",
+      "OuOknhaHeng",
+      "PreyNob",
+      "Ream",
+      "Sameakki",
+      "Samrong",
+      "TuekL'ak",
+      "TuekThla",
+      "TuolTotueng",
+      "VealRenh"
+    ],
+    "StuengHav": [
+      "KaevPhos",
+      "Kampenh",
+      "OuTreh",
+      "TumnobRolok"
+    ]
+  },
+  "MondolKiri": {
+    "KaevSeima": [
+      "ChongPhlah",
+      "Memang",
+      "SraeChhuk",
+      "SraeKhtum",
+      "SraePreah"
+    ],
+    "KaohNheaek": [
+      "ABuonLeu",
+      "NangKhiLik",
+      "Roya",
+      "SokhSant",
+      "SraeHuy",
+      "SraeSangkum"
+    ],
+    "OuReang": [
+      "DakDam",
+      "SaenMonourom"
+    ],
+    "PechChreada": [
+      "BuSra",
+      "KrangTeh",
+      "PuChrey",
+      "SraeAmpum"
+    ],
+    "SaenMonourom": [
+      "Monourom",
+      "Romonea",
+      "SokhDom",
+      "SpeanMeanChey"
+    ]
+  },
+  "OtdarMeanChey": {
+    "AnlongVeaeng": [
+      "AnlongVeaeng",
+      "Lumtong",
+      "Thlat",
+      "TrapeangPrei",
+      "TrapeangTav"
+    ],
+    "BanteayAmpil": [
+      "Ampil",
+      "Beng",
+      "KoukKhpos",
+      "KoukMon"
+    ],
+    "ChongKal": [
+      "CheungTien",
+      "ChongKal",
+      "Krasang",
+      "Pongro"
+    ],
+    "Samraong": [
+      "BansayReak",
+      "BosSbov",
+      "KounKriel",
+      "OuSmach",
+      "Samraong"
+    ],
+    "TrapeangPrasat": [
+      "BakAnloung",
+      "OuSvay",
+      "Ph'av",
+      "PreahPralay",
+      "TrapeangPrasat",
+      "TumnobDach"
+    ]
+  },
+  "PhnomPenh": {
+    "ChamkarMon": [
+      "BoengKengKangTi*",
+      "BoengTrabaek",
+      "Olympic",
+      "PhsarDaeumThkov",
+      "TonleBasak",
+      "TumnobTuek",
+      "TuolSvayPreyTiM*",
+      "TuolSvayPreyTiP*",
+      "TuolTumpungTiMuoy",
+      "TuolTumpungTiPir"
+    ],
+    "ChbarAmpov": [
+      "ChbarAmpovTiPir",
+      "ChhbarAmpovTiMuoy",
+      "KbalKaoh",
+      "Nirouth",
+      "PreaekAeng",
+      "PreaekPra",
+      "PreaekThmei",
+      "VealSbov"
+    ],
+    "ChraoyChongvar": [
+      "BakKaeng",
+      "ChrouyChangvar",
+      "KaohDach",
+      "PreaekLieb",
+      "PreaekTaSek"
+    ],
+    "Dangkao": [
+      "CheungAek",
+      "Dangkao",
+      "KongNoy",
+      "KrangPongro",
+      "PongTuek",
+      "PrateahLang",
+      "PreaekKampues",
+      "PreySa",
+      "PreyVeaeng",
+      "Roluos",
+      "SakSampov",
+      "SpeanThma",
+      "Tien"
+    ],
+    "DounPenh": [
+      "BoengReang",
+      "ChaktoMukh",
+      "CheyChummeah",
+      "PhsarChas",
+      "PhsarKandalTiMuoy",
+      "PhsarKandalTiPir",
+      "PhsarThmeiTiBei",
+      "PhsarThmeiTiMuoy",
+      "PhsarThmeiTiPir",
+      "SrahChak",
+      "VoatPhnum"
+    ],
+    "MeanChey": [
+      "BoengTumpun",
+      "ChakAngraeKraom",
+      "ChakAngraeLeu",
+      "StuengMeanchey"
+    ],
+    "PraekPnov": [
+      "KoukRoka",
+      "PonheaPon",
+      "Ponsang",
+      "PreaekPhnov",
+      "Samraong"
+    ],
+    "PrampirMeakkakra": [
+      "BoengProluet",
+      "Mittapheap",
+      "Monourom",
+      "OuRuesseiTiBei",
+      "OuRuesseiTiBuon",
+      "OuRuesseiTiMuoy",
+      "OuRuesseiTiPir",
+      "VealVong"
+    ],
+    "PurSenChey": [
+      "BoengThum",
+      "ChaomChau",
+      "Kakab",
+      "Kamboul",
+      "Kantaok",
+      "Ovlaok",
+      "PhleungChhehRoteh",
+      "SamraongKraom",
+      "Snaor",
+      "TrapeangKrasang"
+    ],
+    "RusseyKeo": [
+      "ChrangChamrehTiM*",
+      "ChrangChamrehTiP*",
+      "KilomaetrLekhPram*",
+      "RuesseiKaev",
+      "SvayPak",
+      "TuolSangke"
+    ],
+    "Saensokh": [
+      "Khmuonh",
+      "KrangThnong",
+      "PhnomPenhThmei",
+      "TuekThla"
+    ],
+    "TuolKouk": [
+      "BoengKakTiMuoy",
+      "BoengKakTiPir",
+      "BoengSalang",
+      "PhsarDaeumKor",
+      "PhsarDepouTiBei",
+      "PhsarDepouTiMuoy",
+      "PhsarDepouTiPir",
+      "TuekL'akTiBei",
+      "TuekL'akTiMuoy",
+      "TuekL'akTiPir"
+    ]
+  },
+  "Pouthisat": {
+    "Bakan": [
+      "BoengBatKandaol",
+      "BoengKhnar",
+      "KhnarTotueng",
+      "MeTuek",
+      "OuTaPaong",
+      "Rumlech",
+      "SnamPreah",
+      "SvayDounKaev",
+      "TaLou",
+      "Trapeangchorng"
+    ],
+    "Kandieng": [
+      "AnlongVil",
+      "Kandieng",
+      "Kanhchor",
+      "KaohChum",
+      "ReangTil",
+      "SraeSdok",
+      "SvayLuong",
+      "Sya",
+      "Veal"
+    ],
+    "Krakor": [
+      "AnlongTnaot",
+      "AnsaChambak",
+      "BoengKantuot",
+      "ChheuTom",
+      "KampongLuong",
+      "KampongPou",
+      "KbalTrach",
+      "OuSandan",
+      "SnaAnsa",
+      "SvaySa",
+      "TnaotChum"
+    ],
+    "PhnumKravanh": [
+      "BakChenhchien",
+      "Leach",
+      "PhteahRung",
+      "Prongil",
+      "Rokat",
+      "Samraong",
+      "Santreae"
+    ],
+    "Pursat": [
+      "BanteayDei",
+      "ChamraeunPhal",
+      "LolokSa",
+      "PhteahPrey",
+      "PreyNhi",
+      "Roleab",
+      "SvayAt"
+    ],
+    "TonléSap": [
+      "TonléSap"
+    ],
+    "VealVeaeng": [
+      "AnlongReab",
+      "KrapeuPir",
+      "OuSaom",
+      "Pramaoy",
+      "ThmaDa"
+    ]
+  },
+  "PreahVihear": {
+    "CheySaen": [
+      "Chrach",
+      "Khyang",
+      "Putrea",
+      "S'ang",
+      "Tasu",
+      "Thmea"
+    ],
+    "Chhaeb": [
+      "ChhaebMuoy",
+      "ChhaebPir",
+      "KampongSralauMuoy",
+      "KampongSralauPir",
+      "MluPreyMuoy",
+      "MluPreyPir",
+      "SangkaeMuoy",
+      "SangkaePir"
+    ],
+    "ChoamKsant": [
+      "ChoamKsant",
+      "Kantuot",
+      "Morokot",
+      "PringThum",
+      "RumdaohSrae",
+      "SrorAem",
+      "TuekKraham",
+      "Yeang"
+    ],
+    "Kuleaen": [
+      "KuleaenCheung",
+      "KuleaenTboung",
+      "PhnumPenh",
+      "PhnumTbaengPir",
+      "Srayang",
+      "Thmei"
+    ],
+    "PreahVihear": [
+      "KampongPranak",
+      "PalHal"
+    ],
+    "Rovieng": [
+      "Reaksa",
+      "Reaksmei",
+      "RiebRoy",
+      "RikReay",
+      "Robieb",
+      "Rohas",
+      "Romoneiy",
+      "Romtum",
+      "Rotanak",
+      "Rumdaoh",
+      "RungRoeang",
+      "RuosRoan"
+    ],
+    "SangkumThmei": [
+      "Chamraeun",
+      "PhnumTbaengMuoy",
+      "Ro'ang",
+      "RonakSer",
+      "Sdau"
+    ],
+    "TbaengMeanChey": [
+      "ChheanMukh",
+      "Pou",
+      "Prame",
+      "PreahKhleang"
+    ]
+  },
+  "PreyVeng": {
+    "BaPhnum": [
+      "BoengPreah",
+      "CheungPhnum",
+      "ChheuKach",
+      "ReaksChey",
+      "RoungDamrei",
+      "SdauKaong",
+      "SpueuKa",
+      "SpueuKha",
+      "Theay"
+    ],
+    "KamchayMear": [
+      "Cheach",
+      "DounKoeng",
+      "Krabau",
+      "Kranhung",
+      "SeangKhveang",
+      "SmaongKhangCheung",
+      "SmaongKhangTboung",
+      "Trabaek"
+    ],
+    "KampongTrabaek": [
+      "Ansaong",
+      "Cham",
+      "CheangDaek",
+      "Chrey",
+      "KampongTrabaek",
+      "KansoamAk",
+      "KouKhchak",
+      "PeamMontear",
+      "Prasat",
+      "Pratheat",
+      "PreyChhor",
+      "PreyPoun",
+      "Thkov"
+    ],
+    "Kanhchriech": [
+      "ChongAmpil",
+      "Kanhchriech",
+      "KdoeangReay",
+      "KoukKongKaeut",
+      "KoukKongLech",
+      "Preal",
+      "ThmaPun",
+      "Tnaot"
+    ],
+    "MeSang": [
+      "AngkorSar",
+      "ChiPhoch",
+      "Chres",
+      "PreyKhnes",
+      "PreyRumdeng",
+      "PreyTotueng",
+      "SvayChrum",
+      "TrapeangSrae"
+    ],
+    "PeaReang": [
+      "KampongPopil",
+      "KampongPrang",
+      "Kanhcham",
+      "MesarPrachan",
+      "PreyPnov",
+      "PreySniet",
+      "PreySralet",
+      "Reab",
+      "Roka"
+    ],
+    "PeamChor": [
+      "AngkorAngk",
+      "KampongPrasat",
+      "KaohChek",
+      "KaohRoka",
+      "KaohSampov",
+      "KrangTaYang",
+      "PreaekKrabau",
+      "PreaekSambuor",
+      "RuesseiSrok",
+      "SvayPhluoh"
+    ],
+    "PeamRo": [
+      "BaBaong",
+      "BanlichPrasat",
+      "NeakLoeang",
+      "PeamMeanChey",
+      "PeamRo",
+      "PreaekKhsayKa",
+      "PreaekKhsayKha",
+      "PreyKandieng"
+    ],
+    "PreahSdach": [
+      "AngkorReach",
+      "BanteayChakrei",
+      "BoengDaol",
+      "CheyKampok",
+      "KampongSoeng",
+      "KrangSvay",
+      "Lvea",
+      "PreahSdach",
+      "Reathor",
+      "Rumchek",
+      "SenaReachOtdam"
+    ],
+    "PreyVeng": [
+      "Baray",
+      "CheungTuek",
+      "KampongLeav"
+    ],
+    "PurRieng": [
+      "KampongRuessei",
+      "PouRieng",
+      "PreaekAnteah",
+      "PreaekChrey",
+      "PreaekTaSar",
+      "PreyKanlaong",
+      "TaKao"
+    ],
+    "SithorKandal": [
+      "AmpilKrau",
+      "ChreyKhmum",
+      "Lve",
+      "PnovTiMuoy",
+      "PnovTiPir",
+      "PouTi",
+      "PreaekChangkran",
+      "PreyDaeumThnoeng",
+      "PreyTueng",
+      "RuesseiSanh",
+      "Rumlech"
+    ],
+    "SvayAntor": [
+      "AngkorTret",
+      "CheaKhlang",
+      "Chrey",
+      "DamreiPuon",
+      "MeBon",
+      "PeanRoung",
+      "Popueus",
+      "PreyKhla",
+      "Samraong",
+      "SvayAntor",
+      "TuekThla"
+    ]
+  },
+  "Rotanokiri": {
+    "AndoungMeas": [
+      "Malik",
+      "Nhang",
+      "TaLav"
+    ],
+    "BanLung": [
+      "BoengKansaeng",
+      "Kachanh",
+      "Labansiek",
+      "YeakLaom"
+    ],
+    "BarKaev": [
+      "Kak",
+      "KehChong",
+      "LaMinh",
+      "LungKhung",
+      "Saeung",
+      "TingChak"
+    ],
+    "KounMom": [
+      "SereiMongkol",
+      "SraeAngkrorng",
+      "TaAng",
+      "Teun",
+      "TrapeangChres",
+      "TrapeangKraham"
+    ],
+    "Lumphat": [
+      "BaTang",
+      "CheyOtdam",
+      "KaLaeng",
+      "LbangMuoy",
+      "LbangPir",
+      "Seda"
+    ],
+    "OuChum": [
+      "Aekakpheap",
+      "ChaUng",
+      "Kalai",
+      "L'ak",
+      "OuChum",
+      "Pouy",
+      "Sameakki"
+    ],
+    "OuYaDav": [
+      "BarKham",
+      "LumChoar",
+      "PaTe",
+      "PakNhai",
+      "SaomThum",
+      "Sesan",
+      "YaTung"
+    ],
+    "TaVeaeng": [
+      "TaVeaengKraom",
+      "TaVeaengLeu"
+    ],
+    "VeunSai": [
+      "HatPak",
+      "KaChoun",
+      "KaohPang",
+      "KaohPeak",
+      "KokLak",
+      "PaKalan",
+      "PhnumKok",
+      "Pong",
+      "VeunSai"
+    ]
+  },
+  "Siemreab": {
+    "AngkorChum": [
+      "CharChhuk",
+      "DounPeng",
+      "KoukDoung",
+      "Koul",
+      "NokorPheas",
+      "SraeKhvav",
+      "TaSaom"
+    ],
+    "AngkorThum": [
+      "ChobTaTrav",
+      "LeangDai",
+      "PeakSnaeng",
+      "SvayChek"
+    ],
+    "BanteaySrei": [
+      "KhnarSanday",
+      "KhunReam",
+      "PreahDak",
+      "Rumchek",
+      "RunTaAek",
+      "Tbaeng"
+    ],
+    "ChiKraeng": [
+      "AnlongSamnar",
+      "ChiKraeng",
+      "KampongKdei",
+      "Khvav",
+      "KoukThlokKraom",
+      "KoukThlokLeu",
+      "LveaengRuessei",
+      "PongroKraom",
+      "PongroLeu",
+      "RuesseiLok",
+      "Sangvaeuy",
+      "SpeanTnaot"
+    ],
+    "Kralanh": [
+      "ChanleasDai",
+      "KampongThkov",
+      "Kralanh",
+      "KrouchKor",
+      "RoungKou",
+      "SaenSokh",
+      "Sambuor",
+      "Snuol",
+      "Sranal",
+      "TaAn"
+    ],
+    "PrasatBakong": [
+      "Bakong",
+      "Ballangk",
+      "KampongPhluk",
+      "Kandaek",
+      "Kantreang",
+      "MeanChey",
+      "Roluos",
+      "TrapeangThum"
+    ],
+    "Puok": [
+      "DounKaev",
+      "KaevPoar",
+      "KdeiRun",
+      "Khnat",
+      "Lvea",
+      "MukhPaen",
+      "PouTreay",
+      "PreyChruk",
+      "Puok",
+      "Reul",
+      "SamraongYea",
+      "SasarSdam",
+      "TreiNhoar",
+      "Yeang"
+    ],
+    "SiemReap": [
+      "Ampil",
+      "ChongKhnies",
+      "Chreav",
+      "KokChak",
+      "KrabeiRiel",
+      "NokorThum",
+      "SalaKamreuk",
+      "SiemReab",
+      "SlaKram",
+      "SngkatSambuor",
+      "Srangae",
+      "SvayDankum",
+      "TuekVil"
+    ],
+    "SoutrNikom": [
+      "ChanSa",
+      "DamDaek",
+      "DanRun",
+      "KampongKhleang",
+      "Khchas",
+      "KhnarPou",
+      "KienSangkae",
+      "Popel",
+      "Samraong",
+      "TaYaek"
+    ],
+    "SreiSnam": [
+      "ChrouyNeangNguon",
+      "KlangHay",
+      "Moung",
+      "Prei",
+      "SlaengSpean",
+      "TramSasar"
+    ],
+    "SvayLeu": [
+      "BoengMealea",
+      "Kantuot",
+      "KhnangPhnum",
+      "SvayLeu",
+      "TaSiem"
+    ],
+    "TonléSap": [
+      "TonléSap"
+    ],
+    "Varin": [
+      "LveaKrang",
+      "Prasat",
+      "SraeNouy",
+      "SvaySa",
+      "Varin"
+    ]
+  },
+  "StoengTreng": {
+    "Sesan": [
+      "Kamphun",
+      "KbalRomeas",
+      "Phluk",
+      "Samkhuoy",
+      "Sdau",
+      "SraeKor",
+      "TaLat"
+    ],
+    "SiemBouk": [
+      "KaohPreah",
+      "KaohSampeay",
+      "KaohSralay",
+      "OuMreah",
+      "OuRuesseiKandal",
+      "SiemBouk",
+      "SraeKrasang"
+    ],
+    "SiemPang": [
+      "PreaekMeas",
+      "Santepheap",
+      "Sekong",
+      "SraeSambour",
+      "TmaKaev"
+    ],
+    "StuengTraeng": [
+      "PreahBat",
+      "Sameakki",
+      "SrahRuessei",
+      "StuengTraeng"
+    ],
+    "ThalaBarivat": [
+      "AnlongChrey",
+      "AnlongPhe",
+      "ChamkarLeu",
+      "KangCham",
+      "KaohSnaeng",
+      "OuRai",
+      "OuSvay",
+      "PreahRumkel",
+      "SamAng",
+      "SraeRuessei",
+      "ThalaBarivat"
+    ]
+  },
+  "SvayRieng": {
+    "Bavet": [
+      "Bati",
+      "Bavet",
+      "ChrakMtes",
+      "Prasat",
+      "PreyAngkunh"
+    ],
+    "Chantrea": [
+      "Chantrea",
+      "Chres",
+      "MeSarThngak",
+      "PreyKokir",
+      "Samraong",
+      "TuolSdei"
+    ],
+    "KampongRou": [
+      "BanteayKrang",
+      "Khsaetr",
+      "Nhor",
+      "PreahPonlea",
+      "PreyThum",
+      "ReachMontir",
+      "Samlei",
+      "Samyaong",
+      "SvayTaYean",
+      "Thmei",
+      "Tnaot"
+    ],
+    "RomeasHaek": [
+      "Ampil",
+      "AndoungPou",
+      "AndoungTrabaek",
+      "AngkPrasrae",
+      "Chantrei",
+      "ChreyThum",
+      "Doung",
+      "KampongTrach",
+      "Kokir",
+      "Krasang",
+      "Mream",
+      "MukhDa",
+      "SambattMeanChey",
+      "Sambuor",
+      "TrapeangSdau",
+      "Tras"
+    ],
+    "Rumduol": [
+      "BosMon",
+      "ChrungPopel",
+      "KampongAmpil",
+      "KampongChak",
+      "MeunChey",
+      "PongTuek",
+      "Sangkae",
+      "SvayChek",
+      "Thmea",
+      "ThnaThnong"
+    ],
+    "SvayChrum": [
+      "AngkTaSou",
+      "Basak",
+      "Chambak",
+      "ChheuTeal",
+      "DounSa",
+      "KampongChamlang",
+      "KoukPring",
+      "KraolKou",
+      "Kruos",
+      "PouthiReach",
+      "SvayAngk",
+      "SvayChrum",
+      "SvayThum",
+      "SvayYea",
+      "TaSuos",
+      "Thlok"
+    ],
+    "SvayRieng": [
+      "Chek",
+      "KoyTrabaek",
+      "PouTaHao",
+      "PreyChhlak",
+      "Sangkhoar",
+      "SvayRieng",
+      "SvayToea"
+    ],
+    "SvayTeab": [
+      "KandiengReay",
+      "KokiSaom",
+      "Monourom",
+      "Popeaet",
+      "Prasoutr",
+      "PreyTaEi",
+      "RomeangThkaol",
+      "Sambuor",
+      "SvayRumpear"
+    ]
+  },
+  "Takev": {
+    "AngkorBorei": [
+      "AngkorBorei",
+      "BaSrae",
+      "KoukThlok",
+      "Ponley",
+      "PreaekPhtoul",
+      "PreyPhkoam"
+    ],
+    "Bati": [
+      "Chambak",
+      "Champei",
+      "Doung",
+      "Kandoeng",
+      "KomarReachea",
+      "KrangLeav",
+      "KrangThnong",
+      "Lumpong",
+      "PeaReam",
+      "PotSar",
+      "SourPhi",
+      "TangDoung",
+      "Tnaot",
+      "TrapeangKrasang",
+      "TrapeangSab"
+    ],
+    "BoreiCholsar": [
+      "BoreiCholsar",
+      "CheyChouk",
+      "DoungKhpos",
+      "KampongKrasang",
+      "KoukPou"
+    ],
+    "DounKaev": [
+      "Baray",
+      "RokaKnong",
+      "RokaKrau"
+    ],
+    "KaohAndaet": [
+      "KrapumChhuk",
+      "PechSar",
+      "PreyKhla",
+      "PreyYuthka",
+      "Romenh",
+      "ThleaPrachum"
+    ],
+    "KiriVong": [
+      "AngkPrasat",
+      "Kamnab",
+      "Kampeaeng",
+      "KiriChongKaoh",
+      "KoukPrech",
+      "PhnumDen",
+      "PreahBatChoanChum",
+      "PreyAmpok",
+      "PreyRumdeng",
+      "ReamAndaeuk",
+      "Saom",
+      "TaOu"
+    ],
+    "PreyKabbas": [
+      "Angkanh",
+      "BanKam",
+      "Champa",
+      "Char",
+      "Kampeaeng",
+      "KampongReab",
+      "Kdanh",
+      "PouRumchak",
+      "PreyKabbas",
+      "PreyLvea",
+      "PreyPhdau",
+      "Snao",
+      "TangYab"
+    ],
+    "Samraong": [
+      "BoengTranhKhangC*",
+      "BoengTranhKhangT*",
+      "CheungKuon",
+      "ChumreahPen",
+      "Khvav",
+      "Lumchang",
+      "Rovieng",
+      "Samraong",
+      "Sla",
+      "Soengh",
+      "Trea"
+    ],
+    "TramKak": [
+      "AngkTaSaom",
+      "CheangTong",
+      "Kus",
+      "LeayBour",
+      "NhaengNhang",
+      "OtdamSoriya",
+      "OuSaray",
+      "Popel",
+      "Samraong",
+      "SraeRonoung",
+      "TaPhem",
+      "TramKak",
+      "TrapeangKranhoung",
+      "TrapeangThumKhang*"
+    ],
+    "Treang": [
+      "AngkKaev",
+      "AngkKhnor",
+      "Angkanh",
+      "ChiKhma",
+      "Khvav",
+      "PrambeiMum",
+      "PreySloek",
+      "Roneam",
+      "Sambuor",
+      "Sanlung",
+      "Smaong",
+      "Srangae",
+      "Thlok",
+      "Tralach"
+    ]
+  },
+  "TbongKhmum": {
+    "Dambae": [
+      "ChongCheach",
+      "Dambae",
+      "KoukSrok",
+      "NeangTeut",
+      "Seda",
+      "TrapeangPring",
+      "TuekChrov"
+    ],
+    "KrouchChhmar": [
+      "Chhuk",
+      "Chumnik",
+      "KampongTreas",
+      "KaohPir",
+      "KrouchChhmar",
+      "PeusMuoy",
+      "PeusPir",
+      "PreaekAchi",
+      "RokaKhnor",
+      "SvayKhleang",
+      "Trea",
+      "TuolSnuol"
+    ],
+    "Memot": [
+      "ChanMul",
+      "Choam",
+      "ChoamKravien",
+      "ChoamTaMau",
+      "Dar",
+      "Kampoan",
+      "Kokir",
+      "Memong",
+      "Memot",
+      "Rumchek",
+      "Rung",
+      "Tonlung",
+      "Tramung",
+      "Triek"
+    ],
+    "OuReangOv": [
+      "AmpilTaPok",
+      "Chak",
+      "Damril",
+      "KongChey",
+      "Mien",
+      "PreahTheat",
+      "TuolSouphi"
+    ],
+    "PonheaKraek": [
+      "Dountei",
+      "Kak",
+      "KandaolChrum",
+      "KaongKang",
+      "Kraek",
+      "Popel",
+      "TrapeangPhlong",
+      "VealMlu"
+    ],
+    "Suong": [
+      "Suong",
+      "VihearLuong"
+    ],
+    "TboungKhmum": [
+      "Anhchaeum",
+      "BoengPruol",
+      "Chikor",
+      "ChirouTiMuoy",
+      "ChirouTiPir",
+      "Chob",
+      "Kor",
+      "Lngieng",
+      "MongRiev",
+      "PeamChileang",
+      "RokaPoPram",
+      "Sralab",
+      "ThmaPech",
+      "TonleBet"
+    ]
+  }
+}
