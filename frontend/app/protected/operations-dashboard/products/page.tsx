@@ -33,7 +33,7 @@ export default async function ProductsPage() {
         <CubeIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Product Management</h2>
         <p className="text-gray-600 mb-6">
-          This section will be implemented in Phase 4. You'll be able to:
+          This section will be implemented in Phase 4. You&apos;ll be able to:
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left max-w-2xl mx-auto">
           <div className="text-sm text-gray-600">
