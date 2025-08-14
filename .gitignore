@@ -32,3 +32,7 @@ backend/~$KampongSpeu_climate_data.xlsx
 !Takeo.xlsx
 !TbongKhmum.xlsx
 backend/api/g_credentials.json
+/.cursor
+M3_AccuRate_Operations_Dashboard_MVP_Schema.md
+M3_AccuRate_Operations_Dashboard_PRD.md
+M3_implementation.md
