@@ -48,7 +48,6 @@ export function DateInput({
       <PopoverContent 
         className="w-auto overflow-hidden p-0 z-[100]" 
         align="start"
-        onInteractOutside={(e) => e.preventDefault()}
       >
         <div style={{ pointerEvents: 'auto' }}>
           <Calendar

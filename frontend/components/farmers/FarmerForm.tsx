@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -132,11 +132,20 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
     }
   }
 
-  const handleLocationChange = (province: string, district: string, commune: string) => {
-    form.setValue("province", province)
-    form.setValue("district", district)
-    form.setValue("commune", commune)
-  }
+  const handleProvinceChange = useCallback((province: string) => {
+    form.setValue("province", province, { shouldValidate: true })
+    form.setValue("district", "", { shouldValidate: true })
+    form.setValue("commune", "", { shouldValidate: true })
+  }, [form])
+
+  const handleDistrictChange = useCallback((district: string) => {
+    form.setValue("district", district, { shouldValidate: true })
+    form.setValue("commune", "", { shouldValidate: true })
+  }, [form])
+
+  const handleCommuneChange = useCallback((commune: string) => {
+    form.setValue("commune", commune, { shouldValidate: true })
+  }, [form])
 
   return (
     <Form {...form}>
@@ -270,9 +279,9 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
                 province={form.watch("province")}
                 district={form.watch("district")}
                 commune={form.watch("commune")}
-                onProvinceChange={(province) => handleLocationChange(province, "", "")}
-                onDistrictChange={(district) => handleLocationChange(form.watch("province"), district, "")}
-                onCommuneChange={(commune) => handleLocationChange(form.watch("province"), form.watch("district"), commune)}
+                onProvinceChange={handleProvinceChange}
+                onDistrictChange={handleDistrictChange}
+                onCommuneChange={handleCommuneChange}
               />
             </div>
             

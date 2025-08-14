@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useCallback } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -76,20 +76,30 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
       village: "",
       crop: "",
       areaHa: 0,
-      assignedProduct: "",
+      assignedProduct: "none",
     },
   })
 
-  const handleLocationChange = (province: string, district: string, commune: string) => {
-    form.setValue("province", province)
-    form.setValue("district", district)
-    form.setValue("commune", commune)
-  }
+  const handleProvinceChange = useCallback((province: string) => {
+    form.setValue("province", province, { shouldValidate: true })
+    form.setValue("district", "", { shouldValidate: true })
+    form.setValue("commune", "", { shouldValidate: true })
+  }, [form])
+
+  const handleDistrictChange = useCallback((district: string) => {
+    form.setValue("district", district, { shouldValidate: true })
+    form.setValue("commune", "", { shouldValidate: true })
+  }, [form])
+
+  const handleCommuneChange = useCallback((commune: string) => {
+    form.setValue("commune", commune, { shouldValidate: true })
+  }, [form])
 
   const onSubmit = (data: PlotFormData) => {
     const newPlot: Plot = {
       id: editingPlot?.id || `plot-${Date.now()}`,
       ...data,
+      assignedProduct: data.assignedProduct === "none" ? undefined : data.assignedProduct,
     }
 
     if (editingPlot) {
@@ -120,7 +130,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
       locationLong: plot.locationLong,
       crop: plot.crop,
       areaHa: plot.areaHa,
-      assignedProduct: plot.assignedProduct,
+      assignedProduct: plot.assignedProduct || "none",
     })
     setActiveTab("add")
   }
@@ -279,9 +289,9 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                         province={form.watch("province")}
                         district={form.watch("district")}
                         commune={form.watch("commune")}
-                        onProvinceChange={(province) => handleLocationChange(province, "", "")}
-                        onDistrictChange={(district) => handleLocationChange(form.watch("province"), district, "")}
-                        onCommuneChange={(commune) => handleLocationChange(form.watch("province"), form.watch("district"), commune)}
+                        onProvinceChange={handleProvinceChange}
+                        onDistrictChange={handleDistrictChange}
+                        onCommuneChange={handleCommuneChange}
                       />
                     </div>
 
@@ -414,7 +424,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">No product assigned</SelectItem>
+                              <SelectItem value="none">No product assigned</SelectItem>
                               {insuranceProducts.map((product) => (
                                 <SelectItem key={product} value={product}>
                                   {product}
