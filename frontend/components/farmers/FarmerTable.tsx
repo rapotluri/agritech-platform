@@ -3,6 +3,7 @@
 import * as React from "react"
 import { ArrowUpDown, MoreHorizontal, Copy, Eye, Edit, Trash2 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
+import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -265,9 +266,11 @@ export function FarmerTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Profile
+                      <DropdownMenuItem asChild>
+                        <Link href={`/protected/operations-dashboard/farmers/${farmer.id}`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Profile
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Edit className="mr-2 h-4 w-4" />

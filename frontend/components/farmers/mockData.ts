@@ -1,5 +1,21 @@
 import { Farmer } from "./FarmerTable"
 
+// Plot interface based on the schema
+export interface Plot {
+  id: string
+  farmerId: string
+  province: string
+  district: string
+  commune: string
+  village: string
+  locationLat?: number
+  locationLong?: number
+  crop: string
+  areaHa: number
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Mock data for testing the UI
 export const mockFarmers: Farmer[] = [
   {
@@ -271,6 +287,235 @@ export const mockFarmers: Farmer[] = [
     bankAccountKhr: "KHR123456",
     plotsCount: 3,
     assignedProduct: "Peanut Insurance Premium"
+  }
+]
+
+// Mock plot data linked to farmers
+export const mockPlots: Plot[] = [
+  // Plots for Sok Dara (f001)
+  {
+    id: "p001",
+    farmerId: "f001",
+    province: "PhnomPenh",
+    district: "ChamkarMon",
+    commune: "BoengKengKang",
+    village: "Village 1A",
+    locationLat: 11.5564,
+    locationLong: 104.9282,
+    crop: "Rice",
+    areaHa: 2.5,
+    createdAt: new Date("2024-01-15"),
+    updatedAt: new Date("2024-01-15")
+  },
+  {
+    id: "p002",
+    farmerId: "f001",
+    province: "PhnomPenh",
+    district: "ChamkarMon",
+    commune: "BoengKengKang",
+    village: "Village 1B",
+    locationLat: 11.5574,
+    locationLong: 104.9292,
+    crop: "Vegetables",
+    areaHa: 1.0,
+    createdAt: new Date("2024-01-20"),
+    updatedAt: new Date("2024-01-20")
+  },
+  {
+    id: "p003",
+    farmerId: "f001",
+    province: "PhnomPenh",
+    district: "ChamkarMon",
+    commune: "BoengKengKang",
+    village: "Village 1C",
+    crop: "Corn",
+    areaHa: 1.8,
+    createdAt: new Date("2024-02-01"),
+    updatedAt: new Date("2024-02-01")
+  },
+  
+  // Plots for Srey Mom (f002)
+  {
+    id: "p004",
+    farmerId: "f002",
+    province: "Kandal",
+    district: "AngkSnuol",
+    commune: "BaekChan",
+    village: "Village 2A",
+    locationLat: 11.4678,
+    locationLong: 104.8356,
+    crop: "Corn",
+    areaHa: 3.2,
+    createdAt: new Date("2024-02-20"),
+    updatedAt: new Date("2024-02-20")
+  },
+  {
+    id: "p005",
+    farmerId: "f002",
+    province: "Kandal",
+    district: "AngkSnuol",
+    commune: "BaekChan",
+    village: "Village 2B",
+    crop: "Rice",
+    areaHa: 2.1,
+    createdAt: new Date("2024-02-25"),
+    updatedAt: new Date("2024-02-25")
+  },
+
+  // Plots for Chan Vuthy (f003)
+  {
+    id: "p006",
+    farmerId: "f003",
+    province: "Siemreab",
+    district: "SiemReap",
+    commune: "SiemReab",
+    village: "Village 3A",
+    locationLat: 13.3671,
+    locationLong: 103.8448,
+    crop: "Cassava",
+    areaHa: 4.5,
+    createdAt: new Date("2024-03-10"),
+    updatedAt: new Date("2024-03-10")
+  },
+  {
+    id: "p007",
+    farmerId: "f003",
+    province: "Siemreab",
+    district: "SiemReap",
+    commune: "SiemReab",
+    village: "Village 3B",
+    crop: "Rice",
+    areaHa: 3.0,
+    createdAt: new Date("2024-03-12"),
+    updatedAt: new Date("2024-03-12")
+  },
+  {
+    id: "p008",
+    farmerId: "f003",
+    province: "Siemreab",
+    district: "SiemReap",
+    commune: "SiemReab",
+    village: "Village 3C",
+    crop: "Vegetables",
+    areaHa: 1.5,
+    createdAt: new Date("2024-03-15"),
+    updatedAt: new Date("2024-03-15")
+  },
+  {
+    id: "p009",
+    farmerId: "f003",
+    province: "Siemreab",
+    district: "SiemReap",
+    commune: "SiemReab",
+    village: "Village 3D",
+    crop: "Cassava",
+    areaHa: 2.8,
+    createdAt: new Date("2024-03-18"),
+    updatedAt: new Date("2024-03-18")
+  },
+
+  // Plot for Keo Sopheak (f004)
+  {
+    id: "p010",
+    farmerId: "f004",
+    province: "Battambang",
+    district: "Battambang",
+    commune: "ChomkarSomraong",
+    village: "Village 4A",
+    locationLat: 13.0957,
+    locationLong: 103.2021,
+    crop: "Soybean",
+    areaHa: 2.0,
+    createdAt: new Date("2024-01-28"),
+    updatedAt: new Date("2024-01-28")
+  },
+
+  // Plots for Heng Samnang (f005)
+  {
+    id: "p011",
+    farmerId: "f005",
+    province: "KampongCham",
+    district: "KampongCham",
+    commune: "KampongCham",
+    village: "Village 5A",
+    crop: "Rice",
+    areaHa: 5.0,
+    createdAt: new Date("2024-02-15"),
+    updatedAt: new Date("2024-02-15")
+  },
+  {
+    id: "p012",
+    farmerId: "f005",
+    province: "KampongCham",
+    district: "KampongCham",
+    commune: "KampongCham",
+    village: "Village 5B",
+    crop: "Rice",
+    areaHa: 3.5,
+    createdAt: new Date("2024-02-18"),
+    updatedAt: new Date("2024-02-18")
+  },
+  {
+    id: "p013",
+    farmerId: "f005",
+    province: "KampongCham",
+    district: "KampongCham",
+    commune: "KampongCham",
+    village: "Village 5C",
+    crop: "Vegetables",
+    areaHa: 1.2,
+    createdAt: new Date("2024-02-20"),
+    updatedAt: new Date("2024-02-20")
+  },
+  {
+    id: "p014",
+    farmerId: "f005",
+    province: "KampongCham",
+    district: "KampongCham",
+    commune: "KampongCham",
+    village: "Village 5D",
+    crop: "Corn",
+    areaHa: 2.3,
+    createdAt: new Date("2024-02-22"),
+    updatedAt: new Date("2024-02-22")
+  },
+  {
+    id: "p015",
+    farmerId: "f005",
+    province: "KampongCham",
+    district: "KampongCham",
+    commune: "KampongCham",
+    village: "Village 5E",
+    crop: "Rice",
+    areaHa: 4.0,
+    createdAt: new Date("2024-02-25"),
+    updatedAt: new Date("2024-02-25")
+  },
+
+  // Plots for remaining farmers with fewer plots
+  {
+    id: "p016",
+    farmerId: "f006",
+    province: "Kampot",
+    district: "Kampot",
+    commune: "KampongBay",
+    village: "Village 6A",
+    crop: "Vegetables",
+    areaHa: 1.8,
+    createdAt: new Date("2024-03-05"),
+    updatedAt: new Date("2024-03-05")
+  },
+  {
+    id: "p017",
+    farmerId: "f006",
+    province: "Kampot",
+    district: "Kampot",
+    commune: "KampongBay",
+    village: "Village 6B",
+    crop: "Pepper",
+    areaHa: 0.5,
+    createdAt: new Date("2024-03-08"),
+    updatedAt: new Date("2024-03-08")
   }
 ]
 

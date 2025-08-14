@@ -472,7 +472,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
 
         {/* Save and Discard Buttons */}
         <div className="flex justify-center items-start space-x-6 mt-8">
-          <Button type="submit" className="w-full" variant="agro" color="green">
+          <Button type="submit" className="w-full" variant="agro">
             Save Product
           </Button>
           <Button 
