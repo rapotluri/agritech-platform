@@ -114,6 +114,7 @@ export function mapManualBuilderToProduct(
   // Create region object
   const region = {
     province: formData.province,
+    district: formData.district || '',
     commune: formData.commune
   }
 
@@ -200,6 +201,7 @@ export function mapInsureSmartToProduct(
   // Create region object
   const region = {
     province: product.province,
+    district: product.district,
     commune: product.commune
   }
 

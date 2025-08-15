@@ -10,8 +10,10 @@ interface ProductDetailsStepProps {
   product: Product;
   setProduct: (product: Product) => void;
   provinceKeys: string[];
+  districtOptions: string[];
   communeOptions: string[];
   handleProvinceChange: (province: string) => void;
+  handleDistrictChange: (district: string) => void;
   canProceedToStep2: () => boolean;
   onNext: () => void;
 }
@@ -20,8 +22,10 @@ export default function ProductDetailsStep({
   product,
   setProduct,
   provinceKeys,
+  districtOptions,
   communeOptions,
   handleProvinceChange,
+  handleDistrictChange,
   canProceedToStep2,
   onNext,
 }: ProductDetailsStepProps) {
@@ -35,7 +39,7 @@ export default function ProductDetailsStep({
         <CardDescription>Define the high-level details for your weather insurance product</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Label htmlFor="productName">Product Name *</Label>
             <Input
@@ -54,6 +58,19 @@ export default function ProductDetailsStep({
               <SelectContent>
                 {provinceKeys.map((prov) => (
                   <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="district">District *</Label>
+            <Select value={product.district} onValueChange={handleDistrictChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select district" />
+              </SelectTrigger>
+              <SelectContent>
+                {districtOptions.map((district) => (
+                  <SelectItem key={district} value={district}>{district}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

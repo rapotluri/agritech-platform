@@ -112,7 +112,7 @@ export default function TermSheetStep({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Location:</span>
-                        <span className="font-medium">{product.commune}, {product.province}</span>
+                        <span className="font-medium">{product.commune}, {product.district}, {product.province}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Coverage Periods:</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import provincesCommunesData from "../../data/cambodia_provinces_communes.json";
+import provincesDistrictsCommunesData from "../../data/cambodia_provinces_districts_communes.json";
 import apiClient from "@/lib/apiClient";
 import { Product, CoveragePeriod, OptimizationResult } from "./types";
 import InsureSmartHeader from "./InsureSmartHeader";
@@ -11,15 +11,16 @@ import OptimizationStep from "./OptimizationStep";
 import TermSheetStep from "./TermSheetStep";
 import { TrendingDown, TrendingUp, Zap } from "lucide-react";
 
-const provincesCommunes = provincesCommunesData as Record<string, string[]>;
-const provinceKeys = Object.keys(provincesCommunes);
+const provincesDistrictsCommunes = provincesDistrictsCommunesData as Record<string, Record<string, string[]>>;
+const provinceKeys = Object.keys(provincesDistrictsCommunes);
 
 export default function InsureSmartWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [product, setProduct] = useState<Product>({
     name: "",
     province: provinceKeys[0] || "",
-    commune: provincesCommunes[provinceKeys[0]]?.[0] || "",
+    district: Object.keys(provincesDistrictsCommunes[provinceKeys[0]] || {})[0] || "",
+    commune: provincesDistrictsCommunes[provinceKeys[0]]?.[Object.keys(provincesDistrictsCommunes[provinceKeys[0]] || {})[0]]?.[0] || "",
     cropDuration: "",
     sumInsured: "",
     premiumCap: "",
@@ -30,12 +31,29 @@ export default function InsureSmartWizard() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
 
-  // Update commune options when province changes
+  // Update district and commune options when province changes
   const handleProvinceChange = (province: string) => {
+    const districts = provincesDistrictsCommunes[province] || {};
+    const firstDistrict = Object.keys(districts)[0] || "";
+    const firstCommune = districts[firstDistrict]?.[0] || "";
+    
     setProduct((prev) => ({
       ...prev,
       province,
-      commune: provincesCommunes[province]?.[0] || "",
+      district: firstDistrict,
+      commune: firstCommune,
+    }));
+  };
+
+  // Update commune options when district changes
+  const handleDistrictChange = (district: string) => {
+    const communes = provincesDistrictsCommunes[product.province]?.[district] || [];
+    const firstCommune = communes[0] || "";
+    
+    setProduct((prev) => ({
+      ...prev,
+      district,
+      commune: firstCommune,
     }));
   };
 
@@ -113,7 +131,7 @@ export default function InsureSmartWizard() {
   const getStepProgress = () => (currentStep / 4) * 100;
 
   const canProceedToStep2 = (): boolean => {
-    return !!(product.name && product.province && product.commune && product.sumInsured && product.premiumCap);
+    return !!(product.name && product.province && product.district && product.commune && product.sumInsured && product.premiumCap);
   };
 
   const canProceedToStep3 = (): boolean => {
@@ -164,8 +182,9 @@ export default function InsureSmartWizard() {
     }
   };
 
-  // Province/commune options
-  const communeOptions = provincesCommunes[product.province] || [];
+  // Province/district/commune options
+  const districtOptions = Object.keys(provincesDistrictsCommunes[product.province] || {});
+  const communeOptions = provincesDistrictsCommunes[product.province]?.[product.district] || [];
 
   // Add a helper to clear optimization state
   const clearOptimizationState = () => {
@@ -200,8 +219,10 @@ export default function InsureSmartWizard() {
             product={product}
             setProduct={setProduct}
             provinceKeys={provinceKeys}
+            districtOptions={districtOptions}
             communeOptions={communeOptions}
             handleProvinceChange={handleProvinceChange}
+            handleDistrictChange={handleDistrictChange}
             canProceedToStep2={canProceedToStep2}
             onNext={() => setCurrentStep(2)}
           />
