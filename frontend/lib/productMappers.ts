@@ -48,20 +48,53 @@ export function mapManualBuilderToProduct(
     return new Date().toISOString().split('T')[0]
   }
 
-  // Transform indexes/phases to triggers format
+  // Transform indexes/phases to InsureSmart-compatible triggers format
   const triggers = {
-    indexes: phases.map((phase: any) => ({
-      phaseName: phase.phaseName,
-      phaseStartDate: formatDate(phase.phaseStartDate),
-      phaseEndDate: formatDate(phase.phaseEndDate),
-      type: phase.type,
-      trigger: parseFloat(phase.trigger) || 0,
-      exit: parseFloat(phase.exit) || 0,
-      dailyCap: parseFloat(phase.dailyCap) || 0,
-      unitPayout: parseFloat(phase.unitPayout) || 0,
-      maxPayout: parseFloat(phase.maxPayout) || 0,
-      consecutiveDays: parseInt(phase.consecutiveDays) || 1
+    // Convert phases to coverage periods
+    coveragePeriods: phases.map((phase: any, index: number) => ({
+      id: (index + 1).toString(),
+      startDate: formatDate(phase.phaseStartDate),
+      endDate: formatDate(phase.phaseEndDate),
+      perilType: phase.type === 'Drought' ? 'LRI' : phase.type === 'Excess Rainfall' ? 'ERI' : 'LRI'
     })),
+    
+    // Create optimization config structure
+    optimizationConfig: {
+      id: 'manual-builder',
+      premiumRate: premiumResponse.premium.rate / 100, // Convert percentage to decimal
+      premiumCost: premiumResponse.premium.max_payout,
+      periods: phases.map((phase: any) => {
+        // Calculate day offsets from planting date
+        const plantingDate = new Date(formatDate(formData.plantingDate))
+        const startDate = new Date(formatDate(phase.phaseStartDate))
+        const endDate = new Date(formatDate(phase.phaseEndDate))
+        
+        const startDay = Math.floor((startDate.getTime() - plantingDate.getTime()) / (1000 * 60 * 60 * 24))
+        const endDay = Math.floor((endDate.getTime() - plantingDate.getTime()) / (1000 * 60 * 60 * 24))
+        
+        return {
+          start_day: Math.max(0, startDay),
+          end_day: Math.max(1, endDay),
+          perils: [{
+            peril_type: phase.type === 'Drought' ? 'LRI' : phase.type === 'Excess Rainfall' ? 'ERI' : 'LRI',
+            trigger: parseFloat(phase.trigger) || 0,
+            duration: parseInt(phase.consecutiveDays) || 1,
+            unit_payout: parseFloat(phase.unitPayout) || 0,
+            max_payout: parseFloat(phase.maxPayout) || 0,
+            // Manual Builder specific fields for compatibility
+            exit: parseFloat(phase.exit) || 0,
+            dailyCap: parseFloat(phase.dailyCap) || 0,
+            consecutiveDays: parseInt(phase.consecutiveDays) || 1
+          }]
+        }
+      })
+    },
+    
+    // Product-level configuration
+    sumInsured: parseFloat(formData.sumInsured) || premiumResponse.premium.max_payout || 0,
+    premiumCap: parseFloat(formData.premiumCap) || premiumResponse.premium.max_payout || 0,
+    
+    // Manual Builder compatibility fields
     coverageType: formData.coverageType,
     weatherDataPeriod: formData.weatherDataPeriod
   }
