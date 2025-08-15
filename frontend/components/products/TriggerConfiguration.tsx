@@ -200,64 +200,16 @@ export function TriggerConfiguration({ product }: TriggerConfigurationProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center py-4">
-        <Target className="h-16 w-16 mx-auto mb-4 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Trigger Configuration</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Detailed configuration of insurance triggers that determine when payouts are activated 
-          based on weather conditions or other criteria.
-        </p>
-      </div>
-
       {/* Trigger Configuration Display */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-600" />
-            Active Triggers
+            Trigger Details
           </CardTitle>
         </CardHeader>
         <CardContent>
           {formatTriggers(product.triggers)}
-        </CardContent>
-      </Card>
-
-      {/* Trigger Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">About Triggers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">How Triggers Work</h4>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Triggers monitor specific conditions (rainfall, temperature, etc.)</li>
-                <li>• When conditions are met, insurance payouts are activated</li>
-                <li>• Multiple triggers can be configured for different coverage periods</li>
-                <li>• Each trigger has specific thresholds and payout calculations</li>
-              </ul>
-            </div>
-            
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Trigger Types</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-sm text-gray-600">Low Rainfall (LRI) - Triggers when rainfall is below threshold</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-gray-600">High Rainfall (ERI) - Triggers when rainfall exceeds threshold</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-600">Custom triggers for specific conditions</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
