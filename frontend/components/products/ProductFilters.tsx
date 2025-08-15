@@ -40,6 +40,12 @@ export function ProductFilters({
   isLoading = false
 }: ProductFiltersProps) {
   
+  // Ensure arrays are properly defined and filter out invalid values
+  const safeCropTypes = (cropTypes || []).filter(crop => crop && typeof crop === 'string' && crop.trim() !== '')
+  const safeProvinces = (provinces || []).filter(province => province && typeof province === 'string' && province.trim() !== '')
+  const safeDistricts = (districts || []).filter(district => district && typeof district === 'string' && district.trim() !== '')
+  const safeCommunes = (communes || []).filter(commune => commune && typeof commune === 'string' && commune.trim() !== '')
+  
   const updateFilter = (key: keyof ProductFilters, value: any) => {
     onFiltersChange({
       ...filters,
@@ -93,7 +99,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Crops</SelectItem>
-            {cropTypes.map((crop) => (
+            {safeCropTypes.map((crop) => (
               <SelectItem key={crop} value={crop}>
                 {crop}
               </SelectItem>
@@ -112,7 +118,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Provinces</SelectItem>
-            {provinces.map((province) => (
+            {safeProvinces.map((province) => (
               <SelectItem key={province} value={province}>
                 {province}
               </SelectItem>
@@ -131,7 +137,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Districts</SelectItem>
-            {districts.map((district) => (
+            {safeDistricts.map((district) => (
               <SelectItem key={district} value={district}>
                 {district}
               </SelectItem>
@@ -150,7 +156,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Communes</SelectItem>
-            {communes.map((commune) => (
+            {safeCommunes.map((commune) => (
               <SelectItem key={commune} value={commune}>
                 {commune}
               </SelectItem>
@@ -238,7 +244,7 @@ export function ProductFilters({
           <span>Active filters:</span>
           {filters.searchQuery && (
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-              Search: "{filters.searchQuery}"
+              Search: &ldquo;{filters.searchQuery}&rdquo;
             </span>
           )}
           {filters.cropType && (

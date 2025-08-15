@@ -2,16 +2,14 @@
 
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { 
   CubeIcon, 
   CheckCircleIcon, 
   DocumentIcon, 
-  UsersIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  UsersIcon
 } from "@heroicons/react/24/outline"
+import { TrendingUp, TrendingDown } from "lucide-react"
 
 interface ProductStatsData {
   totalProducts: number
@@ -120,7 +118,7 @@ export function ProductStats({ data, isLoading }: ProductStatsProps) {
     if (trend === undefined || trend === 0) return null
     
     const isPositive = trend > 0
-    const TrendIcon = isPositive ? TrendingUpIcon : TrendingDownIcon
+    const TrendIcon = isPositive ? TrendingUp : TrendingDown
     
     return (
       <div className={`flex items-center space-x-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>

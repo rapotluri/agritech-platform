@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { formatDistanceToNow } from "date-fns"
 import {
   Table,
@@ -90,7 +90,6 @@ export function ProductTable({
   totalPages = 1,
   pageSize = 10,
   selectedProducts = [],
-  sorting,
   onProductSelect,
   onSelectAll,
   onSort,
@@ -122,7 +121,7 @@ export function ProductTable({
     )
   }
 
-  const getCropIcon = (crop: string) => {
+  const getCropIcon = () => {
     // You can add specific crop icons here
     return <Package className="h-4 w-4 text-green-600" />
   }
@@ -133,7 +132,7 @@ export function ProductTable({
       const end = new Date(endDate)
       
       return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
-    } catch (error) {
+    } catch {
       return `${startDate} - ${endDate}`
     }
   }
@@ -147,7 +146,7 @@ export function ProductTable({
         return `${region.province || ''}, ${region.district || ''}, ${region.commune || ''}`.replace(/^,\s*|,\s*$/g, '')
       }
       return String(region)
-    } catch (error) {
+    } catch {
       return String(region)
     }
   }
@@ -258,7 +257,7 @@ export function ProductTable({
                 <TableCell className="font-medium">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-gray-100 rounded-lg">
-                      {getCropIcon(product.crop)}
+                      {getCropIcon()}
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900">{product.name}</div>
@@ -268,7 +267,7 @@ export function ProductTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    {getCropIcon(product.crop)}
+                    {getCropIcon()}
                     <span className="capitalize">{product.crop}</span>
                   </div>
                 </TableCell>

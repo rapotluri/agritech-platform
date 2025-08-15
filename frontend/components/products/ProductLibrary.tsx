@@ -58,6 +58,8 @@ export function ProductLibrary() {
   const { data: cropTypes = [] } = useCropTypes()
   const { data: regions } = useRegions()
 
+
+
   // Event handlers
   const handleFiltersChange = (newFilters: IProductFilters) => {
     setFilters(newFilters)
@@ -84,7 +86,7 @@ export function ProductLibrary() {
   }
 
   const handleSelectAll = (selected: boolean) => {
-    setSelectedProducts(selected ? (productsData?.products.map(p => p.id) || []) : [])
+    setSelectedProducts(selected ? (productsData?.products.map((p: any) => p.id) || []) : [])
   }
 
   // Navigation handlers

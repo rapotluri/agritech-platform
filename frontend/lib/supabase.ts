@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { 
   Plot, 
+  Product,
   FarmerInsert, 
   PlotInsert, 
   FarmerUpdate, 
@@ -9,7 +10,12 @@ import {
   FarmerFilters,
   FarmerSorting,
   PaginationParams,
-  FarmersResponse 
+  FarmersResponse,
+  ProductFilters,
+  ProductSorting,
+  ProductsResponse,
+  ProductWithEnrollments,
+  ProductStatsData
 } from './database.types'
 
 export type SupabaseClient = ReturnType<typeof createClient>
@@ -329,8 +335,6 @@ export class ProductsService {
     sorting: ProductSorting = { column: null, direction: 'asc' },
     pagination: PaginationParams = { page: 1, limit: 10 }
   ): Promise<ProductsResponse> {
-    const user = await getCurrentAppUser()
-    
     let query = supabase
       .from('products')
       .select(`
@@ -341,7 +345,6 @@ export class ProductsService {
           status
         )
       `, { count: 'exact' })
-      .eq('created_by_user_id', user.id)
 
     // Apply filters
     if (filters.searchQuery) {
@@ -419,26 +422,21 @@ export class ProductsService {
 
   // Get product statistics
   static async getProductStats(): Promise<ProductStatsData> {
-    const user = await getCurrentAppUser()
-    
     // Get total products count
     const { count: totalProducts } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('created_by_user_id', user.id)
 
     // Get active products count
     const { count: activeProducts } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('created_by_user_id', user.id)
       .eq('status', 'live')
 
     // Get draft products count
     const { count: draftProducts } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('created_by_user_id', user.id)
       .eq('status', 'draft')
 
     // Get products with enrollments count
@@ -448,7 +446,6 @@ export class ProductsService {
         id,
         enrollments (id)
       `)
-      .eq('created_by_user_id', user.id)
 
     const productsWithEnrollmentsCount = (productsWithEnrollments || [])
       .filter(product => product.enrollments && product.enrollments.length > 0)
@@ -464,12 +461,9 @@ export class ProductsService {
 
   // Get unique crop types for filter dropdown
   static async getCropTypes(): Promise<string[]> {
-    const user = await getCurrentAppUser()
-    
     const { data, error } = await supabase
       .from('products')
       .select('crop')
-      .eq('created_by_user_id', user.id)
 
     if (error) throw error
 
@@ -483,38 +477,99 @@ export class ProductsService {
     districts: string[]
     communes: string[]
   }> {
-    const user = await getCurrentAppUser()
-    
     const { data, error } = await supabase
       .from('products')
       .select('region')
-      .eq('created_by_user_id', user.id)
 
     if (error) throw error
 
-    const provinces = new Set<string>()
-    const districts = new Set<string>()
-    const communes = new Set<string>()
+    const provincesSet = new Set()
+    const districtsSet = new Set()
+    const communesSet = new Set()
 
-    (data || []).forEach(product => {
+    ;(data || []).forEach((product: any) => {
       try {
         const region = typeof product.region === 'string' 
           ? JSON.parse(product.region) 
           : product.region
 
-        if (region?.province) provinces.add(region.province)
-        if (region?.district) districts.add(region.district)
-        if (region?.commune) communes.add(region.commune)
-      } catch (error) {
+        if (region?.province) provincesSet.add(region.province)
+        if (region?.district) districtsSet.add(region.district)
+        if (region?.commune) communesSet.add(region.commune)
+      } catch {
         // Skip invalid JSON
       }
     })
 
     return {
-      provinces: Array.from(provinces).sort(),
-      districts: Array.from(districts).sort(),
-      communes: Array.from(communes).sort()
+      provinces: Array.from(provincesSet).sort() as string[],
+      districts: Array.from(districtsSet).sort() as string[],
+      communes: Array.from(communesSet).sort() as string[]
     }
+  }
+
+  // Create a new product
+  static async createProduct(productData: {
+    name: string
+    crop?: string
+    region: any
+    status: 'draft' | 'live'
+    triggers: any
+    coverage_start_date: string
+    coverage_end_date: string
+    terms: any
+  }): Promise<Product> {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        ...productData,
+        created_by_user_id: user.id,
+        crop: productData.crop || '' // Default to empty string if not provided
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Create product error details:', error)
+      throw error
+    }
+
+    return data
+  }
+
+  // Update an existing product
+  static async updateProduct(
+    id: string,
+    updates: Partial<{
+      name: string
+      crop: string
+      region: any
+      status: 'draft' | 'live' | 'archived'
+      triggers: any
+      coverage_start_date: string
+      coverage_end_date: string
+      terms: any
+    }>
+  ): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Update product error details:', error)
+      throw error
+    }
+
+    return data
   }
 }
 

@@ -13,8 +13,7 @@ import {
   PlotUpdate,
   PlotFormData,
   ProductFilters,
-  ProductSorting,
-  ProductStatsData
+  ProductSorting
 } from './database.types'
 import { toast } from 'sonner'
 
@@ -294,6 +293,72 @@ export function useRegions() {
     queryKey: productKeys.regions(),
     queryFn: () => ProductsService.getRegions(),
     staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (productData: {
+      name: string
+      crop?: string
+      region: any
+      status: 'draft' | 'live'
+      triggers: any
+      coverage_start_date: string
+      coverage_end_date: string
+      terms: any
+    }) => ProductsService.createProduct(productData),
+    onSuccess: (data) => {
+      // Invalidate and refetch product-related queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      queryClient.invalidateQueries({ queryKey: productKeys.cropTypes() })
+      queryClient.invalidateQueries({ queryKey: productKeys.regions() })
+      
+      toast.success(`Product "${data.name}" has been created successfully!`)
+    },
+    onError: (error: any) => {
+      console.error('Error creating product:', error)
+      toast.error('Failed to create product. Please try again.')
+    },
+  })
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      updates 
+    }: { 
+      id: string, 
+      updates: Partial<{
+        name: string
+        crop: string
+        region: any
+        status: 'draft' | 'live' | 'archived'
+        triggers: any
+        coverage_start_date: string
+        coverage_end_date: string
+        terms: any
+      }>
+    }) => {
+      return ProductsService.updateProduct(id, updates)
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch product-related queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      
+      toast.success(`Product "${data.name}" has been updated successfully!`)
+    },
+    onError: (error: any) => {
+      console.error('Error updating product:', error)
+      toast.error('Failed to update product. Please try again.')
+    },
   })
 }
 
