@@ -33,41 +33,6 @@ export function ProductOverview({ product }: ProductOverviewProps) {
     return 'Not specified'
   }
 
-  // Helper function to format terms display
-  const formatTerms = (terms: any) => {
-    if (!terms) return 'No terms specified'
-    if (typeof terms === 'string') return terms
-    
-    if (typeof terms === 'object') {
-      return Object.entries(terms).map(([key, value]: [string, any], index: number) => {
-        // Handle different value types
-        let displayValue = value
-        if (typeof value === 'object' && value !== null) {
-          if (value.startDate && value.endDate) {
-            displayValue = `${new Date(value.startDate).toLocaleDateString()} - ${new Date(value.endDate).toLocaleDateString()}`
-          } else if (value.id) {
-            displayValue = `ID: ${value.id}`
-          } else {
-            displayValue = JSON.stringify(value)
-          }
-        } else if (typeof value === 'boolean') {
-          displayValue = value ? 'Yes' : 'No'
-        } else if (value === null || value === undefined) {
-          displayValue = 'Not set'
-        }
-        
-        return (
-          <div key={index} className="flex justify-between">
-            <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>
-            <span>{displayValue}</span>
-          </div>
-        )
-      })
-    }
-    
-    return 'Terms configured'
-  }
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Basic Information Card */}
@@ -131,15 +96,24 @@ export function ProductOverview({ product }: ProductOverviewProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            {formatTerms(product.terms)}
+            {product.triggers?.optimizationConfig ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="font-medium">Premium Cost:</span>
+                  <span>${Number(product.triggers.optimizationConfig.premiumCost || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Premium Rate:</span>
+                  <span>{(Number(product.triggers.optimizationConfig.premiumRate || 0) * 100).toFixed(2)}%</span>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                <DollarSign className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p>No pricing terms configured</p>
+              </div>
+            )}
           </div>
-          
-          {!product.terms && (
-            <div className="text-center py-4 text-gray-500">
-              <DollarSign className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p>No pricing terms configured</p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
