@@ -15,6 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { LocationSelector } from "./LocationSelector"
 import type { PlotFormData, Plot } from "@/lib/database.types"
 import { useCreatePlot, useUpdatePlot, useDeletePlot } from "@/lib/hooks"
@@ -69,6 +80,7 @@ export function PlotManager({ plots, onPlotsChange, farmerId }: PlotManagerProps
   const [activeTab, setActiveTab] = useState("list")
   const [editingPlot, setEditingPlot] = useState<ManagedPlot | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [plotToDelete, setPlotToDelete] = useState<{ plot: ManagedPlot; index: number } | null>(null)
 
   const createPlotMutation = useCreatePlot()
   const updatePlotMutation = useUpdatePlot()
@@ -173,25 +185,27 @@ export function PlotManager({ plots, onPlotsChange, farmerId }: PlotManagerProps
     setActiveTab("add")
   }
 
-  const handleDeletePlot = async (plotIndex: number) => {
+  const handleDeletePlot = (plotIndex: number) => {
     const plot = plots[plotIndex]
-    const plotName = `Plot ${plotIndex + 1} (${plot.crop})`
-    
-    if (!window.confirm(`Are you sure you want to delete ${plotName}? This action cannot be undone.`)) {
-      return
-    }
+    setPlotToDelete({ plot, index: plotIndex })
+  }
+
+  const confirmDeletePlot = async () => {
+    if (!plotToDelete) return
     
     try {
-      if (farmerId && isPlotWithId(plot)) {
+      if (farmerId && isPlotWithId(plotToDelete.plot)) {
         // Delete from database
-        await deletePlotMutation.mutateAsync({ id: plot.id, farmerId: farmerId })
+        await deletePlotMutation.mutateAsync({ id: plotToDelete.plot.id, farmerId: farmerId })
       } else {
         // Remove from local state (used in farmer form)
-        const updatedPlots = plots.filter((_, index) => index !== plotIndex) as PlotFormData[]
+        const updatedPlots = plots.filter((_, index) => index !== plotToDelete.index) as PlotFormData[]
         onPlotsChange(updatedPlots)
       }
     } catch (error) {
       console.error('Error deleting plot:', error)
+    } finally {
+      setPlotToDelete(null)
     }
   }
 
@@ -287,15 +301,38 @@ export function PlotManager({ plots, onPlotsChange, farmerId }: PlotManagerProps
                         >
                           Edit
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeletePlot(index)}
-                          className="text-red-600 hover:text-red-700"
-                          disabled={deletePlotMutation.isPending}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog open={plotToDelete?.index === index} onOpenChange={(open) => !open && setPlotToDelete(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeletePlot(index)}
+                              className="text-red-600 hover:text-red-700"
+                              disabled={deletePlotMutation.isPending}
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Plot</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete Plot {index + 1} ({plot.crop})? 
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={confirmDeletePlot}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={deletePlotMutation.isPending}
+                              >
+                                {deletePlotMutation.isPending ? "Deleting..." : "Delete Plot"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>

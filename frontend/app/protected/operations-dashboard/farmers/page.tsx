@@ -1,14 +1,25 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
-import { UploadIcon, DownloadIcon, UsersIcon, Loader2 } from "lucide-react"
+import { UploadIcon, DownloadIcon, UsersIcon, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { SearchFilters } from "@/components/farmers/SearchFilters"
 import { FarmerTable } from "@/components/farmers/FarmerTable"
 import { FarmerDialog } from "@/components/farmers/FarmerDialog"
-import { useFarmers, useFarmerStats } from "@/lib/hooks"
+import { useFarmers, useFarmerStats, useDeleteFarmer } from "@/lib/hooks"
 import type { FarmerFilters, FarmerSorting, SortableFarmerColumn } from "@/lib/database.types"
 
 
@@ -27,6 +38,7 @@ export default function FarmersPage() {
   const [selectedFarmers, setSelectedFarmers] = useState<string[]>([])
   const [sortColumn, setSortColumn] = useState<SortableFarmerColumn | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
   // Build filters and sorting objects
   const filters: FarmerFilters = useMemo(() => ({
@@ -61,6 +73,9 @@ export default function FarmersPage() {
     data: statsData, 
     isLoading: isStatsLoading 
   } = useFarmerStats()
+
+  // Delete farmer mutation for bulk delete
+  const deleteFarmerMutation = useDeleteFarmer()
 
   // Handle location change
   const handleLocationChange = (province: string, district: string, commune: string) => {
@@ -105,6 +120,25 @@ export default function FarmersPage() {
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
+  }
+
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedFarmers.length === 0) return
+    
+    setIsBulkDeleting(true)
+    try {
+      // Delete farmers one by one (could be optimized with a bulk API endpoint)
+      for (const farmerId of selectedFarmers) {
+        await deleteFarmerMutation.mutateAsync(farmerId)
+      }
+      // Clear selection after successful deletion
+      setSelectedFarmers([])
+    } catch (error) {
+      console.error('Error during bulk delete:', error)
+    } finally {
+      setIsBulkDeleting(false)
+    }
   }
 
   // Get current data
@@ -279,9 +313,38 @@ export default function FarmersPage() {
                 <span className="text-sm text-muted-foreground">
                   {selectedFarmers.length} farmer{selectedFarmers.length !== 1 ? 's' : ''} selected
                 </span>
-                <Button variant="outline" size="sm">
-                  Bulk Actions
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={isBulkDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Selected Farmers</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedFarmers.length} farmer{selectedFarmers.length !== 1 ? 's' : ''}? 
+                        This action cannot be undone and will also delete all associated plots.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleBulkDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={isBulkDeleting}
+                      >
+                        {isBulkDeleting ? "Deleting..." : "Delete All"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
           </div>
