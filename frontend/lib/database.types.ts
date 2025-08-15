@@ -178,7 +178,8 @@ export interface Database {
           region: string | any // jsonb
           status: 'draft' | 'live' | 'archived'
           triggers: any // jsonb
-          coverage_window: string
+          coverage_start_date: string
+          coverage_end_date: string
           terms: any // jsonb
           created_at: string
           updated_at: string
@@ -191,7 +192,8 @@ export interface Database {
           region: string | any
           status?: 'draft' | 'live' | 'archived'
           triggers: any
-          coverage_window: string
+          coverage_start_date: string
+          coverage_end_date: string
           terms: any
           created_at?: string
           updated_at?: string
@@ -204,7 +206,8 @@ export interface Database {
           region?: string | any
           status?: 'draft' | 'live' | 'archived'
           triggers?: any
-          coverage_window?: string
+          coverage_start_date?: string
+          coverage_end_date?: string
           terms?: any
           created_at?: string
           updated_at?: string
@@ -341,4 +344,59 @@ export interface FarmersResponse {
   total: number
   page: number
   totalPages: number
+}
+
+// Product-related types for UI components
+export interface ProductWithEnrollments extends Product {
+  enrollmentCount?: number
+  enrollments?: Array<{
+    id: string
+    farmer_id: string
+    status: string
+  }>
+}
+
+export interface ProductFilters {
+  searchQuery?: string
+  cropType?: string
+  province?: string
+  district?: string
+  commune?: string
+  status?: 'all' | 'draft' | 'live' | 'archived'
+  coverageWindowStart?: Date
+  coverageWindowEnd?: Date
+  dateCreatedStart?: Date
+  dateCreatedEnd?: Date
+}
+
+export type SortableProductColumn = 
+  | 'name'
+  | 'crop'
+  | 'status'
+  | 'created_at'
+  | 'updated_at'
+
+export interface ProductSorting {
+  column: SortableProductColumn | null
+  direction: 'asc' | 'desc'
+}
+
+export interface ProductsResponse {
+  products: ProductWithEnrollments[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export interface ProductStatsData {
+  totalProducts: number
+  activeProducts: number
+  draftProducts: number
+  productsWithEnrollments: number
+  trends?: {
+    totalProductsTrend?: number
+    activeProductsTrend?: number
+    draftProductsTrend?: number
+    productsWithEnrollmentsTrend?: number
+  }
 }

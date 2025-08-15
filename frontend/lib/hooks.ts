@@ -11,7 +11,10 @@ import {
   PlotInsert,
   FarmerUpdate,
   PlotUpdate,
-  PlotFormData
+  PlotFormData,
+  ProductFilters,
+  ProductSorting,
+  ProductStatsData
 } from './database.types'
 import { toast } from 'sonner'
 
@@ -33,7 +36,13 @@ export const plotKeys = {
 }
 
 export const productKeys = {
-  all: () => ['products'] as const,
+  all: ['products'] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (filters: ProductFilters, sorting: ProductSorting, pagination: PaginationParams) => 
+    [...productKeys.lists(), { filters, sorting, pagination }] as const,
+  stats: () => [...productKeys.all, 'stats'] as const,
+  cropTypes: () => [...productKeys.all, 'cropTypes'] as const,
+  regions: () => [...productKeys.all, 'regions'] as const,
 }
 
 // Farmers hooks
@@ -246,8 +255,44 @@ export function useDeletePlot() {
 // Products hooks
 export function useProducts() {
   return useQuery({
-    queryKey: productKeys.all(),
+    queryKey: productKeys.all,
     queryFn: () => ProductsService.getProducts(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+export function useProductsWithEnrollments(
+  filters: ProductFilters = {},
+  sorting: ProductSorting = { column: null, direction: 'asc' },
+  pagination: PaginationParams = { page: 1, limit: 10 }
+) {
+  return useQuery({
+    queryKey: productKeys.list(filters, sorting, pagination),
+    queryFn: () => ProductsService.getProductsWithEnrollments(filters, sorting, pagination),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useProductStats() {
+  return useQuery({
+    queryKey: productKeys.stats(),
+    queryFn: () => ProductsService.getProductStats(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+}
+
+export function useCropTypes() {
+  return useQuery({
+    queryKey: productKeys.cropTypes(),
+    queryFn: () => ProductsService.getCropTypes(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+export function useRegions() {
+  return useQuery({
+    queryKey: productKeys.regions(),
+    queryFn: () => ProductsService.getRegions(),
     staleTime: 10 * 60 * 1000, // 10 minutes
   })
 }

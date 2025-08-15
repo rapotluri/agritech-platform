@@ -311,7 +311,7 @@ export class FarmersService {
 
 // Products service
 export class ProductsService {
-  // Get all products
+  // Get all products (simplified for dropdown usage)
   static async getProducts() {
     const { data, error } = await supabase
       .from('products')
@@ -321,6 +321,200 @@ export class ProductsService {
 
     if (error) throw error
     return data || []
+  }
+
+  // Get products with pagination, filtering, and sorting for the main products table
+  static async getProductsWithEnrollments(
+    filters: ProductFilters = {},
+    sorting: ProductSorting = { column: null, direction: 'asc' },
+    pagination: PaginationParams = { page: 1, limit: 10 }
+  ): Promise<ProductsResponse> {
+    const user = await getCurrentAppUser()
+    
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        enrollments (
+          id,
+          farmer_id,
+          status
+        )
+      `, { count: 'exact' })
+      .eq('created_by_user_id', user.id)
+
+    // Apply filters
+    if (filters.searchQuery) {
+      query = query.or(`name.ilike.%${filters.searchQuery}%,crop.ilike.%${filters.searchQuery}%`)
+    }
+    
+    if (filters.cropType) {
+      query = query.eq('crop', filters.cropType)
+    }
+    
+    if (filters.status && filters.status !== 'all') {
+      query = query.eq('status', filters.status)
+    }
+
+    // Region filtering - assuming region is stored as JSONB
+    if (filters.province) {
+      query = query.contains('region', { province: filters.province })
+    }
+    
+    if (filters.district) {
+      query = query.contains('region', { district: filters.district })
+    }
+    
+    if (filters.commune) {
+      query = query.contains('region', { commune: filters.commune })
+    }
+
+    // Date filtering
+    if (filters.dateCreatedStart) {
+      query = query.gte('created_at', filters.dateCreatedStart.toISOString())
+    }
+    
+    if (filters.dateCreatedEnd) {
+      query = query.lte('created_at', filters.dateCreatedEnd.toISOString())
+    }
+
+    // Coverage window filtering using new date columns
+    if (filters.coverageWindowStart) {
+      query = query.gte('coverage_start_date', filters.coverageWindowStart.toISOString().split('T')[0])
+    }
+    
+    if (filters.coverageWindowEnd) {
+      query = query.lte('coverage_end_date', filters.coverageWindowEnd.toISOString().split('T')[0])
+    }
+
+    // Apply sorting
+    if (sorting.column) {
+      query = query.order(sorting.column, { ascending: sorting.direction === 'asc' })
+    } else {
+      query = query.order('created_at', { ascending: false }) // Default sort by newest
+    }
+
+    // Apply pagination
+    const from = (pagination.page - 1) * pagination.limit
+    const to = from + pagination.limit - 1
+    query = query.range(from, to)
+
+    const { data, error, count } = await query
+
+    if (error) throw error
+
+    // Transform data to include enrollment counts
+    const products: ProductWithEnrollments[] = (data || []).map(product => ({
+      ...product,
+      enrollmentCount: product.enrollments?.length || 0
+    }))
+
+    return {
+      products,
+      total: count || 0,
+      page: pagination.page,
+      totalPages: Math.ceil((count || 0) / pagination.limit)
+    }
+  }
+
+  // Get product statistics
+  static async getProductStats(): Promise<ProductStatsData> {
+    const user = await getCurrentAppUser()
+    
+    // Get total products count
+    const { count: totalProducts } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by_user_id', user.id)
+
+    // Get active products count
+    const { count: activeProducts } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by_user_id', user.id)
+      .eq('status', 'live')
+
+    // Get draft products count
+    const { count: draftProducts } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by_user_id', user.id)
+      .eq('status', 'draft')
+
+    // Get products with enrollments count
+    const { data: productsWithEnrollments } = await supabase
+      .from('products')
+      .select(`
+        id,
+        enrollments (id)
+      `)
+      .eq('created_by_user_id', user.id)
+
+    const productsWithEnrollmentsCount = (productsWithEnrollments || [])
+      .filter(product => product.enrollments && product.enrollments.length > 0)
+      .length
+
+    return {
+      totalProducts: totalProducts || 0,
+      activeProducts: activeProducts || 0,
+      draftProducts: draftProducts || 0,
+      productsWithEnrollments: productsWithEnrollmentsCount
+    }
+  }
+
+  // Get unique crop types for filter dropdown
+  static async getCropTypes(): Promise<string[]> {
+    const user = await getCurrentAppUser()
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('crop')
+      .eq('created_by_user_id', user.id)
+
+    if (error) throw error
+
+    const cropTypes = [...new Set((data || []).map(product => product.crop))]
+    return cropTypes.sort()
+  }
+
+  // Get unique regions for filter dropdowns
+  static async getRegions(): Promise<{
+    provinces: string[]
+    districts: string[]
+    communes: string[]
+  }> {
+    const user = await getCurrentAppUser()
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('region')
+      .eq('created_by_user_id', user.id)
+
+    if (error) throw error
+
+    const provinces = new Set<string>()
+    const districts = new Set<string>()
+    const communes = new Set<string>()
+
+    (data || []).forEach(product => {
+      try {
+        const region = typeof product.region === 'string' 
+          ? JSON.parse(product.region) 
+          : product.region
+
+        if (region?.province) provinces.add(region.province)
+        if (region?.district) districts.add(region.district)
+        if (region?.commune) communes.add(region.commune)
+      } catch (error) {
+        // Skip invalid JSON
+      }
+    })
+
+    return {
+      provinces: Array.from(provinces).sort(),
+      districts: Array.from(districts).sort(),
+      communes: Array.from(communes).sort()
+    }
   }
 }
 
