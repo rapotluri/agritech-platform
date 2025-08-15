@@ -16,26 +16,35 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { LocationSelector } from "./LocationSelector"
-import type { Plot } from "./FarmerForm"
+import type { PlotFormData, Plot } from "@/lib/database.types"
+import { useCreatePlot, useUpdatePlot, useDeletePlot } from "@/lib/hooks"
+
+// Union type for plots - can be either database plots (with id) or form plots (without id)
+type ManagedPlot = Plot | PlotFormData
 
 // Plot form schema
 const plotFormSchema = z.object({
   province: z.string().min(1, "Province is required"),
   district: z.string().min(1, "District is required"),
   commune: z.string().min(1, "Commune is required"),
-  village: z.string().min(1, "Village is required"),
-  locationLat: z.number().optional(),
-  locationLong: z.number().optional(),
+  village: z.string().optional(),
+  location_lat: z.number().optional(),
+  location_long: z.number().optional(),
   crop: z.string().min(1, "Crop type is required"),
-  areaHa: z.number().min(0.01, "Area must be greater than 0"),
-  assignedProduct: z.string().optional(),
+  area_ha: z.number().min(0.01, "Area must be greater than 0"),
 })
 
-type PlotFormData = z.infer<typeof plotFormSchema>
+type LocalPlotFormData = z.infer<typeof plotFormSchema>
 
 interface PlotManagerProps {
-  plots: Plot[]
-  onPlotsChange: (plots: Plot[]) => void
+  plots: ManagedPlot[]
+  onPlotsChange: (plots: PlotFormData[]) => void
+  farmerId?: string // For creating plots directly in the database
+}
+
+// Type guard to check if plot has an ID (database plot)
+const isPlotWithId = (plot: ManagedPlot): plot is Plot => {
+  return 'id' in plot && 'farmer_id' in plot
 }
 
 // Mock crop types
@@ -54,20 +63,18 @@ const cropTypes = [
   "Other"
 ]
 
-// Mock insurance products
-const insuranceProducts = [
-  "Weather Index Insurance",
-  "Crop Yield Insurance",
-  "Multi-Peril Crop Insurance",
-  "Livestock Insurance",
-  "Equipment Insurance"
-]
 
-export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
+
+export function PlotManager({ plots, onPlotsChange, farmerId }: PlotManagerProps) {
   const [activeTab, setActiveTab] = useState("list")
-  const [editingPlot, setEditingPlot] = useState<Plot | null>(null)
+  const [editingPlot, setEditingPlot] = useState<ManagedPlot | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
-  const form = useForm<PlotFormData>({
+  const createPlotMutation = useCreatePlot()
+  const updatePlotMutation = useUpdatePlot()
+  const deletePlotMutation = useDeletePlot()
+
+  const form = useForm<LocalPlotFormData>({
     resolver: zodResolver(plotFormSchema),
     defaultValues: {
       province: "",
@@ -75,8 +82,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
       commune: "",
       village: "",
       crop: "",
-      areaHa: 0,
-      assignedProduct: "none",
+      area_ha: 0,
     },
   })
 
@@ -95,58 +101,108 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
     form.setValue("commune", commune, { shouldValidate: true })
   }, [form])
 
-  const onSubmit = (data: PlotFormData) => {
-    const newPlot: Plot = {
-      id: editingPlot?.id || `plot-${Date.now()}`,
-      ...data,
-      assignedProduct: data.assignedProduct === "none" ? undefined : data.assignedProduct,
-    }
+  const onSubmit = async (data: LocalPlotFormData) => {
+    try {
+      if (farmerId && editingPlot && isPlotWithId(editingPlot)) {
+        // Update existing plot in database
+        await updatePlotMutation.mutateAsync({
+          id: editingPlot.id,
+          updates: {
+            ...data,
+            village: data.village || null,
+            location_lat: data.location_lat || null,
+            location_long: data.location_long || null,
+          }
+        })
+      } else if (farmerId && !editingPlot) {
+        // Create new plot in database
+        await createPlotMutation.mutateAsync({
+          farmer_id: farmerId,
+          ...data,
+          village: data.village || null,
+          location_lat: data.location_lat || null,
+          location_long: data.location_long || null,
+        })
+      } else if (editingPlot && editingIndex !== null) {
+        // Update plot in local state (used in farmer form)
+        const updatedPlot: PlotFormData = {
+          ...data,
+          village: data.village || null,
+          location_lat: data.location_lat || null,
+          location_long: data.location_long || null,
+        }
+        
+        const updatedPlots = plots.map((plot, index) => 
+          index === editingIndex ? updatedPlot : plot
+        ) as PlotFormData[]
+        onPlotsChange(updatedPlots)
+      } else {
+        // Add new plot to local state (used in farmer form)
+        const newPlot: PlotFormData = {
+          ...data,
+          village: data.village || null,
+          location_lat: data.location_lat || null,
+          location_long: data.location_long || null,
+        }
+        onPlotsChange([...plots as PlotFormData[], newPlot])
+      }
 
-    if (editingPlot) {
-      // Update existing plot
-      const updatedPlots = plots.map(plot => 
-        plot.id === editingPlot.id ? newPlot : plot
-      )
-      onPlotsChange(updatedPlots)
-    } else {
-      // Add new plot
-      onPlotsChange([...plots, newPlot])
+      // Reset form and switch to list view
+      form.reset()
+      setEditingPlot(null)
+      setEditingIndex(null)
+      setActiveTab("list")
+    } catch (error) {
+      console.error('Error saving plot:', error)
     }
-
-    // Reset form and switch to list view
-    form.reset()
-    setEditingPlot(null)
-    setActiveTab("list")
   }
 
-  const handleEditPlot = (plot: Plot) => {
+  const handleEditPlot = (plot: ManagedPlot, index: number) => {
     setEditingPlot(plot)
+    setEditingIndex(index)
     form.reset({
       province: plot.province,
       district: plot.district,
       commune: plot.commune,
-      village: plot.village,
-      locationLat: plot.locationLat,
-      locationLong: plot.locationLong,
+      village: plot.village || "",
+      location_lat: plot.location_lat || undefined,
+      location_long: plot.location_long || undefined,
       crop: plot.crop,
-      areaHa: plot.areaHa,
-      assignedProduct: plot.assignedProduct || "none",
+      area_ha: plot.area_ha,
     })
     setActiveTab("add")
   }
 
-  const handleDeletePlot = (plotId: string) => {
-    const updatedPlots = plots.filter(plot => plot.id !== plotId)
-    onPlotsChange(updatedPlots)
+  const handleDeletePlot = async (plotIndex: number) => {
+    const plot = plots[plotIndex]
+    const plotName = `Plot ${plotIndex + 1} (${plot.crop})`
+    
+    if (!window.confirm(`Are you sure you want to delete ${plotName}? This action cannot be undone.`)) {
+      return
+    }
+    
+    try {
+      if (farmerId && isPlotWithId(plot)) {
+        // Delete from database
+        await deletePlotMutation.mutateAsync({ id: plot.id, farmerId: farmerId })
+      } else {
+        // Remove from local state (used in farmer form)
+        const updatedPlots = plots.filter((_, index) => index !== plotIndex) as PlotFormData[]
+        onPlotsChange(updatedPlots)
+      }
+    } catch (error) {
+      console.error('Error deleting plot:', error)
+    }
   }
 
   const handleCancelEdit = () => {
     form.reset()
     setEditingPlot(null)
+    setEditingIndex(null)
     setActiveTab("list")
   }
 
-  const formatLocation = (plot: Plot) => {
+  const formatLocation = (plot: ManagedPlot) => {
     const parts = [plot.province, plot.district, plot.commune, plot.village]
       .filter(Boolean)
       .map(part => part.replace(/([A-Z])/g, ' $1').trim())
@@ -190,18 +246,13 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
           ) : (
             <div className="space-y-3">
               {plots.map((plot, index) => (
-                <Card key={plot.id}>
+                <Card key={index}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="outline">Plot {index + 1}</Badge>
                           <Badge variant="secondary">{plot.crop}</Badge>
-                          {plot.assignedProduct && (
-                            <Badge className="bg-green-100 text-green-800">
-                              {plot.assignedProduct}
-                            </Badge>
-                          )}
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -214,13 +265,13 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                           </div>
                           <div>
                             <span className="font-medium">Area:</span>{" "}
-                            <span className="text-muted-foreground">{plot.areaHa} hectares</span>
+                            <span className="text-muted-foreground">{plot.area_ha} hectares</span>
                           </div>
-                          {(plot.locationLat && plot.locationLong) && (
+                          {(plot.location_lat && plot.location_long) && (
                             <div>
                               <span className="font-medium">GPS:</span>{" "}
                               <span className="text-muted-foreground">
-                                {plot.locationLat.toFixed(6)}, {plot.locationLong.toFixed(6)}
+                                {plot.location_lat.toFixed(6)}, {plot.location_long.toFixed(6)}
                               </span>
                             </div>
                           )}
@@ -231,15 +282,16 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditPlot(plot)}
+                          onClick={() => handleEditPlot(plot, index)}
                         >
                           Edit
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeletePlot(plot.id)}
+                          onClick={() => handleDeletePlot(index)}
                           className="text-red-600 hover:text-red-700"
+                          disabled={deletePlotMutation.isPending}
                         >
                           <TrashIcon className="h-4 w-4" />
                         </Button>
@@ -300,7 +352,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                       name="village"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Village *</FormLabel>
+                          <FormLabel>Village (Optional)</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter village name" {...field} />
                           </FormControl>
@@ -312,7 +364,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="locationLat"
+                        name="location_lat"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Latitude (Optional)</FormLabel>
@@ -332,7 +384,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                       
                       <FormField
                         control={form.control}
-                        name="locationLong"
+                        name="location_long"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Longitude (Optional)</FormLabel>
@@ -391,7 +443,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
 
                       <FormField
                         control={form.control}
-                        name="areaHa"
+                        name="area_ha"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Area (Hectares) *</FormLabel>
@@ -411,31 +463,7 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="assignedProduct"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Assigned Insurance Product (Optional)</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select insurance product" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">No product assigned</SelectItem>
-                              {insuranceProducts.map((product) => (
-                                <SelectItem key={product} value={product}>
-                                  {product}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
                   </div>
 
                   <Separator />
@@ -445,8 +473,16 @@ export function PlotManager({ plots, onPlotsChange }: PlotManagerProps) {
                     <Button type="button" variant="outline" onClick={handleCancelEdit}>
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                      {editingPlot ? "Update Plot" : "Add Plot"}
+                    <Button 
+                      type="button" 
+                      onClick={form.handleSubmit(onSubmit)}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={createPlotMutation.isPending || updatePlotMutation.isPending}
+                    >
+                      {createPlotMutation.isPending || updatePlotMutation.isPending 
+                        ? "Saving..." 
+                        : editingPlot ? "Update Plot" : "Add Plot"
+                      }
                     </Button>
                   </div>
                 </form>

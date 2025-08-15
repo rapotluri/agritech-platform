@@ -18,16 +18,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator"
 import { LocationSelector } from "./LocationSelector"
 import { PlotManager } from "./PlotManager"
+import { useCreateFarmer, useUpdateFarmer } from "@/lib/hooks"
+import type { FarmerWithPlots, PlotFormData } from "@/lib/database.types"
 
 // Form schema based on the database schema
 const farmerFormSchema = z.object({
   // Personal Information
-  englishName: z.string().min(1, "English name is required"),
+  english_name: z.string().min(1, "English name is required"),
   sex: z.enum(["male", "female", "other"]),
   phone: z.string().min(1, "Phone number is required"),
-  nationalId: z.string().min(1, "National ID is required"),
+  national_id: z.string().min(1, "National ID is required"),
   dob: z.date().optional(),
-  enrolmentDate: z.date().default(() => new Date()),
+  enrolment_date: z.date().default(() => new Date()),
   
   // Location Information
   province: z.string().min(1, "Province is required"),
@@ -36,101 +38,119 @@ const farmerFormSchema = z.object({
   village: z.string().optional(),
   
   // Bank Details
-  bankAccountUsd: z.string().optional(),
-  bankAccountKhr: z.string().optional(),
+  bank_account_usd: z.string().optional(),
+  bank_account_khr: z.string().optional(),
   
   // KYC Status
-  kycStatus: z.enum(["pending", "verified", "rejected"]).default("pending"),
-  kycNotes: z.string().optional(),
+  kyc_status: z.enum(["pending", "verified", "rejected"]).default("pending"),
+  kyc_notes: z.string().optional(),
 })
 
 export type FarmerFormData = z.infer<typeof farmerFormSchema>
 
-export interface Plot {
-  id: string
-  province: string
-  district: string
-  commune: string
-  village: string
-  locationLat?: number
-  locationLong?: number
-  crop: string
-  areaHa: number
-  assignedProduct?: string
-}
-
 interface FarmerFormProps {
-  farmer?: any // For edit mode
+  farmer?: FarmerWithPlots // For edit mode
   onSuccess: () => void
   onCancel: () => void
 }
 
 export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
-  const [plots, setPlots] = useState<Plot[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [plots, setPlots] = useState<PlotFormData[]>([])
   
   const isEditMode = !!farmer
+  const createFarmerMutation = useCreateFarmer()
+  const updateFarmerMutation = useUpdateFarmer()
 
   const form = useForm<FarmerFormData>({
     resolver: zodResolver(farmerFormSchema),
     defaultValues: {
-      englishName: farmer?.englishName || "",
+      english_name: farmer?.english_name || "",
       sex: farmer?.sex || "male",
       phone: farmer?.phone || "",
-      nationalId: farmer?.nationalId || "",
+      national_id: farmer?.national_id || "",
       dob: farmer?.dob ? new Date(farmer.dob) : undefined,
-      enrolmentDate: farmer?.enrolmentDate ? new Date(farmer.enrolmentDate) : new Date(),
+      enrolment_date: farmer?.enrolment_date ? new Date(farmer.enrolment_date) : new Date(),
       province: farmer?.province || "",
       district: farmer?.district || "",
       commune: farmer?.commune || "",
       village: farmer?.village || "",
-      bankAccountUsd: farmer?.bankAccountUsd || "",
-      bankAccountKhr: farmer?.bankAccountKhr || "",
-      kycStatus: farmer?.kycStatus || "pending",
-      kycNotes: farmer?.kycNotes || "",
+      bank_account_usd: farmer?.bank_account_usd || "",
+      bank_account_khr: farmer?.bank_account_khr || "",
+      kyc_status: farmer?.kyc_status || "pending",
+      kyc_notes: "",
     },
   })
 
   // Initialize plots for edit mode
   useEffect(() => {
     if (isEditMode && farmer?.plots) {
-      setPlots(farmer.plots)
+      // Convert database plots to form plots
+      const formPlots = farmer.plots.map(plot => ({
+        province: plot.province,
+        district: plot.district,
+        commune: plot.commune,
+        village: plot.village || "",
+        location_lat: plot.location_lat,
+        location_long: plot.location_long,
+        crop: plot.crop,
+        area_ha: plot.area_ha,
+      }))
+      setPlots(formPlots)
     }
   }, [isEditMode, farmer])
 
   const onSubmit = async (data: FarmerFormData) => {
-    setIsSubmitting(true)
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const farmerData = {
-        ...data,
-        plots: plots,
-        id: farmer?.id || `farmer-${Date.now()}`,
-        plotsCount: plots.length,
+      if (isEditMode && farmer) {
+        // Update existing farmer
+        await updateFarmerMutation.mutateAsync({
+          id: farmer.id,
+          updates: {
+            english_name: data.english_name,
+            sex: data.sex,
+            phone: data.phone,
+            national_id: data.national_id,
+            dob: data.dob?.toISOString().split('T')[0],
+            enrolment_date: data.enrolment_date.toISOString().split('T')[0],
+            province: data.province,
+            district: data.district,
+            commune: data.commune,
+            village: data.village || null,
+            bank_account_usd: data.bank_account_usd || null,
+            bank_account_khr: data.bank_account_khr || null,
+            kyc_status: data.kyc_status,
+          }
+        })
+      } else {
+        // Create new farmer
+        await createFarmerMutation.mutateAsync({
+          farmerData: {
+            english_name: data.english_name,
+            sex: data.sex,
+            phone: data.phone,
+            national_id: data.national_id,
+            dob: data.dob?.toISOString().split('T')[0] || null,
+            enrolment_date: data.enrolment_date.toISOString().split('T')[0],
+            province: data.province,
+            district: data.district,
+            commune: data.commune,
+            village: data.village || null,
+            bank_account_usd: data.bank_account_usd || null,
+            bank_account_khr: data.bank_account_khr || null,
+            kyc_status: data.kyc_status,
+          },
+          plots: plots
+        })
       }
-      
-      console.log("Submitting farmer data:", farmerData)
-      
-      // Here you would make the actual API call
-      // await createFarmer(farmerData) or await updateFarmer(farmer.id, farmerData)
-      
-      toast.success(
-        isEditMode 
-          ? `Farmer ${data.englishName} has been updated successfully!`
-          : `Farmer ${data.englishName} has been added successfully!`
-      )
       
       onSuccess()
     } catch (error) {
       console.error("Error submitting farmer data:", error)
-      toast.error("Failed to save farmer data. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+      // Error handling is done in the mutation hooks
     }
   }
+
+  const isSubmitting = createFarmerMutation.isPending || updateFarmerMutation.isPending
 
   const handleProvinceChange = useCallback((province: string) => {
     form.setValue("province", province, { shouldValidate: true })
@@ -160,7 +180,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="englishName"
+                name="english_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>English Name *</FormLabel>
@@ -213,7 +233,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
               
               <FormField
                 control={form.control}
-                name="nationalId"
+                name="national_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>National ID *</FormLabel>
@@ -247,7 +267,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
               
               <FormField
                 control={form.control}
-                name="enrolmentDate"
+                name="enrolment_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Enrollment Date *</FormLabel>
@@ -311,7 +331,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="bankAccountUsd"
+                name="bank_account_usd"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>USD Account</FormLabel>
@@ -325,7 +345,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
               
               <FormField
                 control={form.control}
-                name="bankAccountKhr"
+                name="bank_account_khr"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>KHR Account</FormLabel>
@@ -350,7 +370,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="kycStatus"
+                name="kyc_status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status *</FormLabel>
@@ -374,7 +394,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
             
             <FormField
               control={form.control}
-              name="kycNotes"
+              name="kyc_notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Verification Notes</FormLabel>

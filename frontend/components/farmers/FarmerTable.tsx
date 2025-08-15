@@ -26,31 +26,18 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-export interface Farmer {
-  id: string
-  englishName: string
-  sex: "male" | "female" | "other"
-  phone: string
-  nationalId: string
-  dob: Date
-  enrolmentDate: Date
-  province: string
-  district: string
-  commune: string
-  village: string
-  kycStatus: "pending" | "verified" | "rejected"
-  bankAccountUsd?: string
-  bankAccountKhr?: string
-  plotsCount: number
-  assignedProduct?: string
-}
+import type { FarmerWithPlots, SortableFarmerColumn } from "@/lib/database.types"
+import { useDeleteFarmer } from "@/lib/hooks"
+import { toast } from "sonner"
+
+export type { FarmerWithPlots as Farmer }
 
 interface FarmerTableProps {
   farmers: Farmer[]
   selectedFarmers: string[]
   onSelectionChange: (farmerIds: string[]) => void
-  onSort: (column: keyof Farmer, direction: "asc" | "desc") => void
-  sortColumn: keyof Farmer | null
+  onSort: (column: SortableFarmerColumn, direction: "asc" | "desc") => void
+  sortColumn: SortableFarmerColumn | null
   sortDirection: "asc" | "desc"
   className?: string
 }
@@ -108,6 +95,8 @@ export function FarmerTable({
   sortDirection,
   className,
 }: FarmerTableProps) {
+  const deleteFarmerMutation = useDeleteFarmer()
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       onSelectionChange(farmers.map(f => f.id))
@@ -124,12 +113,24 @@ export function FarmerTable({
     }
   }
 
-  const handleSort = (column: keyof Farmer) => {
+  const handleSort = (column: SortableFarmerColumn) => {
     const direction = sortColumn === column && sortDirection === "asc" ? "desc" : "asc"
     onSort(column, direction)
   }
 
-  const SortableHeader = ({ column, children }: { column: keyof Farmer; children: React.ReactNode }) => (
+  const handleDeleteFarmer = async (farmer: Farmer) => {
+    if (window.confirm(`Are you sure you want to delete farmer "${farmer.english_name}"? This action cannot be undone.`)) {
+      try {
+        await deleteFarmerMutation.mutateAsync(farmer.id)
+        // Remove from selection if selected
+        onSelectionChange(selectedFarmers.filter(id => id !== farmer.id))
+      } catch (error) {
+        console.error('Error deleting farmer:', error)
+      }
+    }
+  }
+
+  const SortableHeader = ({ column, children }: { column: SortableFarmerColumn; children: React.ReactNode }) => (
     <Button
       variant="ghost"
       onClick={() => handleSort(column)}
@@ -184,7 +185,7 @@ export function FarmerTable({
                   <Checkbox
                     checked={selectedFarmers.includes(farmer.id)}
                     onCheckedChange={(checked) => handleSelectFarmer(farmer.id, checked as boolean)}
-                    aria-label={`Select ${farmer.englishName}`}
+                    aria-label={`Select ${farmer.english_name}`}
                   />
                 </TableCell>
                 <TableCell className="font-mono text-sm">
@@ -194,13 +195,13 @@ export function FarmerTable({
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {farmer.englishName.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                        {farmer.english_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">{farmer.englishName}</div>
+                      <div className="font-medium">{farmer.english_name}</div>
                       <div className="text-sm text-muted-foreground">
-                        ID: {farmer.nationalId}
+                        ID: {farmer.national_id}
                       </div>
                     </div>
                   </div>
@@ -232,28 +233,28 @@ export function FarmerTable({
                 <TableCell>
                   <div className="text-sm">
                     <div className="font-medium">
-                      {format(farmer.enrolmentDate, "MMM dd, yyyy")}
+                      {format(new Date(farmer.enrolment_date), "MMM dd, yyyy")}
                     </div>
                     <div className="text-muted-foreground">
-                      {formatDistanceToNow(farmer.enrolmentDate, { addSuffix: true })}
+                      {formatDistanceToNow(new Date(farmer.enrolment_date), { addSuffix: true })}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge 
                     variant="secondary" 
-                    className={cn("border", getKYCStatusColor(farmer.kycStatus))}
+                    className={cn("border", getKYCStatusColor(farmer.kyc_status))}
                   >
-                    {getKYCStatusLabel(farmer.kycStatus)}
+                    {getKYCStatusLabel(farmer.kyc_status)}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="font-medium">{farmer.plotsCount}</span>
+                      <span className="font-medium">{farmer.plotsCount || 0}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {farmer.plotsCount} plot{farmer.plotsCount !== 1 ? 's' : ''}
+                      {farmer.plotsCount || 0} plot{(farmer.plotsCount || 0) !== 1 ? 's' : ''}
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
@@ -277,9 +278,13 @@ export function FarmerTable({
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => handleDeleteFarmer(farmer)}
+                        disabled={deleteFarmerMutation.isPending}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {deleteFarmerMutation.isPending ? "Deleting..." : "Delete"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
