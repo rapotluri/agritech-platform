@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-
+import cambodiaLocationData from "../../data/cambodia_provinces_districts_communes.json"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
@@ -39,30 +39,10 @@ export function LocationSelector({
 
   // Load location data
   React.useEffect(() => {
-    const loadLocationData = async () => {
-      try {
-        const response = await fetch('/data/cambodia_provinces_districts_communes.json')
-        const data = await response.json()
-        setLocationData(data)
-        setProvinces(Object.keys(data))
-      } catch (error) {
-        console.error('Failed to load location data:', error)
-        // Fallback data for development
-        const fallbackData = {
-          "PhnomPenh": {
-            "ChamkarMon": ["BoengKengKang", "Olympic", "PhsarDaeumThkov"],
-            "ChbarAmpov": ["ChbarAmpov", "KbalKaoh", "PreaekAeng"]
-          },
-          "Kandal": {
-            "AngkSnuol": ["BaekChan", "ChhakChheuNeang", "DamnakAmpil"],
-            "KandalStueng": ["AmpovPrey", "AnlongRomiet", "Barku"]
-          }
-        }
-        setLocationData(fallbackData)
-        setProvinces(Object.keys(fallbackData))
-      }
-    }
-    loadLocationData()
+    // Use the imported JSON data directly
+    const data = cambodiaLocationData as LocationData
+    setLocationData(data)
+    setProvinces(Object.keys(data))
   }, [])
 
   // Update districts when province changes

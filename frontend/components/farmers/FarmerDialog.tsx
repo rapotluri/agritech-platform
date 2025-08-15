@@ -54,7 +54,27 @@ export function FarmerDialog({
           {trigger || defaultTrigger}
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onOpenAutoFocus={(e) => {
+          // Prevent auto-focus which can interfere with Select components
+          e.preventDefault()
+        }}
+        onPointerDownOutside={(e) => {
+          // Prevent closing dialog when interacting with Select components
+          const target = e.target as HTMLElement
+          if (target.closest('[role="listbox"]') || target.closest('[role="combobox"]')) {
+            e.preventDefault()
+          }
+        }}
+        onInteractOutside={(e) => {
+          // Prevent closing dialog when interacting with Select dropdowns
+          const target = e.target as HTMLElement
+          if (target.closest('[role="listbox"]') || target.closest('[role="combobox"]')) {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? `Edit Farmer: ${farmer?.englishName}` : "Add New Farmer"}

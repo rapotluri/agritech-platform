@@ -170,14 +170,35 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form 
+        onSubmit={form.handleSubmit(onSubmit)} 
+        className="space-y-6"
+        onWheel={(e) => {
+          // Allow scroll events to propagate to Select dropdowns
+          const target = e.target as HTMLElement;
+          const listbox = target.closest('[role="listbox"]');
+          if (listbox) {
+            e.stopPropagation();
+          }
+        }}
+      >
         {/* Personal Information Section */}
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
             <CardDescription>Basic details about the farmer</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent 
+            className="space-y-4"
+            onWheel={(e) => {
+              // Check if we're scrolling inside a Select dropdown
+              const target = e.target as HTMLElement;
+              const listbox = target.closest('[role="listbox"]');
+              if (listbox) {
+                e.stopPropagation();
+              }
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -293,7 +314,17 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
             <CardTitle>Location Information</CardTitle>
             <CardDescription>Farmer&apos;s residential address</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent 
+            className="space-y-4"
+            onWheel={(e) => {
+              // Check if we're scrolling inside a Select dropdown
+              const target = e.target as HTMLElement;
+              const listbox = target.closest('[role="listbox"]');
+              if (listbox) {
+                e.stopPropagation();
+              }
+            }}
+          >
             <div className="space-y-2">
               <Label>Location *</Label>
               <LocationSelector
@@ -328,7 +359,17 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
             <CardTitle>Bank Details</CardTitle>
             <CardDescription>Optional bank account information</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent 
+            className="space-y-4"
+            onWheel={(e) => {
+              // Check if we're scrolling inside a Select dropdown
+              const target = e.target as HTMLElement;
+              const listbox = target.closest('[role="listbox"]');
+              if (listbox) {
+                e.stopPropagation();
+              }
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -367,7 +408,17 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
             <CardTitle>KYC Status</CardTitle>
             <CardDescription>Know Your Customer verification status</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent 
+            className="space-y-4"
+            onWheel={(e) => {
+              // Check if we're scrolling inside a Select dropdown
+              const target = e.target as HTMLElement;
+              const listbox = target.closest('[role="listbox"]');
+              if (listbox) {
+                e.stopPropagation();
+              }
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
