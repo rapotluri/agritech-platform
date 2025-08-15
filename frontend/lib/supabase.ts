@@ -469,7 +469,7 @@ export class ProductsService {
 
     if (error) throw error
 
-    const cropTypes = [...new Set((data || []).map(product => product.crop))]
+    const cropTypes = Array.from(new Set((data || []).map((product: any) => product.crop))) as string[]
     return cropTypes.sort()
   }
 

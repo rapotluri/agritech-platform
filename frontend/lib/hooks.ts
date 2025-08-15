@@ -41,7 +41,7 @@ export const productKeys = {
     [...productKeys.lists(), { filters, sorting, pagination }] as const,
   stats: () => [...productKeys.all, 'stats'] as const,
   cropTypes: () => [...productKeys.all, 'cropTypes'] as const,
-
+  regions: () => [...productKeys.all, 'regions'] as const,
 }
 
 // Farmers hooks
