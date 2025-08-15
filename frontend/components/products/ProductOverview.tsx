@@ -8,7 +8,6 @@ import {
   Calendar,
   MapPin,
   Leaf,
-  Target,
   DollarSign,
   Shield,
   Clock,
@@ -32,62 +31,6 @@ export function ProductOverview({ product }: ProductOverviewProps) {
       return parts.join(', ') || 'Not specified'
     }
     return 'Not specified'
-  }
-
-  // Helper function to format triggers display
-  const formatTriggers = (triggers: any) => {
-    if (!triggers) return 'No triggers configured'
-    if (typeof triggers === 'string') return triggers
-    
-    if (Array.isArray(triggers)) {
-      return triggers.map((trigger: any, index: number) => {
-        let displayValue = trigger.value || 'N/A'
-        if (typeof displayValue === 'object' && displayValue !== null) {
-          if (displayValue.startDate && displayValue.endDate) {
-            displayValue = `${new Date(displayValue.startDate).toLocaleDateString()} - ${new Date(displayValue.endDate).toLocaleDateString()}`
-          } else if (displayValue.id) {
-            displayValue = `ID: ${displayValue.id}`
-          } else {
-            displayValue = JSON.stringify(displayValue)
-          }
-        }
-        
-        return (
-          <div key={index} className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-blue-600" />
-            <span>{trigger.type || 'Unknown'}: {displayValue}</span>
-          </div>
-        )
-      })
-    }
-    
-    if (typeof triggers === 'object') {
-      return Object.entries(triggers).map(([key, value]: [string, any], index: number) => {
-        let displayValue = value
-        if (typeof value === 'object' && value !== null) {
-          if (value.startDate && value.endDate) {
-            displayValue = `${new Date(value.startDate).toLocaleDateString()} - ${new Date(value.endDate).toLocaleDateString()}`
-          } else if (value.id) {
-            displayValue = `ID: ${value.id}`
-          } else {
-            displayValue = JSON.stringify(value)
-          }
-        } else if (typeof value === 'boolean') {
-          displayValue = value ? 'Yes' : 'No'
-        } else if (value === null || value === undefined) {
-          displayValue = 'Not set'
-        }
-        
-        return (
-          <div key={index} className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-blue-600" />
-            <span>{key}: {displayValue}</span>
-          </div>
-        )
-      })
-    }
-    
-    return 'Triggers configured'
   }
 
   // Helper function to format terms display
@@ -175,30 +118,6 @@ export function ProductOverview({ product }: ProductOverviewProps) {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Trigger Configuration Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-blue-600" />
-            Trigger Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            {formatTriggers(product.triggers)}
-          </div>
-          
-          {product.triggers && (
-            <div className="pt-2">
-              <Separator />
-              <p className="text-sm text-gray-600 mt-2">
-                Triggers determine when insurance payouts are activated based on weather conditions or other criteria.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { useProduct } from "@/lib/hooks"
 import { ProductHeader } from "./ProductHeader"
 import { ProductOverview } from "./ProductOverview"
+import { TriggerConfiguration } from "./TriggerConfiguration"
 import { EnrollmentManager } from "./EnrollmentManager"
 import { ProductAnalytics } from "./ProductAnalytics"
 import { ConfigurationHistory } from "./ConfigurationHistory"
@@ -60,8 +61,9 @@ export function ProductDetail() {
 
       {/* Product Details Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="trigger-config">Trigger Configuration</TabsTrigger>
           <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
           <TabsTrigger value="analytics">Performance Analytics</TabsTrigger>
           <TabsTrigger value="history">Configuration History</TabsTrigger>
@@ -69,6 +71,10 @@ export function ProductDetail() {
 
         <TabsContent value="overview" className="mt-6">
           <ProductOverview product={product} />
+        </TabsContent>
+
+        <TabsContent value="trigger-config" className="mt-6">
+          <TriggerConfiguration product={product} />
         </TabsContent>
 
         <TabsContent value="enrollments" className="mt-6">
