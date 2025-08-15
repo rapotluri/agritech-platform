@@ -326,16 +326,85 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
               }
             }}
           >
-            <div className="space-y-2">
-              <Label>Location *</Label>
-              <LocationSelector
-                province={form.watch("province")}
-                district={form.watch("district")}
-                commune={form.watch("commune")}
-                onProvinceChange={handleProvinceChange}
-                onDistrictChange={handleDistrictChange}
-                onCommuneChange={handleCommuneChange}
-              />
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Location *</Label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="province"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Province *</FormLabel>
+                      <FormControl>
+                        <LocationSelector
+                          province={field.value}
+                          district={form.watch("district")}
+                          commune={form.watch("commune")}
+                          onProvinceChange={(value) => {
+                            field.onChange(value)
+                            handleProvinceChange(value)
+                          }}
+                          onDistrictChange={handleDistrictChange}
+                          onCommuneChange={handleCommuneChange}
+                          fieldType="province"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="district"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>District *</FormLabel>
+                      <FormControl>
+                        <LocationSelector
+                          province={form.watch("province")}
+                          district={field.value}
+                          commune={form.watch("commune")}
+                          onProvinceChange={handleProvinceChange}
+                          onDistrictChange={(value) => {
+                            field.onChange(value)
+                            handleDistrictChange(value)
+                          }}
+                          onCommuneChange={handleCommuneChange}
+                          fieldType="district"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="commune"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Commune *</FormLabel>
+                      <FormControl>
+                        <LocationSelector
+                          province={form.watch("province")}
+                          district={form.watch("district")}
+                          commune={field.value}
+                          onProvinceChange={handleProvinceChange}
+                          onDistrictChange={handleDistrictChange}
+                          onCommuneChange={(value) => {
+                            field.onChange(value)
+                            handleCommuneChange(value)
+                          }}
+                          fieldType="commune"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
             
             <FormField

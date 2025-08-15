@@ -18,6 +18,9 @@ interface DateInputProps {
   placeholder?: string
   disabled?: boolean
   className?: string
+  id?: string
+  "aria-describedby"?: string
+  "aria-invalid"?: boolean
 }
 
 export function DateInput({ 
@@ -25,7 +28,10 @@ export function DateInput({
   onChange, 
   placeholder = "Select date", 
   disabled = false,
-  className 
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid
 }: DateInputProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -35,9 +41,14 @@ export function DateInput({
         <Button
           variant="outline"
           disabled={disabled}
+          id={id}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           className={cn(
             "w-full justify-between font-normal",
             !value && "text-muted-foreground",
+            // Add error styling when aria-invalid is true
+            ariaInvalid && "border-destructive ring-destructive",
             className
           )}
         >

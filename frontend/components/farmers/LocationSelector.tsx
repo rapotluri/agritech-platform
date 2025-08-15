@@ -14,6 +14,7 @@ interface LocationSelectorProps {
   onCommuneChange: (commune: string) => void
   className?: string
   disabled?: boolean
+  fieldType?: "province" | "district" | "commune" // Single field mode
 }
 
 interface LocationData {
@@ -31,6 +32,7 @@ export function LocationSelector({
   onCommuneChange,
   className,
   disabled = false,
+  fieldType,
 }: LocationSelectorProps) {
   const [locationData, setLocationData] = React.useState<LocationData>({})
   const [provinces, setProvinces] = React.useState<string[]>([])
@@ -87,46 +89,99 @@ export function LocationSelector({
     onCommuneChange(value)
   }
 
-           return (
-        <div className={cn("flex gap-2", className)}>
-          <Select value={province} onValueChange={handleProvinceChange} disabled={disabled}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Province *" />
-            </SelectTrigger>
-            <SelectContent>
-              {provinces.map((prov) => (
-                <SelectItem key={prov} value={prov}>
-                  {prov.replace(/([A-Z])/g, ' $1').trim()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  // Single field mode - render only the specified field
+  if (fieldType === "province") {
+    return (
+      <Select value={province} onValueChange={handleProvinceChange} disabled={disabled}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Select province" />
+        </SelectTrigger>
+        <SelectContent>
+          {provinces.map((prov) => (
+            <SelectItem key={prov} value={prov}>
+              {prov.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
 
-          <Select value={district} onValueChange={handleDistrictChange} disabled={disabled || !province}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="District *" />
-            </SelectTrigger>
-            <SelectContent>
-              {districts.map((dist) => (
-                <SelectItem key={dist} value={dist}>
-                  {dist.replace(/([A-Z])/g, ' $1').trim()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  if (fieldType === "district") {
+    return (
+      <Select value={district} onValueChange={handleDistrictChange} disabled={disabled || !province}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Select district" />
+        </SelectTrigger>
+        <SelectContent>
+          {districts.map((dist) => (
+            <SelectItem key={dist} value={dist}>
+              {dist.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
 
-          <Select value={commune} onValueChange={handleCommuneChange} disabled={disabled || !district}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Commune *" />
-            </SelectTrigger>
-            <SelectContent>
-              {communes.map((com) => (
-                <SelectItem key={com} value={com}>
-                  {com.replace(/([A-Z])/g, ' $1').trim()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )
+  if (fieldType === "commune") {
+    return (
+      <Select value={commune} onValueChange={handleCommuneChange} disabled={disabled || !district}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Select commune" />
+        </SelectTrigger>
+        <SelectContent>
+          {communes.map((com) => (
+            <SelectItem key={com} value={com}>
+              {com.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+
+  // Multi-field mode - render all fields together (backwards compatibility)
+  return (
+    <div className={cn("flex gap-2", className)}>
+      <Select value={province} onValueChange={handleProvinceChange} disabled={disabled}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Province *" />
+        </SelectTrigger>
+        <SelectContent>
+          {provinces.map((prov) => (
+            <SelectItem key={prov} value={prov}>
+              {prov.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={district} onValueChange={handleDistrictChange} disabled={disabled || !province}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="District *" />
+        </SelectTrigger>
+        <SelectContent>
+          {districts.map((dist) => (
+            <SelectItem key={dist} value={dist}>
+              {dist.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={commune} onValueChange={handleCommuneChange} disabled={disabled || !district}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Commune *" />
+        </SelectTrigger>
+        <SelectContent>
+          {communes.map((com) => (
+            <SelectItem key={com} value={com}>
+              {com.replace(/([A-Z])/g, ' $1').trim()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
 }
