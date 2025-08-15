@@ -27,9 +27,14 @@ const farmerFormSchema = z.object({
   // Personal Information
   english_name: z.string().min(1, "English name is required"),
   sex: z.enum(["male", "female", "other"]),
-  phone: z.string().min(1, "Phone number is required"),
+  phone: z.string()
+    .min(1, "Phone number is required")
+    .regex(/^\d+$/, "Phone number must contain only numbers"),
   national_id: z.string().min(1, "National ID is required"),
-  dob: z.date().optional(),
+  dob: z.date({
+    required_error: "Date of birth is required",
+    invalid_type_error: "Please enter a valid date"
+  }),
   enrolment_date: z.date().default(() => new Date()),
   
   // Location Information
@@ -247,7 +252,31 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
                   <FormItem>
                     <FormLabel>Phone Number *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter phone number" {...field} />
+                      <Input 
+                        placeholder="Enter phone number" 
+                        {...field}
+                        onKeyDown={(e) => {
+                          // Allow: backspace, delete, tab, escape, enter, arrow keys
+                          if ([8, 9, 27, 13, 37, 38, 39, 40, 46].includes(e.keyCode) ||
+                              // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                              (e.ctrlKey && [65, 67, 86, 88].includes(e.keyCode)) ||
+                              // Allow home, end
+                              [35, 36].includes(e.keyCode)) {
+                            return;
+                          }
+                          // Prevent if not a digit (0-9)
+                          if (e.keyCode < 48 || e.keyCode > 57) {
+                            e.preventDefault();
+                          }
+                        }}
+                        onPaste={(e) => {
+                          // Get pasted text and only allow if it contains only digits
+                          const paste = e.clipboardData.getData('text');
+                          if (!/^\d*$/.test(paste)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -275,7 +304,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
                 name="dob"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
+                    <FormLabel>Date of Birth *</FormLabel>
                     <FormControl>
                       <DateInput
                         value={field.value}
