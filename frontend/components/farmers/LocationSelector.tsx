@@ -47,35 +47,44 @@ export function LocationSelector({
     setProvinces(Object.keys(data))
   }, [])
 
+  // Memoize districts to prevent unnecessary updates
+  const currentDistricts = React.useMemo(() => {
+    if (province && locationData[province]) {
+      return Object.keys(locationData[province])
+    }
+    return []
+  }, [province, locationData])
+
+  // Memoize communes to prevent unnecessary updates
+  const currentCommunes = React.useMemo(() => {
+    if (province && district && locationData[province]?.[district]) {
+      return locationData[province][district]
+    }
+    return []
+  }, [province, district, locationData])
+
   // Update districts when province changes
   React.useEffect(() => {
-    if (province && locationData[province]) {
-      const provinceDistricts = Object.keys(locationData[province])
-      setDistricts(provinceDistricts)
-      // Reset district and commune if province changes
-      if (!provinceDistricts.includes(district)) {
-        onDistrictChange('')
-        onCommuneChange('')
-      }
-    } else {
-      setDistricts([])
-      setCommunes([])
-    }
-  }, [province, locationData, district, onDistrictChange, onCommuneChange])
+    setDistricts(currentDistricts)
+  }, [currentDistricts])
 
   // Update communes when district changes
   React.useEffect(() => {
-    if (province && district && locationData[province]?.[district]) {
-      const districtCommunes = locationData[province][district]
-      setCommunes(districtCommunes)
-      // Reset commune if district changes
-      if (!districtCommunes.includes(commune)) {
-        onCommuneChange('')
-      }
-    } else {
-      setCommunes([])
+    setCommunes(currentCommunes)
+  }, [currentCommunes])
+
+  // Reset dependent fields when they become invalid
+  React.useEffect(() => {
+    if (district && currentDistricts.length > 0 && !currentDistricts.includes(district)) {
+      onDistrictChange('')
     }
-  }, [province, district, locationData, commune, onCommuneChange])
+  }, [district, currentDistricts, onDistrictChange])
+
+  React.useEffect(() => {
+    if (commune && currentCommunes.length > 0 && !currentCommunes.includes(commune)) {
+      onCommuneChange('')
+    }
+  }, [commune, currentCommunes, onCommuneChange])
 
   const handleProvinceChange = (value: string) => {
     onProvinceChange(value)

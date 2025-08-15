@@ -154,20 +154,20 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
 
   const isSubmitting = createFarmerMutation.isPending || updateFarmerMutation.isPending
 
-  const handleProvinceChange = useCallback((province: string) => {
-    form.setValue("province", province, { shouldValidate: true })
+  const handleProvinceChange = useCallback(() => {
+    // Only reset dependent fields, the province value is set by field.onChange
     form.setValue("district", "", { shouldValidate: true })
     form.setValue("commune", "", { shouldValidate: true })
   }, [form])
 
-  const handleDistrictChange = useCallback((district: string) => {
-    form.setValue("district", district, { shouldValidate: true })
+  const handleDistrictChange = useCallback(() => {
+    // Only reset dependent fields, the district value is set by field.onChange
     form.setValue("commune", "", { shouldValidate: true })
   }, [form])
 
-  const handleCommuneChange = useCallback((commune: string) => {
-    form.setValue("commune", commune, { shouldValidate: true })
-  }, [form])
+  const handleCommuneChange = useCallback(() => {
+    // No dependent fields to reset for commune
+  }, [])
 
   return (
     <Form {...form}>
@@ -343,7 +343,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
                           commune={form.watch("commune")}
                           onProvinceChange={(value) => {
                             field.onChange(value)
-                            handleProvinceChange(value)
+                            handleProvinceChange()
                           }}
                           onDistrictChange={handleDistrictChange}
                           onCommuneChange={handleCommuneChange}
@@ -369,7 +369,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
                           onProvinceChange={handleProvinceChange}
                           onDistrictChange={(value) => {
                             field.onChange(value)
-                            handleDistrictChange(value)
+                            handleDistrictChange()
                           }}
                           onCommuneChange={handleCommuneChange}
                           fieldType="district"
@@ -395,7 +395,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = t
                           onDistrictChange={handleDistrictChange}
                           onCommuneChange={(value) => {
                             field.onChange(value)
-                            handleCommuneChange(value)
+                            handleCommuneChange()
                           }}
                           fieldType="commune"
                         />
