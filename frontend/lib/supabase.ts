@@ -1,0 +1,425 @@
+import { createClient } from '@/utils/supabase/client'
+import { 
+  Plot, 
+  FarmerInsert, 
+  PlotInsert, 
+  FarmerUpdate, 
+  PlotUpdate,
+  FarmerWithPlots,
+  FarmerFilters,
+  FarmerSorting,
+  PaginationParams,
+  FarmersResponse 
+} from './database.types'
+
+export type SupabaseClient = ReturnType<typeof createClient>
+
+// Initialize Supabase client
+const supabase = createClient()
+
+// Auth helpers
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error) throw error
+  return user
+}
+
+export const getCurrentAppUser = async () => {
+  const user = await getCurrentUser()
+  if (!user) return null
+  
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+// Farmers service
+export class FarmersService {
+  // Get farmers with pagination, filtering, and sorting
+  static async getFarmers(
+    filters: FarmerFilters = {},
+    sorting: FarmerSorting = { column: null, direction: 'asc' },
+    pagination: PaginationParams = { page: 1, limit: 10 }
+  ): Promise<FarmersResponse> {
+    // If product filter is applied, we need to change our approach
+    const hasProductFilter = filters.product && filters.product !== 'all'
+    
+    let query = supabase
+      .from('farmers')
+      .select(`
+        *,
+        plots (*),
+        enrollments ${hasProductFilter ? '!inner' : ''} (
+          id,
+          product_id,
+          status,
+          products (
+            id,
+            name
+          )
+        )
+      `, { count: 'exact' })
+      .is('deleted_at', null) // Only active farmers
+
+    // Apply filters
+    if (filters.searchQuery) {
+      query = query.or(`english_name.ilike.%${filters.searchQuery}%,phone.ilike.%${filters.searchQuery}%,national_id.ilike.%${filters.searchQuery}%`)
+    }
+    
+    if (filters.province) {
+      query = query.eq('province', filters.province)
+    }
+    
+    if (filters.district) {
+      query = query.eq('district', filters.district)
+    }
+    
+    if (filters.commune) {
+      query = query.eq('commune', filters.commune)
+    }
+    
+    if (filters.kycStatus && filters.kycStatus !== 'all') {
+      query = query.eq('kyc_status', filters.kycStatus)
+    }
+
+    // Product filter - filter by farmers who have active enrollments with the specified product
+    if (filters.product && filters.product !== 'all') {
+      query = query
+        .eq('enrollments.product_id', filters.product)
+        .eq('enrollments.status', 'active')
+    }
+
+    // Apply sorting
+    if (sorting.column) {
+      query = query.order(sorting.column, { ascending: sorting.direction === 'asc' })
+    } else {
+      query = query.order('created_at', { ascending: false }) // Default sort by newest
+    }
+
+    // Apply pagination
+    const from = (pagination.page - 1) * pagination.limit
+    const to = from + pagination.limit - 1
+    query = query.range(from, to)
+
+    const { data, error, count } = await query
+
+    if (error) throw error
+
+    // Transform data to include plotsCount and assignedProduct
+    const farmers: FarmerWithPlots[] = (data || []).map(farmer => {
+      // Get the active enrollment's product name
+      const activeEnrollment = farmer.enrollments?.find((e: any) => e.status === 'active')
+      const assignedProduct = activeEnrollment?.products?.name || null
+
+      return {
+        ...farmer,
+        plotsCount: farmer.plots?.length || 0,
+        assignedProduct
+      }
+    })
+
+    return {
+      farmers,
+      total: count || 0,
+      page: pagination.page,
+      totalPages: Math.ceil((count || 0) / pagination.limit)
+    }
+  }
+
+  // Get single farmer by ID with plots
+  static async getFarmerById(id: string): Promise<FarmerWithPlots | null> {
+    const { data, error } = await supabase
+      .from('farmers')
+      .select(`
+        *,
+        plots (*)
+      `)
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return null // Not found
+      throw error
+    }
+
+    return {
+      ...data,
+      plotsCount: data.plots?.length || 0,
+      assignedProduct: null // TODO: Get from enrollments table
+    }
+  }
+
+  // Create farmer with plots
+  static async createFarmer(
+    farmerData: Omit<FarmerInsert, 'created_by_user_id'>,
+    plots: Omit<PlotInsert, 'farmer_id'>[] = []
+  ): Promise<FarmerWithPlots> {
+    console.log('Creating farmer with data:', farmerData, 'and plots:', plots)
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // Start transaction
+    const { data: farmer, error: farmerError } = await supabase
+      .from('farmers')
+      .insert({
+        ...farmerData,
+        created_by_user_id: user.id
+      })
+      .select()
+      .single()
+
+    if (farmerError) {
+      console.error('Create farmer error details:', farmerError)
+      throw farmerError
+    }
+    console.log('Farmer created successfully:', farmer)
+
+    // Insert plots if any
+    let farmerPlots: Plot[] = []
+    if (plots.length > 0) {
+      const plotsToInsert = plots.map(plot => ({
+        ...plot,
+        farmer_id: farmer.id
+      }))
+      console.log('Inserting plots:', plotsToInsert)
+      
+      const { data: plotsData, error: plotsError } = await supabase
+        .from('plots')
+        .insert(plotsToInsert)
+        .select()
+
+      if (plotsError) {
+        console.error('Create plots error details:', plotsError)
+        throw plotsError
+      }
+      farmerPlots = plotsData || []
+      console.log('Plots created successfully:', farmerPlots)
+    }
+
+    return {
+      ...farmer,
+      plots: farmerPlots,
+      plotsCount: farmerPlots.length,
+      assignedProduct: null
+    }
+  }
+
+  // Update farmer
+  static async updateFarmer(
+    id: string,
+    updates: FarmerUpdate
+  ): Promise<FarmerWithPlots> {
+    const { data, error } = await supabase
+      .from('farmers')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        plots (*)
+      `)
+      .single()
+
+    if (error) throw error
+
+    return {
+      ...data,
+      plotsCount: data.plots?.length || 0,
+      assignedProduct: null
+    }
+  }
+
+  // Delete farmer (hard delete for now due to RLS policy)
+  static async deleteFarmer(id: string): Promise<void> {
+    // First, delete all plots associated with this farmer
+    const { error: plotsError } = await supabase
+      .from('plots')
+      .delete()
+      .eq('farmer_id', id)
+
+    if (plotsError) {
+      console.error('Delete farmer plots error details:', plotsError)
+      throw new Error(`Failed to delete farmer plots: ${plotsError.message}`)
+    }
+
+    // Then delete the farmer
+    const { error } = await supabase
+      .from('farmers')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Delete farmer error details:', error)
+      throw error
+    }
+  }
+
+  // Get farmer statistics
+  static async getFarmerStats() {
+    const { count: totalFarmers, error: totalError } = await supabase
+      .from('farmers')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+
+    const { count: verifiedFarmers, error: verifiedError } = await supabase
+      .from('farmers')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .eq('kyc_status', 'verified')
+
+    const { count: pendingKYC, error: pendingError } = await supabase
+      .from('farmers')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .eq('kyc_status', 'pending')
+
+    const { count: totalPlots, error: plotsError } = await supabase
+      .from('plots')
+      .select('*', { count: 'exact', head: true })
+
+    // Recent enrollments (last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const { count: recentEnrollments, error: recentError } = await supabase
+      .from('farmers')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .gte('enrolment_date', thirtyDaysAgo.toISOString().split('T')[0])
+
+    if (totalError || verifiedError || pendingError || plotsError || recentError) {
+      throw new Error('Failed to fetch farmer statistics')
+    }
+
+    return {
+      totalFarmers: totalFarmers || 0,
+      activeEnrollments: verifiedFarmers || 0,
+      pendingKYC: pendingKYC || 0,
+      totalPlots: totalPlots || 0,
+      recentEnrollments: recentEnrollments || 0
+    }
+  }
+}
+
+// Products service
+export class ProductsService {
+  // Get all products
+  static async getProducts() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, crop, status')
+      .eq('status', 'live')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  }
+}
+
+// Plots service
+export class PlotsService {
+  // Get plots for a farmer
+  static async getFarmerPlots(farmerId: string): Promise<Plot[]> {
+    const { data, error } = await supabase
+      .from('plots')
+      .select('*')
+      .eq('farmer_id', farmerId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
+
+  // Create plot
+  static async createPlot(plotData: PlotInsert): Promise<Plot> {
+    console.log('Creating plot with data:', plotData)
+    const { data, error } = await supabase
+      .from('plots')
+      .insert(plotData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Create plot error details:', error)
+      throw error
+    }
+    console.log('Plot created successfully:', data)
+    return data
+  }
+
+  // Update plot
+  static async updatePlot(id: string, updates: PlotUpdate): Promise<Plot> {
+    console.log('Updating plot with ID:', id, 'updates:', updates)
+    const { data, error } = await supabase
+      .from('plots')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Update plot error details:', error)
+      throw error
+    }
+    console.log('Plot updated successfully:', data)
+    return data
+  }
+
+  // Delete plot
+  static async deletePlot(id: string): Promise<void> {
+    console.log('Deleting plot with ID:', id)
+    const { error } = await supabase
+      .from('plots')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Delete plot error details:', error)
+      throw error
+    }
+    console.log('Plot deleted successfully')
+  }
+}
+
+// Real-time subscriptions - temporarily disabled due to API compatibility
+// export const subscribeToFarmers = (callback: (farmers: Farmer[]) => void) => {
+//   return supabase
+//     .channel('farmers_changes')
+//     .on(
+//       'postgres_changes',
+//       {
+//         event: '*',
+//         schema: 'public',
+//         table: 'farmers'
+//       },
+//       callback
+//     )
+//     .subscribe()
+// }
+
+// export const subscribeToPlots = (farmerId: string, callback: (plots: Plot[]) => void) => {
+//   return supabase
+//     .channel(`plots_changes_${farmerId}`)
+//     .on(
+//       'postgres_changes',
+//       {
+//         event: '*',
+//         schema: 'public',
+//         table: 'plots',
+//         filter: `farmer_id=eq.${farmerId}`
+//       },
+//       callback
+//     )
+//     .subscribe()
+// }
