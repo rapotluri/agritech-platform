@@ -366,7 +366,6 @@ export interface ProductFilters {
   coverageWindowStart?: Date
   coverageWindowEnd?: Date
   dateCreatedStart?: Date
-  dateCreatedEnd?: Date
 }
 
 export type SortableProductColumn = 

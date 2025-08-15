@@ -41,7 +41,7 @@ export const productKeys = {
     [...productKeys.lists(), { filters, sorting, pagination }] as const,
   stats: () => [...productKeys.all, 'stats'] as const,
   cropTypes: () => [...productKeys.all, 'cropTypes'] as const,
-  regions: () => [...productKeys.all, 'regions'] as const,
+
 }
 
 // Farmers hooks
@@ -288,13 +288,7 @@ export function useCropTypes() {
   })
 }
 
-export function useRegions() {
-  return useQuery({
-    queryKey: productKeys.regions(),
-    queryFn: () => ProductsService.getRegions(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  })
-}
+
 
 export function useCreateProduct() {
   const queryClient = useQueryClient()

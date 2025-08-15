@@ -372,13 +372,15 @@ export class ProductsService {
       query = query.contains('region', { commune: filters.commune })
     }
 
-    // Date filtering
+    // Date filtering - filter for products created on the specific date
     if (filters.dateCreatedStart) {
-      query = query.gte('created_at', filters.dateCreatedStart.toISOString())
-    }
-    
-    if (filters.dateCreatedEnd) {
-      query = query.lte('created_at', filters.dateCreatedEnd.toISOString())
+      const selectedDate = filters.dateCreatedStart.toISOString().split('T')[0] // Get YYYY-MM-DD format
+      const startOfDay = `${selectedDate}T00:00:00.000Z`
+      const endOfDay = `${selectedDate}T23:59:59.999Z`
+      
+      query = query
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
     }
 
     // Coverage window filtering using new date columns
@@ -471,42 +473,7 @@ export class ProductsService {
     return cropTypes.sort()
   }
 
-  // Get unique regions for filter dropdowns
-  static async getRegions(): Promise<{
-    provinces: string[]
-    districts: string[]
-    communes: string[]
-  }> {
-    const { data, error } = await supabase
-      .from('products')
-      .select('region')
 
-    if (error) throw error
-
-    const provincesSet = new Set()
-    const districtsSet = new Set()
-    const communesSet = new Set()
-
-    ;(data || []).forEach((product: any) => {
-      try {
-        const region = typeof product.region === 'string' 
-          ? JSON.parse(product.region) 
-          : product.region
-
-        if (region?.province) provincesSet.add(region.province)
-        if (region?.district) districtsSet.add(region.district)
-        if (region?.commune) communesSet.add(region.commune)
-      } catch {
-        // Skip invalid JSON
-      }
-    })
-
-    return {
-      provinces: Array.from(provincesSet).sort() as string[],
-      districts: Array.from(districtsSet).sort() as string[],
-      communes: Array.from(communesSet).sort() as string[]
-    }
-  }
 
   // Create a new product
   static async createProduct(productData: {

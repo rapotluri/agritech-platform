@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateInput } from "@/components/ui/date-input"
 import { Search, X } from "lucide-react"
+import cambodiaData from "@/data/cambodia_provinces_districts_communes.json"
 
 export interface ProductFilters {
   searchQuery?: string
@@ -17,16 +18,12 @@ export interface ProductFilters {
   coverageWindowStart?: Date
   coverageWindowEnd?: Date
   dateCreatedStart?: Date
-  dateCreatedEnd?: Date
 }
 
 interface ProductFiltersProps {
   filters: ProductFilters
   onFiltersChange: (filters: ProductFilters) => void
   cropTypes?: string[]
-  provinces?: string[]
-  districts?: string[]
-  communes?: string[]
   isLoading?: boolean
 }
 
@@ -34,23 +31,32 @@ export function ProductFilters({
   filters,
   onFiltersChange,
   cropTypes = [],
-  provinces = [],
-  districts = [],
-  communes = [],
   isLoading = false
 }: ProductFiltersProps) {
   
   // Ensure arrays are properly defined and filter out invalid values
   const safeCropTypes = (cropTypes || []).filter(crop => crop && typeof crop === 'string' && crop.trim() !== '')
-  const safeProvinces = (provinces || []).filter(province => province && typeof province === 'string' && province.trim() !== '')
-  const safeDistricts = (districts || []).filter(district => district && typeof district === 'string' && district.trim() !== '')
-  const safeCommunes = (communes || []).filter(commune => commune && typeof commune === 'string' && commune.trim() !== '')
+  
+  // Get location data from JSON file
+  const provinces = Object.keys(cambodiaData).sort()
+  const selectedProvinceData = filters.province ? cambodiaData[filters.province as keyof typeof cambodiaData] : null
+  const districts = selectedProvinceData ? Object.keys(selectedProvinceData).sort() : []
+  const communes = (selectedProvinceData && filters.district) 
+    ? selectedProvinceData[filters.district as keyof typeof selectedProvinceData] || []
+    : []
   
   const updateFilter = (key: keyof ProductFilters, value: any) => {
-    onFiltersChange({
-      ...filters,
-      [key]: value
-    })
+    const newFilters = { ...filters, [key]: value }
+    
+    // Clear dependent filters when parent changes
+    if (key === 'province') {
+      newFilters.district = undefined
+      newFilters.commune = undefined
+    } else if (key === 'district') {
+      newFilters.commune = undefined
+    }
+    
+    onFiltersChange(newFilters)
   }
 
   const clearFilters = () => {
@@ -69,8 +75,7 @@ export function ProductFilters({
     (filters.status && filters.status !== 'all') ||
     filters.coverageWindowStart || 
     filters.coverageWindowEnd ||
-    filters.dateCreatedStart ||
-    filters.dateCreatedEnd
+    filters.dateCreatedStart
 
   return (
     <div className="space-y-4">
@@ -118,7 +123,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Provinces</SelectItem>
-            {safeProvinces.map((province) => (
+            {provinces.map((province) => (
               <SelectItem key={province} value={province}>
                 {province}
               </SelectItem>
@@ -137,7 +142,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Districts</SelectItem>
-            {safeDistricts.map((district) => (
+            {districts.map((district) => (
               <SelectItem key={district} value={district}>
                 {district}
               </SelectItem>
@@ -156,7 +161,7 @@ export function ProductFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Communes</SelectItem>
-            {safeCommunes.map((commune) => (
+            {communes.map((commune) => (
               <SelectItem key={commune} value={commune}>
                 {commune}
               </SelectItem>
@@ -216,25 +221,15 @@ export function ProductFilters({
           </div>
         </div>
 
-        {/* Date Created Range */}
+        {/* Date Created */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Date Created</label>
-          <div className="flex space-x-2">
-            <DateInput
-              value={filters.dateCreatedStart}
-              onChange={(date) => updateFilter('dateCreatedStart', date)}
-              placeholder="Start date"
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <DateInput
-              value={filters.dateCreatedEnd}
-              onChange={(date) => updateFilter('dateCreatedEnd', date)}
-              placeholder="End date"
-              disabled={isLoading}
-              className="flex-1"
-            />
-          </div>
+          <DateInput
+            value={filters.dateCreatedStart}
+            onChange={(date) => updateFilter('dateCreatedStart', date)}
+            placeholder="Select creation date"
+            disabled={isLoading}
+          />
         </div>
       </div>
 

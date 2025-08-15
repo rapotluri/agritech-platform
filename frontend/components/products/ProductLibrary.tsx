@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +16,7 @@ import { ProductTable } from "./ProductTable"
 import { 
   useProductsWithEnrollments, 
   useProductStats, 
-  useCropTypes, 
-  useRegions 
+  useCropTypes
 } from "@/lib/hooks"
 import { ProductSorting, SortableProductColumn } from "@/lib/database.types"
 import { Plus, Download } from "lucide-react"
@@ -56,7 +56,6 @@ export function ProductLibrary() {
   } = useProductStats()
 
   const { data: cropTypes = [] } = useCropTypes()
-  const { data: regions } = useRegions()
 
 
 
@@ -168,36 +167,56 @@ export function ProductLibrary() {
       />
 
       {/* Search & Filter Controls */}
-      <ProductFiltersComponent
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        cropTypes={cropTypes}
-        provinces={regions?.provinces || []}
-        districts={regions?.districts || []}
-        communes={regions?.communes || []}
-        isLoading={isProductsLoading}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Search & Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProductFiltersComponent
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            cropTypes={cropTypes}
+            isLoading={isProductsLoading}
+          />
+        </CardContent>
+      </Card>
 
       {/* Products Table */}
-      <ProductTable
-        products={productsData?.products || []}
-        isLoading={isProductsLoading}
-        totalCount={productsData?.total || 0}
-        currentPage={currentPage}
-        totalPages={productsData?.totalPages || 1}
-        pageSize={pageSize}
-        selectedProducts={selectedProducts}
-        sorting={sorting}
-        onProductSelect={handleProductSelect}
-        onSelectAll={handleSelectAll}
-        onSort={handleSort}
-        onPageChange={handlePageChange}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDuplicate={handleDuplicate}
-        onArchive={handleArchive}
-        onAssign={handleAssign}
-      />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Product Directory</CardTitle>
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected
+                </span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ProductTable
+            products={productsData?.products || []}
+            isLoading={isProductsLoading}
+            totalCount={productsData?.total || 0}
+            currentPage={currentPage}
+            totalPages={productsData?.totalPages || 1}
+            pageSize={pageSize}
+            selectedProducts={selectedProducts}
+            sorting={sorting}
+            onProductSelect={handleProductSelect}
+            onSelectAll={handleSelectAll}
+            onSort={handleSort}
+            onPageChange={handlePageChange}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDuplicate={handleDuplicate}
+            onArchive={handleArchive}
+            onAssign={handleAssign}
+          />
+        </CardContent>
+      </Card>
 
       {/* Error handling */}
       {productsError && (
