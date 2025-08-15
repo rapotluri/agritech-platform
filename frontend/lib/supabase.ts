@@ -48,11 +48,23 @@ export class FarmersService {
     sorting: FarmerSorting = { column: null, direction: 'asc' },
     pagination: PaginationParams = { page: 1, limit: 10 }
   ): Promise<FarmersResponse> {
+    // If product filter is applied, we need to change our approach
+    const hasProductFilter = filters.product && filters.product !== 'all'
+    
     let query = supabase
       .from('farmers')
       .select(`
         *,
-        plots (*)
+        plots (*),
+        enrollments ${hasProductFilter ? '!inner' : ''} (
+          id,
+          product_id,
+          status,
+          products (
+            id,
+            name
+          )
+        )
       `, { count: 'exact' })
       .is('deleted_at', null) // Only active farmers
 
@@ -77,6 +89,13 @@ export class FarmersService {
       query = query.eq('kyc_status', filters.kycStatus)
     }
 
+    // Product filter - filter by farmers who have active enrollments with the specified product
+    if (filters.product && filters.product !== 'all') {
+      query = query
+        .eq('enrollments.product_id', filters.product)
+        .eq('enrollments.status', 'active')
+    }
+
     // Apply sorting
     if (sorting.column) {
       query = query.order(sorting.column, { ascending: sorting.direction === 'asc' })
@@ -93,12 +112,18 @@ export class FarmersService {
 
     if (error) throw error
 
-    // Transform data to include plotsCount
-    const farmers: FarmerWithPlots[] = (data || []).map(farmer => ({
-      ...farmer,
-      plotsCount: farmer.plots?.length || 0,
-      assignedProduct: null // TODO: Get from enrollments table when implemented
-    }))
+    // Transform data to include plotsCount and assignedProduct
+    const farmers: FarmerWithPlots[] = (data || []).map(farmer => {
+      // Get the active enrollment's product name
+      const activeEnrollment = farmer.enrollments?.find((e: any) => e.status === 'active')
+      const assignedProduct = activeEnrollment?.products?.name || null
+
+      return {
+        ...farmer,
+        plotsCount: farmer.plots?.length || 0,
+        assignedProduct
+      }
+    })
 
     return {
       farmers,
@@ -283,6 +308,21 @@ export class FarmersService {
       totalPlots: totalPlots || 0,
       recentEnrollments: recentEnrollments || 0
     }
+  }
+}
+
+// Products service
+export class ProductsService {
+  // Get all products
+  static async getProducts() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, crop, status')
+      .eq('status', 'live')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+    return data || []
   }
 }
 

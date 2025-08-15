@@ -155,10 +155,7 @@ export function FarmerTable({
                 />
               </TableHead>
               <TableHead>
-                <SortableHeader column="id">Farmer ID</SortableHeader>
-              </TableHead>
-              <TableHead>
-                <SortableHeader column="englishName">Name</SortableHeader>
+                <SortableHeader column="english_name">Name</SortableHeader>
               </TableHead>
               <TableHead>
                 <SortableHeader column="phone">Contact</SortableHeader>
@@ -167,14 +164,12 @@ export function FarmerTable({
                 <SortableHeader column="province">Location</SortableHeader>
               </TableHead>
               <TableHead>
-                <SortableHeader column="enrolmentDate">Enrollment Date</SortableHeader>
+                <SortableHeader column="enrolment_date">Enrollment Date</SortableHeader>
               </TableHead>
               <TableHead>
-                <SortableHeader column="kycStatus">KYC Status</SortableHeader>
+                <SortableHeader column="kyc_status">KYC Status</SortableHeader>
               </TableHead>
-              <TableHead>
-                <SortableHeader column="plotsCount">Plots Count</SortableHeader>
-              </TableHead>
+              <TableHead>Plots Count</TableHead>
               <TableHead className="w-12">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -187,9 +182,6 @@ export function FarmerTable({
                     onCheckedChange={(checked) => handleSelectFarmer(farmer.id, checked as boolean)}
                     aria-label={`Select ${farmer.english_name}`}
                   />
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {farmer.id.slice(0, 8)}...
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">

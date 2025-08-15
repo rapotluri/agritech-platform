@@ -210,6 +210,47 @@ export interface Database {
           updated_at?: string
         }
       }
+      enrollments: {
+        Row: {
+          id: string
+          created_by_user_id: string
+          farmer_id: string
+          plot_id: string | null
+          product_id: string
+          season: string
+          premium: number
+          sum_insured: number
+          status: 'pending' | 'active' | 'expired' | 'cancelled'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          created_by_user_id: string
+          farmer_id: string
+          plot_id?: string | null
+          product_id: string
+          season: string
+          premium: number
+          sum_insured: number
+          status?: 'pending' | 'active' | 'expired' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          created_by_user_id?: string
+          farmer_id?: string
+          plot_id?: string | null
+          product_id?: string
+          season?: string
+          premium?: number
+          sum_insured?: number
+          status?: 'pending' | 'active' | 'expired' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -229,6 +270,7 @@ export type AppUser = Database['public']['Tables']['app_users']['Row']
 export type Farmer = Database['public']['Tables']['farmers']['Row']
 export type Plot = Database['public']['Tables']['plots']['Row']
 export type Product = Database['public']['Tables']['products']['Row']
+export type Enrollment = Database['public']['Tables']['enrollments']['Row']
 
 // Insert types
 export type FarmerInsert = Database['public']['Tables']['farmers']['Insert']

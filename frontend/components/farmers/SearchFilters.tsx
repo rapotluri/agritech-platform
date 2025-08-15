@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 
 import { LocationSelector } from "./LocationSelector"
 import { cn } from "@/lib/utils"
+import { useProducts } from "@/lib/hooks"
 
 interface SearchFiltersProps {
   searchQuery: string
@@ -25,15 +26,7 @@ interface SearchFiltersProps {
   className?: string
 }
 
-// Mock insurance products
-const INSURANCE_PRODUCTS = [
-  "Rice Insurance Premium",
-  "Corn Insurance Premium", 
-  "Cassava Insurance Premium",
-  "Soybean Insurance Premium",
-  "Peanut Insurance Premium",
-  "Vegetable Insurance Premium"
-]
+// This will be replaced with real products from database
 
 const KYC_STATUSES = [
   { value: "all", label: "All KYC Status" },
@@ -57,20 +50,24 @@ export function SearchFilters({
   onClearFilters,
   className,
 }: SearchFiltersProps) {
-  const [debouncedSearch, setDebouncedSearch] = React.useState(searchQuery)
+  const [localSearchQuery, setLocalSearchQuery] = React.useState(searchQuery)
+  
+  // Fetch products from database
+  const { data: products = [], isLoading: isProductsLoading } = useProducts()
+
+  // Update local state when prop changes
+  React.useEffect(() => {
+    setLocalSearchQuery(searchQuery)
+  }, [searchQuery])
 
   // Debounce search input
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
+      onSearchChange(localSearchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  React.useEffect(() => {
-    onSearchChange(debouncedSearch)
-  }, [debouncedSearch, onSearchChange])
+  }, [localSearchQuery, onSearchChange])
 
   const handleLocationChange = (province: string, district: string, commune: string) => {
     onLocationChange(province, district, commune)
@@ -87,8 +84,8 @@ export function SearchFilters({
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search farmers by name, national ID, or phone number..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={localSearchQuery}
+          onChange={(e) => setLocalSearchQuery(e.target.value)}
           className="pl-10 h-12 text-base"
         />
       </div>
@@ -135,14 +132,18 @@ export function SearchFilters({
              <SelectTrigger className="h-9">
                <SelectValue placeholder="All Products" />
              </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">All Products</SelectItem>
-               {INSURANCE_PRODUCTS.map((product) => (
-                 <SelectItem key={product} value={product}>
-                   {product}
-                 </SelectItem>
-               ))}
-             </SelectContent>
+                         <SelectContent>
+              <SelectItem value="all">All Products</SelectItem>
+              {isProductsLoading ? (
+                <SelectItem value="loading" disabled>Loading products...</SelectItem>
+              ) : (
+                products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
            </Select>
          </div>
 

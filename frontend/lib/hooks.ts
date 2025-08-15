@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FarmersService, PlotsService } from './supabase'
+import { FarmersService, PlotsService, ProductsService } from './supabase'
 import { 
   FarmerFilters, 
   FarmerSorting, 
@@ -31,6 +31,10 @@ export const plotKeys = {
   all: ['plots'] as const,
   lists: () => [...plotKeys.all, 'list'] as const,
   list: (farmerId: string) => [...plotKeys.lists(), farmerId] as const,
+}
+
+export const productKeys = {
+  all: () => ['products'] as const,
 }
 
 // Farmers hooks
@@ -237,6 +241,15 @@ export function useDeletePlot() {
       console.error('Error deleting plot:', error)
       toast.error('Failed to delete plot. Please try again.')
     },
+  })
+}
+
+// Products hooks
+export function useProducts() {
+  return useQuery({
+    queryKey: productKeys.all(),
+    queryFn: () => ProductsService.getProducts(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 
