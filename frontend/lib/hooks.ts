@@ -39,6 +39,8 @@ export const productKeys = {
   lists: () => [...productKeys.all, 'list'] as const,
   list: (filters: ProductFilters, sorting: ProductSorting, pagination: PaginationParams) => 
     [...productKeys.lists(), { filters, sorting, pagination }] as const,
+  details: () => [...productKeys.all, 'detail'] as const,
+  detail: (id: string) => [...productKeys.details(), id] as const,
   stats: () => [...productKeys.all, 'stats'] as const,
   cropTypes: () => [...productKeys.all, 'cropTypes'] as const,
   regions: () => [...productKeys.all, 'regions'] as const,
@@ -288,6 +290,14 @@ export function useCropTypes() {
   })
 }
 
+export function useProduct(id: string) {
+  return useQuery({
+    queryKey: productKeys.detail(id),
+    queryFn: () => ProductsService.getProductById(id),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
 
 
 export function useCreateProduct() {

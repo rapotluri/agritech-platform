@@ -356,6 +356,36 @@ export interface ProductWithEnrollments extends Product {
   }>
 }
 
+// Detailed product type for the product detail page
+export interface ProductWithDetailedEnrollments extends Product {
+  enrollments?: Array<{
+    id: string
+    farmer_id: string
+    plot_id: string | null
+    season: string
+    premium: number
+    sum_insured: number
+    status: 'pending' | 'active' | 'expired' | 'cancelled'
+    created_at: string
+    farmer: {
+      id: string
+      english_name: string
+      phone: string
+      province: string
+      district: string
+      commune: string
+    }
+    plot: {
+      id: string
+      province: string
+      district: string
+      commune: string
+      crop: string
+      area_ha: number
+    } | null
+  }>
+}
+
 export interface ProductFilters {
   searchQuery?: string
   cropType?: string

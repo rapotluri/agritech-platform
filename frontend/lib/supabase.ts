@@ -473,7 +473,45 @@ export class ProductsService {
     return cropTypes.sort()
   }
 
+  // Get a single product by ID with detailed enrollment data
+  static async getProductById(id: string) {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        enrollments (
+          id,
+          farmer_id,
+          plot_id,
+          season,
+          premium,
+          sum_insured,
+          status,
+          created_at,
+          farmer:farmers (
+            id,
+            english_name,
+            phone,
+            province,
+            district,
+            commune
+          ),
+          plot:plots (
+            id,
+            province,
+            district,
+            commune,
+            crop,
+            area_ha
+          )
+        )
+      `)
+      .eq('id', id)
+      .single()
 
+    if (error) throw error
+    return data
+  }
 
   // Create a new product
   static async createProduct(productData: {
