@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowUpDown, MoreHorizontal, Copy, Eye, Edit, Trash2 } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Copy, Eye, Trash2 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -273,10 +273,6 @@ export function FarmerTable({
                           <Eye className="mr-2 h-4 w-4" />
                           View Profile
                         </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <AlertDialog>

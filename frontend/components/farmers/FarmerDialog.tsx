@@ -49,9 +49,11 @@ export function FarmerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        {trigger || defaultTrigger}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || defaultTrigger}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -59,7 +61,7 @@ export function FarmerDialog({
           </DialogTitle>
           <DialogDescription>
             {isEditMode 
-              ? "Update farmer information and manage their plots."
+              ? "Update farmer information. To manage plots, use the Plots tab on the farmer profile page."
               : "Enter farmer details and add their plots. All required fields are marked with *."}
           </DialogDescription>
         </DialogHeader>
@@ -68,6 +70,7 @@ export function FarmerDialog({
           farmer={farmer}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChange?.(false)}
+          showPlotManagement={!isEditMode}
         />
       </DialogContent>
     </Dialog>

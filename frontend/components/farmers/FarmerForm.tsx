@@ -52,9 +52,10 @@ interface FarmerFormProps {
   farmer?: FarmerWithPlots // For edit mode
   onSuccess: () => void
   onCancel: () => void
+  showPlotManagement?: boolean // Control whether to show plot management section
 }
 
-export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
+export function FarmerForm({ farmer, onSuccess, onCancel, showPlotManagement = true }: FarmerFormProps) {
   const [plots, setPlots] = useState<PlotFormData[]>([])
   
   const isEditMode = !!farmer
@@ -139,7 +140,7 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
             bank_account_khr: data.bank_account_khr || null,
             kyc_status: data.kyc_status,
           },
-          plots: plots
+          plots: showPlotManagement ? plots : []
         })
       }
       
@@ -412,18 +413,22 @@ export function FarmerForm({ farmer, onSuccess, onCancel }: FarmerFormProps) {
           </CardContent>
         </Card>
 
-        {/* Plot Management Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Plot Management</CardTitle>
-            <CardDescription>Manage farmer&apos;s agricultural plots</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PlotManager plots={plots} onPlotsChange={setPlots} />
-          </CardContent>
-        </Card>
+        {/* Plot Management Section - Only show when enabled */}
+        {showPlotManagement && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Plot Management</CardTitle>
+                <CardDescription>Manage farmer&apos;s agricultural plots</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PlotManager plots={plots} onPlotsChange={setPlots} />
+              </CardContent>
+            </Card>
 
-        <Separator />
+            <Separator />
+          </>
+        )}
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4">

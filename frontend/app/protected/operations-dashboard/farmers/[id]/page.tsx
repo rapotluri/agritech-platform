@@ -15,7 +15,20 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronRight, Plus } from "lucide-react"
 import { useFarmer, useDeleteFarmer } from "@/lib/hooks"
 import { PlotManager } from "@/components/farmers/PlotManager"
+import { FarmerDialog } from "@/components/farmers/FarmerDialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { format, formatDistanceToNow } from "date-fns"
+import { useRouter } from "next/navigation"
 
 interface FarmerProfilePageProps {
   params: {
@@ -58,6 +71,7 @@ const formatPhoneNumber = (phone: string) => {
 }
 
 export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
+  const router = useRouter()
   const { 
     data: farmer, 
     isLoading: isFarmerLoading, 
@@ -65,6 +79,19 @@ export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
   } = useFarmer(params.id)
   
   const deleteFarmerMutation = useDeleteFarmer()
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+
+  const handleDeleteFarmer = async () => {
+    if (!farmer) return
+    
+    try {
+      await deleteFarmerMutation.mutateAsync(farmer.id)
+      // Navigate back to farmers list after successful deletion
+      router.push('/protected/operations-dashboard/farmers')
+    } catch (error) {
+      console.error('Error deleting farmer:', error)
+    }
+  }
 
   // Show loading state
   if (isFarmerLoading) {
@@ -108,7 +135,11 @@ export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
           
           {/* Quick Actions */}
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+            >
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
@@ -116,10 +147,39 @@ export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                  disabled={deleteFarmerMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {deleteFarmerMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete farmer{" "}
+                    <span className="font-semibold">{farmer?.english_name}</span>{" "}
+                    and remove all their data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteFarmer}
+                    disabled={deleteFarmerMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deleteFarmerMutation.isPending ? "Deleting..." : "Delete Farmer"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
@@ -374,6 +434,13 @@ export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Farmer Dialog */}
+      <FarmerDialog
+        farmer={farmer}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </TooltipProvider>
   )
 }
