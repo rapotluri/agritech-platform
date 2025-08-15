@@ -24,6 +24,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 
 import type { FarmerWithPlots, SortableFarmerColumn } from "@/lib/database.types"
@@ -119,14 +130,12 @@ export function FarmerTable({
   }
 
   const handleDeleteFarmer = async (farmer: Farmer) => {
-    if (window.confirm(`Are you sure you want to delete farmer "${farmer.english_name}"? This action cannot be undone.`)) {
-      try {
-        await deleteFarmerMutation.mutateAsync(farmer.id)
-        // Remove from selection if selected
-        onSelectionChange(selectedFarmers.filter(id => id !== farmer.id))
-      } catch (error) {
-        console.error('Error deleting farmer:', error)
-      }
+    try {
+      await deleteFarmerMutation.mutateAsync(farmer.id)
+      // Remove from selection if selected
+      onSelectionChange(selectedFarmers.filter(id => id !== farmer.id))
+    } catch (error) {
+      console.error('Error deleting farmer:', error)
     }
   }
 
@@ -270,14 +279,38 @@ export function FarmerTable({
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-red-600"
-                        onClick={() => handleDeleteFarmer(farmer)}
-                        disabled={deleteFarmerMutation.isPending}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {deleteFarmerMutation.isPending ? "Deleting..." : "Delete"}
-                      </DropdownMenuItem>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            disabled={deleteFarmerMutation.isPending}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {deleteFarmerMutation.isPending ? "Deleting..." : "Delete"}
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete farmer{" "}
+                              <span className="font-semibold">{farmer.english_name}</span>{" "}
+                              and remove all their data from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteFarmer(farmer)}
+                              disabled={deleteFarmerMutation.isPending}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {deleteFarmerMutation.isPending ? "Deleting..." : "Delete Farmer"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
