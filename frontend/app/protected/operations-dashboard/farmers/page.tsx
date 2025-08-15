@@ -9,7 +9,7 @@ import { SearchFilters } from "@/components/farmers/SearchFilters"
 import { FarmerTable } from "@/components/farmers/FarmerTable"
 import { FarmerDialog } from "@/components/farmers/FarmerDialog"
 import { useFarmers, useFarmerStats } from "@/lib/hooks"
-import type { FarmerWithPlots, FarmerFilters, FarmerSorting, SortableFarmerColumn } from "@/lib/database.types"
+import type { FarmerFilters, FarmerSorting, SortableFarmerColumn } from "@/lib/database.types"
 
 
 export default function FarmersPage() {
@@ -115,8 +115,7 @@ export default function FarmersPage() {
   const totalPlots = statsData?.totalPlots || 0
   const recentEnrollments = statsData?.recentEnrollments || 0
 
-  // Loading states
-  const isLoading = isFarmersLoading || isStatsLoading
+  // Loading states (used for conditional rendering)
 
   return (
     <div className="p-8 space-y-8">

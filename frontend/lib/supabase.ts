@@ -1,7 +1,5 @@
 import { createClient } from '@/utils/supabase/client'
 import { 
-  Database, 
-  Farmer, 
   Plot, 
   FarmerInsert, 
   PlotInsert, 
@@ -394,34 +392,34 @@ export class PlotsService {
   }
 }
 
-// Real-time subscriptions
-export const subscribeToFarmers = (callback: (farmers: Farmer[]) => void) => {
-  return supabase
-    .channel('farmers_changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'farmers'
-      },
-      callback
-    )
-    .subscribe()
-}
+// Real-time subscriptions - temporarily disabled due to API compatibility
+// export const subscribeToFarmers = (callback: (farmers: Farmer[]) => void) => {
+//   return supabase
+//     .channel('farmers_changes')
+//     .on(
+//       'postgres_changes',
+//       {
+//         event: '*',
+//         schema: 'public',
+//         table: 'farmers'
+//       },
+//       callback
+//     )
+//     .subscribe()
+// }
 
-export const subscribeToPlots = (farmerId: string, callback: (plots: Plot[]) => void) => {
-  return supabase
-    .channel(`plots_changes_${farmerId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'plots',
-        filter: `farmer_id=eq.${farmerId}`
-      },
-      callback
-    )
-    .subscribe()
-}
+// export const subscribeToPlots = (farmerId: string, callback: (plots: Plot[]) => void) => {
+//   return supabase
+//     .channel(`plots_changes_${farmerId}`)
+//     .on(
+//       'postgres_changes',
+//       {
+//         event: '*',
+//         schema: 'public',
+//         table: 'plots',
+//         filter: `farmer_id=eq.${farmerId}`
+//       },
+//       callback
+//     )
+//     .subscribe()
+// }

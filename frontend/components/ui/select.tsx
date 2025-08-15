@@ -11,13 +11,7 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 
 import { cn } from "@/lib/utils"
 
-const Select = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>
->(({ modal = true, ...props }, ref) => (
-  <SelectPrimitive.Root modal={modal} {...props} />
-))
-Select.displayName = SelectPrimitive.Root.displayName
+const Select = SelectPrimitive.Root
 
 const SelectGroup = SelectPrimitive.Group
 

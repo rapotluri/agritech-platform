@@ -11,7 +11,6 @@ import {
   PlotInsert,
   FarmerUpdate,
   PlotUpdate,
-  Plot,
   PlotFormData
 } from './database.types'
 import { toast } from 'sonner'

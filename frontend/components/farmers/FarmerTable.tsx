@@ -39,12 +39,11 @@ import { cn } from "@/lib/utils"
 
 import type { FarmerWithPlots, SortableFarmerColumn } from "@/lib/database.types"
 import { useDeleteFarmer } from "@/lib/hooks"
-import { toast } from "sonner"
-
-export type { FarmerWithPlots as Farmer }
+// Toast notifications handled by mutation hooks
+// import { toast } from "sonner"
 
 interface FarmerTableProps {
-  farmers: Farmer[]
+  farmers: FarmerWithPlots[]
   selectedFarmers: string[]
   onSelectionChange: (farmerIds: string[]) => void
   onSort: (column: SortableFarmerColumn, direction: "asc" | "desc") => void
@@ -129,7 +128,7 @@ export function FarmerTable({
     onSort(column, direction)
   }
 
-  const handleDeleteFarmer = async (farmer: Farmer) => {
+  const handleDeleteFarmer = async (farmer: FarmerWithPlots) => {
     try {
       await deleteFarmerMutation.mutateAsync(farmer.id)
       // Remove from selection if selected

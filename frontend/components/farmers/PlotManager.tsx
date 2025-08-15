@@ -205,7 +205,8 @@ export function PlotManager({ plots, onPlotsChange, farmerId }: PlotManagerProps
   const formatLocation = (plot: ManagedPlot) => {
     const parts = [plot.province, plot.district, plot.commune, plot.village]
       .filter(Boolean)
-      .map(part => part.replace(/([A-Z])/g, ' $1').trim())
+      .map(part => part?.replace(/([A-Z])/g, ' $1').trim())
+      .filter(Boolean)
     return parts.join(", ")
   }
 
