@@ -49,10 +49,43 @@ export function AssignmentSummaryStep({
   }
 
   const getTotalSumInsured = () => {
-    // For now, using a simple calculation - this could be enhanced based on product configuration
+    // Calculate sum insured based on area and product coverage rate
     const area = getTotalAreaSelected()
-    // Assuming $1000 per hectare as default sum insured - this should come from product config
-    return area * 1000
+    
+    // Get the sum insured rate from product triggers
+    if (product?.triggers && typeof product.triggers === 'object') {
+      const triggers = product.triggers as any
+      
+      // Check if there's a sumInsured value in the triggers
+      if (triggers.sumInsured) {
+        return area * parseFloat(triggers.sumInsured)
+      }
+      
+      // If no sumInsured, calculate from optimizationConfig periods
+      if (triggers.optimizationConfig && triggers.optimizationConfig.periods) {
+        const periods = triggers.optimizationConfig.periods
+        let totalMaxPayout = 0
+        
+        // Sum all max_payout values across all periods
+        periods.forEach((period: any) => {
+          if (period.perils && Array.isArray(period.perils)) {
+            period.perils.forEach((peril: any) => {
+              if (peril.max_payout) {
+                totalMaxPayout += parseFloat(peril.max_payout)
+              }
+            })
+          }
+        })
+        
+        if (totalMaxPayout > 0) {
+          return area * totalMaxPayout
+        }
+      }
+    }
+    
+    // Fallback: use a reasonable default if no configuration found
+    const defaultCoverageRate = 800 // $800 per hectare as a reasonable default
+    return area * defaultCoverageRate
   }
 
   const handleCreateEnrollments = () => {
