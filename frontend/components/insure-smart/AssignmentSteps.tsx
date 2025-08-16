@@ -14,6 +14,7 @@ interface AssignmentStepsProps {
   selectedPlots: Record<string, string[]>
   onFarmerSelection: (farmerIds: string[]) => void
   onPlotSelection: (farmerId: string, plotIds: string[]) => void
+  onPlotDataUpdate: (farmerId: string, plots: any[]) => void
 }
 
 export function AssignmentSteps({
@@ -22,7 +23,8 @@ export function AssignmentSteps({
   selectedFarmers,
   selectedPlots,
   onFarmerSelection,
-  onPlotSelection
+  onPlotSelection,
+  onPlotDataUpdate
 }: AssignmentStepsProps) {
 
 
@@ -65,6 +67,7 @@ export function AssignmentSteps({
             selectedFarmers={selectedFarmers}
             selectedPlots={selectedPlots}
             onPlotSelection={onPlotSelection}
+            onPlotDataUpdate={onPlotDataUpdate}
           />
         )
       default:

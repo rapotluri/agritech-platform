@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -19,13 +19,14 @@ interface PlotSelectorProps {
   selectedFarmers: string[]
   selectedPlots: Record<string, string[]>
   onPlotSelection: (farmerId: string, plotIds: string[]) => void
-
+  onPlotDataUpdate: (farmerId: string, plots: any[]) => void
 }
 
 export function PlotSelector({
   selectedFarmers,
   selectedPlots,
-  onPlotSelection
+  onPlotSelection,
+  onPlotDataUpdate
 }: PlotSelectorProps) {
   const [expandedFarmers, setExpandedFarmers] = useState<string[]>([])
 
@@ -39,7 +40,18 @@ export function PlotSelector({
     { page: 1, limit: 100 }
   )
 
-  const farmers = farmersResponse?.farmers || []
+  const farmers = useMemo(() => farmersResponse?.farmers || [], [farmersResponse?.farmers])
+
+  // Update plot data when farmers data is loaded
+  useEffect(() => {
+    if (farmers.length > 0) {
+      farmers.forEach(farmer => {
+        if (farmer.plots) {
+          onPlotDataUpdate(farmer.id, farmer.plots)
+        }
+      })
+    }
+  }, [farmers, onPlotDataUpdate])
 
 
 

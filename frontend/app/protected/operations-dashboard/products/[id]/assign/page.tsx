@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -18,6 +18,7 @@ export default function ProductAssignmentPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedFarmers, setSelectedFarmers] = useState<string[]>([])
   const [selectedPlots, setSelectedPlots] = useState<Record<string, string[]>>({})
+  const [plotData, setPlotData] = useState<Record<string, any[]>>({})
   const [totalSteps] = useState(2) // Only implementing Steps 1-2
 
   const { data: product, isLoading: productLoading, error: productError } = useProduct(productId)
@@ -26,21 +27,42 @@ export default function ProductAssignmentPage() {
     setCurrentStep(step)
   }
 
-  const handleFarmerSelection = (farmerIds: string[]) => {
+  const handleFarmerSelection = useCallback((farmerIds: string[]) => {
     setSelectedFarmers(farmerIds)
     // Clear plot selections when farmers change
     setSelectedPlots({})
-  }
+    // Clear plot data when farmers change
+    setPlotData({})
+  }, [])
 
-  const handlePlotSelection = (farmerId: string, plotIds: string[]) => {
+  const handlePlotSelection = useCallback((farmerId: string, plotIds: string[]) => {
     setSelectedPlots(prev => ({
       ...prev,
       [farmerId]: plotIds
     }))
-  }
+  }, [])
+
+  const handlePlotDataUpdate = useCallback((farmerId: string, plots: any[]) => {
+    setPlotData(prev => ({
+      ...prev,
+      [farmerId]: plots
+    }))
+  }, [])
 
   const getTotalPlotsSelected = () => {
     return Object.values(selectedPlots).reduce((total, plotIds) => total + plotIds.length, 0)
+  }
+
+
+
+  const getPremiumRate = () => {
+    if (product?.triggers && typeof product.triggers === 'object') {
+      const triggers = product.triggers as any
+      if (triggers.optimizationConfig && triggers.optimizationConfig.premiumCost) {
+        return parseFloat(triggers.optimizationConfig.premiumCost)
+      }
+    }
+    return 0
   }
 
 
@@ -186,6 +208,7 @@ export default function ProductAssignmentPage() {
             selectedPlots={selectedPlots}
             onFarmerSelection={handleFarmerSelection}
             onPlotSelection={handlePlotSelection}
+            onPlotDataUpdate={handlePlotDataUpdate}
           />
         </div>
 
@@ -195,7 +218,8 @@ export default function ProductAssignmentPage() {
             selectedFarmers={selectedFarmers}
             selectedPlots={selectedPlots}
             totalPlots={getTotalPlotsSelected()}
-            totalArea={0}
+            plotData={plotData}
+            premiumRate={getPremiumRate()}
             currentStep={currentStep}
             onContinue={() => {
               if (currentStep < totalSteps) {

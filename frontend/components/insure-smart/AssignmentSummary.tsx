@@ -11,7 +11,8 @@ interface AssignmentSummaryProps {
   selectedFarmers: string[]
   selectedPlots: Record<string, string[]>
   totalPlots: number
-  totalArea: number
+  plotData: Record<string, any[]> // Add plot data to calculate actual areas
+  premiumRate: number // Add premium rate from product
   currentStep: number
   onContinue: () => void
 }
@@ -20,21 +21,30 @@ export function AssignmentSummary({
   selectedFarmers,
   selectedPlots,
   totalPlots,
-
+  plotData,
+  premiumRate,
   currentStep,
   onContinue
 }: AssignmentSummaryProps) {
   const getTotalAreaSelected = () => {
-    // This would calculate the actual area from plot data
-    // For now, return a placeholder
-    return totalPlots * 1.5 // Assuming average 1.5 ha per plot
+    // Calculate actual area from selected plot data
+    let totalArea = 0
+    Object.entries(selectedPlots).forEach(([farmerId, plotIds]) => {
+      const farmerPlots = plotData[farmerId] || []
+      plotIds.forEach(plotId => {
+        const plot = farmerPlots.find(p => p.id === plotId)
+        if (plot && plot.area_ha) {
+          totalArea += parseFloat(plot.area_ha)
+        }
+      })
+    })
+    return totalArea
   }
 
   const getEstimatedPremium = () => {
-    // This would calculate based on product rates and area
-    // For now, return a placeholder
+    // Calculate based on actual area and product premium rate
     const area = getTotalAreaSelected()
-    return area * 25 // Assuming $25 per hectare
+    return area * premiumRate
   }
 
   const canContinue = () => {
