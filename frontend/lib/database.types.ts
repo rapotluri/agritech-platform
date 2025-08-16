@@ -297,6 +297,7 @@ export interface FarmerFilters {
   commune?: string
   kycStatus?: 'all' | 'pending' | 'verified' | 'rejected'
   product?: string
+  farmerIds?: string[]
 }
 
 // Define sortable farmer columns (exclude virtual/computed fields)

@@ -77,15 +77,15 @@ export class FarmersService {
       query = query.or(`english_name.ilike.%${filters.searchQuery}%,phone.ilike.%${filters.searchQuery}%,national_id.ilike.%${filters.searchQuery}%`)
     }
     
-    if (filters.province) {
+    if (filters.province && filters.province !== 'all') {
       query = query.eq('province', filters.province)
     }
     
-    if (filters.district) {
+    if (filters.district && filters.district !== 'all') {
       query = query.eq('district', filters.district)
     }
     
-    if (filters.commune) {
+    if (filters.commune && filters.commune !== 'all') {
       query = query.eq('commune', filters.commune)
     }
     
@@ -98,6 +98,11 @@ export class FarmersService {
       query = query
         .eq('enrollments.product_id', filters.product)
         .eq('enrollments.status', 'active')
+    }
+
+    // Filter by specific farmer IDs
+    if (filters.farmerIds && filters.farmerIds.length > 0) {
+      query = query.in('id', filters.farmerIds)
     }
 
     // Apply sorting
