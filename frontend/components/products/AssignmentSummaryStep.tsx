@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -33,6 +34,7 @@ export function AssignmentSummaryStep({
   onAssignmentConfirmed
 }: AssignmentSummaryStepProps) {
   
+  const router = useRouter()
   const [isCreatingEnrollments, setIsCreatingEnrollments] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   
@@ -164,8 +166,8 @@ export function AssignmentSummaryStep({
       
       toast.success(`Successfully created ${createdEnrollments.length} enrollments!`)
       
-      // TODO: Redirect to enrollments page or refresh data
-      console.log("Created enrollments:", createdEnrollments)
+      // Navigate back to the product page
+      router.push(`/protected/operations-dashboard/products/${product.id}`)
       
     } catch (error) {
       console.error("Error creating enrollments:", error)
@@ -424,7 +426,7 @@ export function AssignmentSummaryStep({
             <Button
               onClick={handleCreateEnrollments}
               disabled={!assignmentConfirmed || isCreatingEnrollments}
-              className="flex-1"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               size="lg"
             >
               {isCreatingEnrollments ? (
