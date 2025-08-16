@@ -8,10 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Users,
-  DollarSign,
   MapPin,
   Calendar,
-  TrendingUp,
   FileText,
   Download,
   Plus
@@ -29,16 +27,6 @@ export function EnrollmentManager({ product }: EnrollmentManagerProps) {
   
   // Calculate summary metrics
   const totalEnrollments = enrollments.length
-  const activeEnrollments = enrollments.filter((e: any) => e.status === 'active').length
-  const expiredEnrollments = enrollments.filter((e: any) => e.status === 'expired').length
-  const pendingEnrollments = enrollments.filter((e: any) => e.status === 'pending').length
-  
-  const totalPremium = enrollments.reduce((sum: number, e: any) => sum + (e.premium || 0), 0)
-  const totalSumInsured = enrollments.reduce((sum: number, e: any) => sum + (e.sum_insured || 0), 0)
-  
-  const averagePlotSize = enrollments.length > 0 
-    ? enrollments.reduce((sum: number, e: any) => sum + (e.plot?.area_ha || 0), 0) / enrollments.length
-    : 0
 
   const handleAssign = () => {
     router.push(`/protected/operations-dashboard/products/${product.id}/assign`)
@@ -78,103 +66,6 @@ export function EnrollmentManager({ product }: EnrollmentManagerProps) {
 
   return (
     <div className="space-y-6">
-      {/* Enrollment Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Enrollments</p>
-                <p className="text-2xl font-bold text-gray-900">{totalEnrollments}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Enrollments</p>
-                <p className="text-2xl font-bold text-gray-900">{activeEnrollments}</p>
-                <p className="text-xs text-gray-500">
-                  {totalEnrollments > 0 ? `${Math.round((activeEnrollments / totalEnrollments) * 100)}%` : '0%'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="h-4 w-4 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Premium</p>
-                <p className="text-2xl font-bold text-gray-900">${totalPremium.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">
-                  Avg: ${totalEnrollments > 0 ? (totalPremium / totalEnrollments).toFixed(2) : '0'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <MapPin className="h-4 w-4 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg Plot Size</p>
-                <p className="text-2xl font-bold text-gray-900">{averagePlotSize.toFixed(2)} ha</p>
-                <p className="text-xs text-gray-500">
-                  Total: {totalSumInsured.toLocaleString()} ha
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Enrollment Status Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{activeEnrollments}</div>
-              <div className="text-sm text-gray-600">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{pendingEnrollments}</div>
-              <div className="text-sm text-gray-600">Pending</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{expiredEnrollments}</div>
-              <div className="text-sm text-gray-600">Expired</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
-                {enrollments.filter((e: any) => e.status === 'cancelled').length}
-              </div>
-              <div className="text-sm text-gray-600">Cancelled</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Action Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
