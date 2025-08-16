@@ -1,10 +1,10 @@
 "use client"
 
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FarmerSelector } from "./FarmerSelector"
 import { PlotSelector } from "./PlotSelector"
+import { AssignmentSummaryStep } from "./AssignmentSummaryStep"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface AssignmentStepsProps {
@@ -15,6 +15,11 @@ interface AssignmentStepsProps {
   onFarmerSelection: (farmerIds: string[]) => void
   onPlotSelection: (farmerId: string, plotIds: string[]) => void
   onPlotDataUpdate: (farmerId: string, plots: any[]) => void
+  assignmentConfirmed: boolean
+  onAssignmentConfirmed: (confirmed: boolean) => void
+  product: any
+  plotData: Record<string, any[]>
+  premiumRate: number
 }
 
 export function AssignmentSteps({
@@ -24,15 +29,19 @@ export function AssignmentSteps({
   selectedPlots,
   onFarmerSelection,
   onPlotSelection,
-  onPlotDataUpdate
+  onPlotDataUpdate,
+  assignmentConfirmed,
+  onAssignmentConfirmed,
+  product,
+  plotData,
+  premiumRate
 }: AssignmentStepsProps) {
-
 
   const handleNext = () => {
     if (currentStep === 1 && selectedFarmers.length > 0) {
       onStepChange(2)
-    } else if (currentStep === 2) {
-      // This would continue to the next step in the future
+    } else if (currentStep === 2 && Object.values(selectedPlots).some(plots => plots.length > 0)) {
+      onStepChange(3)
     }
   }
 
@@ -70,6 +79,18 @@ export function AssignmentSteps({
             onPlotDataUpdate={onPlotDataUpdate}
           />
         )
+      case 3:
+        return (
+          <AssignmentSummaryStep
+            selectedFarmers={selectedFarmers}
+            selectedPlots={selectedPlots}
+            plotData={plotData}
+            premiumRate={premiumRate}
+            product={product}
+            assignmentConfirmed={assignmentConfirmed}
+            onAssignmentConfirmed={onAssignmentConfirmed}
+          />
+        )
       default:
         return null
     }
@@ -81,6 +102,8 @@ export function AssignmentSteps({
         return "Step 1: Select Farmers"
       case 2:
         return "Step 2: Select Plots"
+      case 3:
+        return "Step 3: Review & Confirm Assignment"
       default:
         return ""
     }
@@ -92,6 +115,8 @@ export function AssignmentSteps({
         return "Search and select farmers who will be enrolled in this product"
       case 2:
         return "Choose which plots to include for each selected farmer"
+      case 3:
+        return "Review assignment details and confirm to create enrollments"
       default:
         return ""
     }
@@ -120,7 +145,7 @@ export function AssignmentSteps({
           </Button>
 
           <div className="flex gap-2">
-            {currentStep < 2 && (
+            {currentStep < 3 && (
               <Button
                 onClick={handleNext}
                 disabled={!canProceedToNext()}

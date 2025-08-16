@@ -2,10 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Users, MapPin, Calculator, CheckCircle } from "lucide-react"
-
 
 interface AssignmentSummaryProps {
   selectedFarmers: string[]
@@ -15,6 +15,8 @@ interface AssignmentSummaryProps {
   premiumRate: number // Add premium rate from product
   currentStep: number
   onContinue: () => void
+  assignmentConfirmed: boolean
+  onAssignmentConfirmed: (confirmed: boolean) => void
 }
 
 export function AssignmentSummary({
@@ -24,7 +26,9 @@ export function AssignmentSummary({
   plotData,
   premiumRate,
   currentStep,
-  onContinue
+  onContinue,
+  assignmentConfirmed,
+  onAssignmentConfirmed
 }: AssignmentSummaryProps) {
   const getTotalAreaSelected = () => {
     // Calculate actual area from selected plot data
@@ -54,6 +58,9 @@ export function AssignmentSummary({
     if (currentStep === 2) {
       return Object.values(selectedPlots).some(plots => plots.length > 0)
     }
+    if (currentStep === 3) {
+      return assignmentConfirmed
+    }
     return false
   }
 
@@ -63,6 +70,9 @@ export function AssignmentSummary({
     }
     if (currentStep === 2) {
       return "Continue to Configuration"
+    }
+    if (currentStep === 3) {
+      return "Create Enrollments"
     }
     return "Continue"
   }
@@ -143,6 +153,27 @@ export function AssignmentSummary({
               </Badge>
             )}
           </div>
+
+          <Separator />
+
+          {/* Step 3 */}
+          <div className="flex items-center gap-3">
+            {getStepIcon(3)}
+            <div className="flex-1">
+              <div className="font-medium">Review & Confirm</div>
+              <div className="text-sm text-gray-500">
+                {assignmentConfirmed 
+                  ? "Assignment confirmed"
+                  : "Review and confirm assignment"
+                }
+              </div>
+            </div>
+            {getStepStatus(3) === "completed" && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                Complete
+              </Badge>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -194,6 +225,30 @@ export function AssignmentSummary({
         </CardContent>
       </Card>
 
+      {/* Confirmation Checkbox for Step 3 */}
+      {currentStep === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Confirmation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="assignment-confirmation-sidebar"
+                checked={assignmentConfirmed}
+                onCheckedChange={(checked) => onAssignmentConfirmed(checked as boolean)}
+              />
+              <label
+                htmlFor="assignment-confirmation-sidebar"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Confirm assignment
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions */}
       <Card>
         <CardHeader>
@@ -213,7 +268,9 @@ export function AssignmentSummary({
             <p className="text-sm text-gray-500 text-center mt-2">
               {currentStep === 1 
                 ? "Select at least one farmer to continue"
-                : "Select at least one plot to continue"
+                : currentStep === 2
+                ? "Select at least one plot to continue"
+                : "Please confirm the assignment to continue"
               }
             </p>
           )}
@@ -236,8 +293,7 @@ export function AssignmentSummary({
               You can select all plots or individual ones.
             </p>
             <p>
-              <strong>Next:</strong> Configure coverage periods and review assignments 
-              before finalizing enrollments.
+              <strong>Step 3:</strong> Review assignment details and confirm to create enrollments.
             </p>
           </div>
         </CardContent>

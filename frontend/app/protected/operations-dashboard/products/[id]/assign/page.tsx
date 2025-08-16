@@ -27,7 +27,8 @@ export default function ProductAssignmentPage() {
   const [selectedFarmers, setSelectedFarmers] = useState<string[]>([])
   const [selectedPlots, setSelectedPlots] = useState<Record<string, string[]>>({})
   const [plotData, setPlotData] = useState<Record<string, any[]>>({})
-  const [totalSteps] = useState(2) // Only implementing Steps 1-2
+  const [totalSteps] = useState(3) // Updated to 3 steps
+  const [assignmentConfirmed, setAssignmentConfirmed] = useState(false) // New state for confirmation
 
   const { data: product, isLoading: productLoading, error: productError } = useProduct(productId)
 
@@ -227,6 +228,7 @@ export default function ProductAssignmentPage() {
         <div className="flex justify-between text-xs text-gray-500">
           <span>Farmer Selection</span>
           <span>Plot Selection</span>
+          <span>Review & Confirm</span>
         </div>
       </div>
 
@@ -244,6 +246,11 @@ export default function ProductAssignmentPage() {
             onFarmerSelection={handleFarmerSelection}
             onPlotSelection={handlePlotSelection}
             onPlotDataUpdate={handlePlotDataUpdate}
+            assignmentConfirmed={assignmentConfirmed}
+            onAssignmentConfirmed={setAssignmentConfirmed}
+            product={product}
+            plotData={plotData}
+            premiumRate={getPremiumRate()}
           />
         </div>
 
@@ -261,6 +268,8 @@ export default function ProductAssignmentPage() {
                 setCurrentStep(currentStep + 1)
               }
             }}
+            assignmentConfirmed={assignmentConfirmed}
+            onAssignmentConfirmed={setAssignmentConfirmed}
           />
         </div>
       </div>
