@@ -46,6 +46,22 @@ export const productKeys = {
   regions: () => [...productKeys.all, 'regions'] as const,
 }
 
+export const enrollmentKeys = {
+  all: ['enrollments'] as const,
+  lists: () => [...enrollmentKeys.all, 'list'] as const,
+  list: (farmerId: string) => [...enrollmentKeys.lists(), farmerId] as const,
+}
+
+// Farmer enrollments hook
+export function useFarmerEnrollments(farmerId: string) {
+  return useQuery<any[]>({
+    queryKey: enrollmentKeys.list(farmerId),
+    queryFn: () => FarmersService.getFarmerEnrollments(farmerId),
+    enabled: !!farmerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
 // Farmers hooks
 export function useFarmers(
   filters: FarmerFilters = {},

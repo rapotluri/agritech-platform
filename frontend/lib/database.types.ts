@@ -430,3 +430,30 @@ export interface ProductStatsData {
     productsWithEnrollmentsTrend?: number
   }
 }
+
+// Farmer enrollment interface for Policy History tab
+export interface FarmerEnrollment {
+  id: string
+  product_id: string
+  plot_id: string | null
+  season: string
+  premium: number
+  sum_insured: number
+  status: 'pending' | 'active' | 'expired' | 'cancelled'
+  created_at: string
+  updated_at: string
+  product: {
+    id: string
+    name: string
+    crop: string
+    status: 'draft' | 'live' | 'archived'
+  }
+  plot: {
+    id: string
+    province: string
+    district: string
+    commune: string
+    crop: string
+    area_ha: number
+  } | null
+}

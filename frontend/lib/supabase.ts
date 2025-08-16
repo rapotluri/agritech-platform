@@ -318,6 +318,58 @@ export class FarmersService {
       recentEnrollments: recentEnrollments || 0
     }
   }
+
+  // Get farmer enrollments for Policy History tab
+  static async getFarmerEnrollments(farmerId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select(`
+        id,
+        product_id,
+        plot_id,
+        season,
+        premium,
+        sum_insured,
+        status,
+        created_at,
+        updated_at,
+        product:products (
+          id,
+          name,
+          crop,
+          status
+        ),
+        plot:plots (
+          id,
+          province,
+          district,
+          commune,
+          crop,
+          area_ha
+        )
+      `)
+      .eq('farmer_id', farmerId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    
+    // Transform the data to match our interface
+    const transformedData = (data || []).map((enrollment: any) => ({
+      id: enrollment.id,
+      product_id: enrollment.product_id,
+      plot_id: enrollment.plot_id,
+      season: enrollment.season,
+      premium: enrollment.premium,
+      sum_insured: enrollment.sum_insured,
+      status: enrollment.status,
+      created_at: enrollment.created_at,
+      updated_at: enrollment.updated_at,
+      product: enrollment.product,
+      plot: enrollment.plot
+    }))
+    
+    return transformedData
+  }
 }
 
 // Products service
