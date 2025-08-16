@@ -246,11 +246,18 @@ export function PlotSelector({
                                       </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                      <div className="flex items-center gap-2 text-sm">
-                                        <MapPin className="w-4 h-4 text-gray-400" />
-                                        <span>{plot.commune}, {plot.village || 'N/A'}</span>
-                                      </div>
+                                                                         <div className="space-y-2">
+                                       <div className="flex items-center gap-2 text-sm">
+                                         <MapPin className="w-4 h-4 text-gray-400" />
+                                         <span>
+                                           {plot.province && plot.district && plot.commune 
+                                             ? `${plot.province}, ${plot.district}, ${plot.commune}${plot.village ? `, ${plot.village}` : ''}`
+                                             : plot.commune 
+                                               ? `${plot.commune}${plot.village ? `, ${plot.village}` : ''}`
+                                               : 'Location not specified'
+                                           }
+                                         </span>
+                                       </div>
                                       
                                       <div className="flex items-center gap-2 text-sm">
                                         <Crop className="w-4 h-4 text-gray-400" />
