@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Users, MapPin, Calculator, DollarSign, FileText, CheckCircle } from "lucide-react"
+import { TriggerConfiguration } from "./TriggerConfiguration"
 
 interface AssignmentSummaryStepProps {
   selectedFarmers: string[]
@@ -160,6 +161,10 @@ export function AssignmentSummaryStep({
                 <div className="text-xl font-bold text-green-700">${getEstimatedPremium().toFixed(2)}</div>
               </div>
             </div>
+            <div className="mt-4 text-xs text-green-700">
+              <p><strong>Sum Insured:</strong> Total coverage value based on area and product coverage rate</p>
+              <p><strong>Premium:</strong> Total cost based on area and premium rate</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -214,27 +219,16 @@ export function AssignmentSummaryStep({
         </CardContent>
       </Card>
 
-      {/* Terms & Conditions */}
+      {/* Product Triggers */}
+      <TriggerConfiguration product={product} />
+
+      {/* Final Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Terms & Conditions
-          </CardTitle>
+          <CardTitle className="text-lg">Final Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Product Terms Summary</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>• Product: {product?.name}</p>
-              <p>• Crop Type: {product?.crop}</p>
-              <p>• Coverage Period: {product?.coverage_start_date && product?.coverage_end_date ? 
-                `${new Date(product.coverage_start_date).toLocaleDateString()} - ${new Date(product.coverage_end_date).toLocaleDateString()}` : 
-                'Not specified'}</p>
-              <p>• Premium Rate: ${premiumRate}/ha</p>
-            </div>
-          </div>
-          
+          {/* Confirmation Checkbox */}
           <div className="flex items-center space-x-2">
             <Checkbox
               id="assignment-confirmation"
@@ -248,15 +242,7 @@ export function AssignmentSummaryStep({
               I confirm that I have reviewed the assignment details and agree to create enrollments for the selected farmers and plots.
             </label>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Final Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Final Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
           <div className="flex gap-3">
             <Button
               onClick={handleCreateEnrollments}
