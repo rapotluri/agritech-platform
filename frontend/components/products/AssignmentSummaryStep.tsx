@@ -1,12 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Users, MapPin, Calculator, DollarSign, FileText, CheckCircle } from "lucide-react"
+import { Users, MapPin, Calculator, DollarSign, FileText, CheckCircle, Loader2 } from "lucide-react"
 import { TriggerConfiguration } from "./TriggerConfiguration"
+import { EnrollmentsService } from "@/lib/supabase"
+import { toast } from "sonner"
 
 interface AssignmentSummaryStepProps {
   selectedFarmers: string[]
@@ -29,6 +32,9 @@ export function AssignmentSummaryStep({
   assignmentConfirmed,
   onAssignmentConfirmed
 }: AssignmentSummaryStepProps) {
+  
+  const [isCreatingEnrollments, setIsCreatingEnrollments] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   
   const getTotalAreaSelected = () => {
     let totalArea = 0
@@ -89,17 +95,188 @@ export function AssignmentSummaryStep({
     return area * defaultCoverageRate
   }
 
-  const handleCreateEnrollments = () => {
-    if (assignmentConfirmed) {
-      // TODO: Implement enrollment creation logic
-      console.log("Creating enrollments...")
-      // This would typically call an API to create the enrollments
+  const getCurrentSeason = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    
+    // Simple season logic - can be enhanced based on your business rules
+    if (month >= 6 && month <= 10) {
+      return `Wet Season ${year}`
+    } else {
+      return `Dry Season ${year}`
     }
   }
 
-  const handleExportSummary = () => {
-    // TODO: Implement export functionality
-    console.log("Exporting summary...")
+  const prepareEnrollmentData = () => {
+    const enrollments: Array<{
+      farmer_id: string
+      plot_id: string
+      product_id: string
+      season: string
+      premium: number
+      sum_insured: number
+      status: 'pending'
+    }> = []
+    const currentSeason = getCurrentSeason()
+    
+    Object.entries(selectedPlots).forEach(([farmerId, plotIds]) => {
+      const farmerPlots = plotData[farmerId] || []
+      
+      plotIds.forEach(plotId => {
+        const plot = farmerPlots.find(p => p.id === plotId)
+        if (plot && plot.area_ha) {
+          const area = parseFloat(plot.area_ha)
+          const premium = area * premiumRate
+          const sumInsured = area * (getTotalSumInsured() / getTotalAreaSelected())
+          
+          enrollments.push({
+            farmer_id: farmerId,
+            plot_id: plotId,
+            product_id: product.id,
+            season: currentSeason,
+            premium: premium,
+            sum_insured: sumInsured,
+            status: 'pending' as const
+          })
+        }
+      })
+    })
+    
+    return enrollments
+  }
+
+  const handleCreateEnrollments = async () => {
+    if (!assignmentConfirmed) return
+    
+    try {
+      setIsCreatingEnrollments(true)
+      
+      const enrollmentData = prepareEnrollmentData()
+      
+      if (enrollmentData.length === 0) {
+        toast.error("No valid enrollment data to create")
+        return
+      }
+      
+      // Create enrollments in batch
+      const createdEnrollments = await EnrollmentsService.createBatchEnrollments(enrollmentData)
+      
+      toast.success(`Successfully created ${createdEnrollments.length} enrollments!`)
+      
+      // TODO: Redirect to enrollments page or refresh data
+      console.log("Created enrollments:", createdEnrollments)
+      
+    } catch (error) {
+      console.error("Error creating enrollments:", error)
+      toast.error("Failed to create enrollments. Please try again.")
+    } finally {
+      setIsCreatingEnrollments(false)
+    }
+  }
+
+  const handleExportSummary = async () => {
+    try {
+      setIsExporting(true)
+      
+      // Prepare data for export
+      const exportData = {
+        product: {
+          name: product?.name,
+          crop: product?.crop,
+          coveragePeriod: product?.coverage_start_date && product?.coverage_end_date ? 
+            `${new Date(product.coverage_start_date).toLocaleDateString()} - ${new Date(product.coverage_end_date).toLocaleDateString()}` : 
+            'Not specified',
+          premiumRate: `$${premiumRate}/ha`
+        },
+        assignment: {
+          totalFarmers: selectedFarmers.length,
+          totalPlots: Object.values(selectedPlots).reduce((total, plotIds) => total + plotIds.length, 0),
+          totalArea: getTotalAreaSelected(),
+          totalPremium: getEstimatedPremium(),
+          totalSumInsured: getTotalSumInsured()
+        },
+        farmers: selectedFarmers.map(farmerId => {
+          const farmer = farmerData[farmerId]
+          const farmerPlots = plotData[farmerId] || []
+          const selectedFarmerPlots = selectedPlots[farmerId] || []
+          const farmerPlotData = farmerPlots.filter(plot => selectedFarmerPlots.includes(plot.id))
+          const farmerArea = farmerPlotData.reduce((total, plot) => total + (parseFloat(plot.area_ha) || 0), 0)
+          const farmerPremium = farmerArea * premiumRate
+          
+          return {
+            id: farmerId,
+            name: farmer?.english_name || `Farmer ${farmerId.slice(0, 8)}...`,
+            location: farmer?.province ? `${farmer.province}, ${farmer.district || ''}`.trim() : 'Location not specified',
+            plots: selectedFarmerPlots.length,
+            area: farmerArea,
+            premium: farmerPremium
+          }
+        })
+      }
+      
+      // Create and download CSV
+      const csvContent = convertToCSV(exportData)
+      downloadCSV(csvContent, `assignment-summary-${product?.name}-${new Date().toISOString().split('T')[0]}.csv`)
+      
+      toast.success("Assignment summary exported successfully!")
+      
+    } catch (error) {
+      console.error("Error exporting summary:", error)
+      toast.error("Failed to export summary. Please try again.")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const convertToCSV = (data: any) => {
+    const headers = [
+      'Product Name', 'Crop Type', 'Coverage Period', 'Premium Rate',
+      'Total Farmers', 'Total Plots', 'Total Area (ha)', 'Total Premium ($)', 'Total Sum Insured ($)'
+    ]
+    
+    const productRow = [
+      data.product.name,
+      data.product.crop,
+      data.product.coveragePeriod,
+      data.product.premiumRate,
+      data.assignment.totalFarmers,
+      data.assignment.totalPlots,
+      data.assignment.totalArea.toFixed(2),
+      data.assignment.totalPremium.toFixed(2),
+      data.assignment.totalSumInsured.toFixed(2)
+    ]
+    
+    const farmerHeaders = ['Farmer ID', 'Farmer Name', 'Location', 'Plots', 'Area (ha)', 'Premium ($)']
+    
+    const csvRows = [
+      headers.join(','),
+      productRow.join(','),
+      '',
+      farmerHeaders.join(','),
+      ...data.farmers.map((farmer: any) => [
+        farmer.id,
+        `"${farmer.name}"`,
+        `"${farmer.location}"`,
+        farmer.plots,
+        farmer.area.toFixed(2),
+        farmer.premium.toFixed(2)
+      ].join(','))
+    ]
+    
+    return csvRows.join('\n')
+  }
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
@@ -246,22 +423,41 @@ export function AssignmentSummaryStep({
           <div className="flex gap-3">
             <Button
               onClick={handleCreateEnrollments}
-              disabled={!assignmentConfirmed}
+              disabled={!assignmentConfirmed || isCreatingEnrollments}
               className="flex-1"
               size="lg"
             >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Create Enrollments
+              {isCreatingEnrollments ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Create Enrollments
+                </>
+              )}
             </Button>
             
             <Button
               onClick={handleExportSummary}
+              disabled={isExporting}
               variant="outline"
               className="flex-1"
               size="lg"
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Export Summary
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export Summary
+                </>
+              )}
             </Button>
           </div>
           

@@ -651,6 +651,84 @@ export class PlotsService {
   }
 }
 
+// Enrollments service
+export class EnrollmentsService {
+  // Create a single enrollment
+  static async createEnrollment(enrollmentData: {
+    farmer_id: string
+    plot_id: string | null
+    product_id: string
+    season: string
+    premium: number
+    sum_insured: number
+    status?: 'pending' | 'active' | 'expired' | 'cancelled'
+  }) {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('enrollments')
+      .insert({
+        created_by_user_id: user.id,
+        ...enrollmentData,
+        status: enrollmentData.status || 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  // Create multiple enrollments in batch
+  static async createBatchEnrollments(enrollments: Array<{
+    farmer_id: string
+    plot_id: string | null
+    product_id: string
+    season: string
+    premium: number
+    sum_insured: number
+    status?: 'pending' | 'active' | 'expired' | 'cancelled'
+  }>) {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const enrollmentsWithUser = enrollments.map(enrollment => ({
+      created_by_user_id: user.id,
+      ...enrollment,
+      status: enrollment.status || 'pending'
+    }))
+
+    const { data, error } = await supabase
+      .from('enrollments')
+      .insert(enrollmentsWithUser)
+      .select()
+
+    if (error) throw error
+    return data
+  }
+
+  // Get enrollments for a specific product
+  static async getProductEnrollments(productId: string) {
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select(`
+        *,
+        farmer:farmers(
+          id, english_name, phone, province, district, commune
+        ),
+        plot:plots(
+          id, province, district, commune, crop, area_ha
+        )
+      `)
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  }
+}
+
 // Real-time subscriptions - temporarily disabled due to API compatibility
 // export const subscribeToFarmers = (callback: (farmers: Farmer[]) => void) => {
 //   return supabase
