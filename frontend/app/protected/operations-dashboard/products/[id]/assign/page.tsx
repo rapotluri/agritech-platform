@@ -98,32 +98,65 @@ export default function ProductAssignmentPage() {
           <CardTitle className="text-lg">Product Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Product Name</p>
-              <p className="text-lg font-semibold">{product.name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Crop Type</p>
-              <p className="text-lg font-semibold">{product.crop}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <p className="text-lg font-semibold capitalize">{product.status}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Coverage Period</p>
-              <p className="text-lg font-semibold">
-                {new Date(product.coverage_start_date).toLocaleDateString()} - {new Date(product.coverage_end_date).toLocaleDateString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Region</p>
-              <p className="text-lg font-semibold">
-                {typeof product.region === 'string' ? product.region : 'Multiple regions'}
-              </p>
-            </div>
-          </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <div>
+               <p className="text-sm font-medium text-gray-500">Product Name</p>
+               <p className="text-lg font-semibold">{product.name}</p>
+             </div>
+             <div>
+               <p className="text-sm font-medium text-gray-500">Crop Type</p>
+               <p className="text-lg font-semibold">{product.crop}</p>
+             </div>
+             <div>
+               <p className="text-sm font-medium text-gray-500">Status</p>
+               <p className="text-lg font-semibold capitalize">{product.status}</p>
+             </div>
+             <div>
+               <p className="text-sm font-medium text-gray-500">Coverage Period</p>
+               <p className="text-lg font-semibold">
+                 {new Date(product.coverage_start_date).toLocaleDateString()} - {new Date(product.coverage_end_date).toLocaleDateString()}
+               </p>
+             </div>
+             <div>
+               <p className="text-sm font-medium text-gray-500">Region</p>
+               <p className="text-lg font-semibold">
+                 {(() => {
+                   if (typeof product.region === 'string') {
+                     return product.region
+                   } else if (product.region && typeof product.region === 'object') {
+                     // Handle JSONB region object
+                     const region = product.region as any
+                     if (region.province && region.district && region.commune) {
+                       return `${region.province}, ${region.district}, ${region.commune}`
+                     } else if (region.province && region.district) {
+                       return `${region.province}, ${region.district}`
+                     } else if (region.province) {
+                       return region.province
+                     } else if (Array.isArray(region)) {
+                       return region.join(', ')
+                     }
+                   }
+                   return 'Region not specified'
+                 })()}
+               </p>
+             </div>
+             <div>
+               <p className="text-sm font-medium text-gray-500">Premium Cost</p>
+               <p className="text-lg font-semibold text-green-600">
+                 {(() => {
+                   // Get premium cost from product triggers.optimizationConfig.premiumCost
+                   if (product.triggers && typeof product.triggers === 'object') {
+                     const triggers = product.triggers as any
+                     if (triggers.optimizationConfig && triggers.optimizationConfig.premiumCost) {
+                       return `$${triggers.optimizationConfig.premiumCost}/ha`
+                     }
+                   }
+                   // Fallback if premium cost is not available
+                   return 'Premium cost not specified'
+                 })()}
+               </p>
+             </div>
+           </div>
         </CardContent>
       </Card>
 

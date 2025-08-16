@@ -35,7 +35,7 @@ export function FarmerSelector({
     province: "all",
     district: "all",
     commune: "all",
-    kycStatus: "verified" // Default to verified farmers only
+    kycStatus: "all" // Default to all KYC statuses
   })
 
   const [sorting] = useState({ column: null, direction: 'asc' as 'asc' | 'desc' })
@@ -75,7 +75,7 @@ export function FarmerSelector({
       province: "all",
       district: "all",
       commune: "all",
-      kycStatus: "verified"
+      kycStatus: "all"
     })
     setPagination(prev => ({ ...prev, page: 1 }))
   }
