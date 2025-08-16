@@ -225,58 +225,6 @@ export function AssignmentSummary({
         </CardContent>
       </Card>
 
-      {/* Confirmation Checkbox for Step 3 */}
-      {currentStep === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Confirmation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="assignment-confirmation-sidebar"
-                checked={assignmentConfirmed}
-                onCheckedChange={(checked) => onAssignmentConfirmed(checked as boolean)}
-              />
-              <label
-                htmlFor="assignment-confirmation-sidebar"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Confirm assignment
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Next Steps</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={onContinue}
-            disabled={!canContinue()}
-            className="w-full"
-            size="lg"
-          >
-            {getContinueButtonText()}
-          </Button>
-          
-          {!canContinue() && (
-            <p className="text-sm text-gray-500 text-center mt-2">
-              {currentStep === 1 
-                ? "Select at least one farmer to continue"
-                : currentStep === 2
-                ? "Select at least one plot to continue"
-                : "Please confirm the assignment to continue"
-              }
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Help Text */}
       <Card>
         <CardHeader>
