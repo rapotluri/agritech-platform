@@ -54,7 +54,6 @@ export function PlotSelector({
   }, [farmers, onPlotDataUpdate])
 
 
-
   const handlePlotToggle = (farmerId: string, plotId: string, checked: boolean) => {
     const currentPlots = selectedPlots[farmerId] || []
     let newPlots: string[]
