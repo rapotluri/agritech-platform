@@ -27,6 +27,7 @@ export default function ProductAssignmentPage() {
   const [selectedFarmers, setSelectedFarmers] = useState<string[]>([])
   const [selectedPlots, setSelectedPlots] = useState<Record<string, string[]>>({})
   const [plotData, setPlotData] = useState<Record<string, any[]>>({})
+  const [farmerData, setFarmerData] = useState<Record<string, any>>({}) // New state for farmer data
   const [totalSteps] = useState(3) // Updated to 3 steps
   const [assignmentConfirmed, setAssignmentConfirmed] = useState(false) // New state for confirmation
 
@@ -55,6 +56,13 @@ export default function ProductAssignmentPage() {
     setPlotData(prev => ({
       ...prev,
       [farmerId]: plots
+    }))
+  }, [])
+
+  const handleFarmerDataUpdate = useCallback((farmerId: string, farmer: any) => {
+    setFarmerData(prev => ({
+      ...prev,
+      [farmerId]: farmer
     }))
   }, [])
 
@@ -246,10 +254,12 @@ export default function ProductAssignmentPage() {
             onFarmerSelection={handleFarmerSelection}
             onPlotSelection={handlePlotSelection}
             onPlotDataUpdate={handlePlotDataUpdate}
+            onFarmerDataUpdate={handleFarmerDataUpdate}
             assignmentConfirmed={assignmentConfirmed}
             onAssignmentConfirmed={setAssignmentConfirmed}
             product={product}
             plotData={plotData}
+            farmerData={farmerData}
             premiumRate={getPremiumRate()}
           />
         </div>
@@ -263,13 +273,7 @@ export default function ProductAssignmentPage() {
             plotData={plotData}
             premiumRate={getPremiumRate()}
             currentStep={currentStep}
-            onContinue={() => {
-              if (currentStep < totalSteps) {
-                setCurrentStep(currentStep + 1)
-              }
-            }}
             assignmentConfirmed={assignmentConfirmed}
-            onAssignmentConfirmed={setAssignmentConfirmed}
           />
         </div>
       </div>

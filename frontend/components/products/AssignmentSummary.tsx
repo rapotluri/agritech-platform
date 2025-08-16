@@ -1,8 +1,6 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Users, MapPin, Calculator, CheckCircle } from "lucide-react"
@@ -14,9 +12,7 @@ interface AssignmentSummaryProps {
   plotData: Record<string, any[]> // Add plot data to calculate actual areas
   premiumRate: number // Add premium rate from product
   currentStep: number
-  onContinue: () => void
   assignmentConfirmed: boolean
-  onAssignmentConfirmed: (confirmed: boolean) => void
 }
 
 export function AssignmentSummary({
@@ -26,9 +22,7 @@ export function AssignmentSummary({
   plotData,
   premiumRate,
   currentStep,
-  onContinue,
-  assignmentConfirmed,
-  onAssignmentConfirmed
+  assignmentConfirmed
 }: AssignmentSummaryProps) {
   const getTotalAreaSelected = () => {
     // Calculate actual area from selected plot data
@@ -49,32 +43,6 @@ export function AssignmentSummary({
     // Calculate based on actual area and product premium rate
     const area = getTotalAreaSelected()
     return area * premiumRate
-  }
-
-  const canContinue = () => {
-    if (currentStep === 1) {
-      return selectedFarmers.length > 0
-    }
-    if (currentStep === 2) {
-      return Object.values(selectedPlots).some(plots => plots.length > 0)
-    }
-    if (currentStep === 3) {
-      return assignmentConfirmed
-    }
-    return false
-  }
-
-  const getContinueButtonText = () => {
-    if (currentStep === 1) {
-      return "Continue to Plot Selection"
-    }
-    if (currentStep === 2) {
-      return "Continue to Configuration"
-    }
-    if (currentStep === 3) {
-      return "Create Enrollments"
-    }
-    return "Continue"
   }
 
   const getStepStatus = (step: number) => {

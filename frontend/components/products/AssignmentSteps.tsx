@@ -15,10 +15,12 @@ interface AssignmentStepsProps {
   onFarmerSelection: (farmerIds: string[]) => void
   onPlotSelection: (farmerId: string, plotIds: string[]) => void
   onPlotDataUpdate: (farmerId: string, plots: any[]) => void
+  onFarmerDataUpdate: (farmerId: string, farmer: any) => void
   assignmentConfirmed: boolean
   onAssignmentConfirmed: (confirmed: boolean) => void
   product: any
   plotData: Record<string, any[]>
+  farmerData: Record<string, any>
   premiumRate: number
 }
 
@@ -30,10 +32,12 @@ export function AssignmentSteps({
   onFarmerSelection,
   onPlotSelection,
   onPlotDataUpdate,
+  onFarmerDataUpdate,
   assignmentConfirmed,
   onAssignmentConfirmed,
   product,
   plotData,
+  farmerData,
   premiumRate
 }: AssignmentStepsProps) {
 
@@ -68,6 +72,7 @@ export function AssignmentSteps({
           <FarmerSelector
             selectedFarmers={selectedFarmers}
             onSelectionChange={onFarmerSelection}
+            onFarmerDataUpdate={onFarmerDataUpdate}
           />
         )
       case 2:
@@ -85,6 +90,7 @@ export function AssignmentSteps({
             selectedFarmers={selectedFarmers}
             selectedPlots={selectedPlots}
             plotData={plotData}
+            farmerData={farmerData}
             premiumRate={premiumRate}
             product={product}
             assignmentConfirmed={assignmentConfirmed}

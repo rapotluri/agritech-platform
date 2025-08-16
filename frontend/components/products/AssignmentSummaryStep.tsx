@@ -11,6 +11,7 @@ interface AssignmentSummaryStepProps {
   selectedFarmers: string[]
   selectedPlots: Record<string, string[]>
   plotData: Record<string, any[]>
+  farmerData: Record<string, any>
   premiumRate: number
   product: any
   assignmentConfirmed: boolean
@@ -21,6 +22,7 @@ export function AssignmentSummaryStep({
   selectedFarmers,
   selectedPlots,
   plotData,
+  farmerData,
   premiumRate,
   product,
   assignmentConfirmed,
@@ -138,7 +140,8 @@ export function AssignmentSummaryStep({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Farmer</TableHead>
+                <TableHead>Farmer Name</TableHead>
+                <TableHead>Farmer ID</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Plots</TableHead>
                 <TableHead>Area (ha)</TableHead>
@@ -152,16 +155,18 @@ export function AssignmentSummaryStep({
                 const farmerPlotData = farmerPlots.filter(plot => selectedFarmerPlots.includes(plot.id))
                 const farmerArea = farmerPlotData.reduce((total, plot) => total + (parseFloat(plot.area_ha) || 0), 0)
                 const farmerPremium = farmerArea * premiumRate
+                const farmer = farmerData[farmerId]
 
                 return (
                   <TableRow key={farmerId}>
                     <TableCell className="font-medium">
-                      {/* TODO: Get farmer name from farmer data */}
-                      Farmer {farmerId.slice(0, 8)}...
+                      {farmer?.english_name || `Farmer ${farmerId.slice(0, 8)}...`}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500 font-mono">
+                      {farmerId.slice(0, 8)}...
                     </TableCell>
                     <TableCell>
-                      {/* TODO: Get farmer location from farmer data */}
-                      Location
+                      {farmer?.province ? `${farmer.province}, ${farmer.district || ''}`.trim() : 'Location not specified'}
                     </TableCell>
                     <TableCell>{selectedFarmerPlots.length}</TableCell>
                     <TableCell>{farmerArea.toFixed(2)}</TableCell>

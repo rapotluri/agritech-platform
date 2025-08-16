@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 interface FarmerSelectorProps {
   selectedFarmers: string[]
   onSelectionChange: (farmerIds: string[]) => void
-
+  onFarmerDataUpdate: (farmerId: string, farmer: any) => void
 }
 
 interface FarmerFilters {
@@ -28,7 +28,8 @@ interface FarmerFilters {
 
 export function FarmerSelector({
   selectedFarmers,
-  onSelectionChange
+  onSelectionChange,
+  onFarmerDataUpdate
 }: FarmerSelectorProps) {
   const [filters, setFilters] = useState<FarmerFilters>({
     searchQuery: "",
@@ -50,15 +51,29 @@ export function FarmerSelector({
 
   const handleFarmerToggle = (farmerId: string, checked: boolean) => {
     if (checked) {
-      onSelectionChange([...selectedFarmers, farmerId])
+      const newSelection = [...selectedFarmers, farmerId]
+      onSelectionChange(newSelection)
+      
+      // Update farmer data for the newly selected farmer
+      const farmer = farmers.find(f => f.id === farmerId)
+      if (farmer) {
+        onFarmerDataUpdate(farmerId, farmer)
+      }
     } else {
-      onSelectionChange(selectedFarmers.filter(id => id !== farmerId))
+      const newSelection = selectedFarmers.filter(id => id !== farmerId)
+      onSelectionChange(newSelection)
     }
   }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      onSelectionChange(farmers.map(f => f.id))
+      const allFarmerIds = farmers.map(f => f.id)
+      onSelectionChange(allFarmerIds)
+      
+      // Update farmer data for all selected farmers
+      farmers.forEach(farmer => {
+        onFarmerDataUpdate(farmer.id, farmer)
+      })
     } else {
       onSelectionChange([])
     }
