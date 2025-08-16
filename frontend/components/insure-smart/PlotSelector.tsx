@@ -202,31 +202,36 @@ export function PlotSelector({
                             <p>No plots available for this farmer</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
                             {farmerPlots.map((plot) => {
                               const isSelected = selectedFarmerPlots.includes(plot.id)
                                                              const isCompatible = getPlotCompatibility()
                                const status = getPlotStatus()
 
                               return (
-                                <Card 
-                                  key={plot.id} 
-                                  className={cn(
-                                    "transition-all duration-200",
-                                    isSelected ? "ring-2 ring-green-500 bg-green-50" : "hover:shadow-md"
-                                  )}
-                                >
+                                                                 <Card 
+                                   key={plot.id} 
+                                   className={cn(
+                                     "transition-all duration-200 overflow-visible",
+                                     isSelected ? "ring-2 ring-green-500 bg-green-50" : "hover:shadow-md"
+                                   )}
+                                 >
                                   <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                      <Checkbox
-                                        checked={isSelected}
-                                        onCheckedChange={(checked) => handlePlotToggle(farmer.id, plot.id, checked as boolean)}
-                                        disabled={!isCompatible}
-                                      />
-                                      <Badge className={cn("text-xs", getStatusColor(status))}>
-                                        {getStatusIcon(status)}
-                                        <span className="ml-1">{status}</span>
-                                      </Badge>
+                                    <div className="flex items-start justify-between mb-3 gap-3">
+                                      <div className="flex-shrink-0 p-1">
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={(checked) => handlePlotToggle(farmer.id, plot.id, checked as boolean)}
+                                          disabled={!isCompatible}
+                                          className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                                        />
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        <Badge className={cn("text-xs", getStatusColor(status))}>
+                                          {getStatusIcon(status)}
+                                          <span className="ml-1">{status}</span>
+                                        </Badge>
+                                      </div>
                                     </div>
 
                                     <div className="space-y-2">
