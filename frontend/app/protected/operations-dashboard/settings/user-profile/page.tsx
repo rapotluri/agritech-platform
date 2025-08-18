@@ -66,6 +66,12 @@ export default function UserProfilePage() {
       
       setAppUser({ ...appUser, display_name: displayName.trim() });
       setIsEditingName(false);
+      
+      // Trigger a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('displayNameUpdated', {
+        detail: { displayName: displayName.trim() }
+      }));
+      
     } catch (error) {
       console.error('Error updating display name:', error);
       alert('Failed to update display name. Please try again.');
