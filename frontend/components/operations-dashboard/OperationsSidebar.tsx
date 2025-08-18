@@ -3,6 +3,7 @@
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { 
   HomeIcon, 
   UsersIcon, 
@@ -30,6 +31,43 @@ const navigationItems = [
 
 export function OperationsSidebar({ user }: OperationsSidebarProps) {
   const pathname = usePathname();
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDisplayName = async () => {
+      try {
+        const { createClient } = await import("@/utils/supabase/client");
+        const supabase = createClient();
+        const { data: appUserData, error } = await supabase
+          .from('app_users')
+          .select('display_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (appUserData && !error && appUserData.display_name) {
+          setDisplayName(appUserData.display_name);
+        }
+      } catch (error) {
+        console.error('Error fetching display name:', error);
+      }
+    };
+
+    if (user?.id) {
+      fetchDisplayName();
+    }
+
+    // Listen for display name updates from other components
+    const handleDisplayNameUpdate = (event: CustomEvent) => {
+      setDisplayName(event.detail.displayName);
+    };
+
+    window.addEventListener('displayNameUpdated', handleDisplayNameUpdate as EventListener);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('displayNameUpdated', handleDisplayNameUpdate as EventListener);
+    };
+  }, [user?.id]);
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -54,7 +92,7 @@ export function OperationsSidebar({ user }: OperationsSidebarProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user.email || "User"}
+              {displayName || user.email || "User"}
             </p>
             <p className="text-xs text-gray-500">Standard User</p>
           </div>

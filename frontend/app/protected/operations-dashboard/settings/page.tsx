@@ -33,9 +33,12 @@ export default async function SettingsPage() {
             <h3 className="ml-3 text-lg font-semibold text-gray-900">User Profile</h3>
           </div>
           <p className="text-gray-600 mb-4">Update your personal information and preferences</p>
-          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors">
-            Coming Soon
-          </button>
+          <a 
+            href="/protected/operations-dashboard/settings/user-profile"
+            className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-center"
+          >
+            Manage Profile
+          </a>
         </div>
 
         {/* Organization Settings */}
