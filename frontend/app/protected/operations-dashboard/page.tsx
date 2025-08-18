@@ -1,5 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   UsersIcon, 
@@ -11,15 +13,31 @@ import {
   DocumentTextIcon,
   ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
+import { useFarmerStats, useProductStats } from "@/lib/hooks";
 
-export default async function OperationsDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function OperationsDashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const { data: farmerStats } = useFarmerStats();
+  const { data: productStats } = useProductStats();
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkUser = async () => {
+      const { createClient } = await import("@/utils/supabase/client");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/sign-in");
+      } else {
+        setUser(user);
+      }
+    };
+    checkUser();
+  }, [router]);
 
   if (!user) {
-    return redirect("/sign-in");
+    return null;
   }
 
   return (
@@ -31,7 +49,7 @@ export default async function OperationsDashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -39,7 +57,9 @@ export default async function OperationsDashboardPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Farmers</p>
-              <p className="text-2xl font-bold text-gray-900">0</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {farmerStats?.totalFarmers || 0}
+              </p>
             </div>
           </div>
         </div>
@@ -51,7 +71,9 @@ export default async function OperationsDashboardPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Active Products</p>
-              <p className="text-2xl font-bold text-gray-900">0</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {productStats?.activeProducts || 0}
+              </p>
             </div>
           </div>
         </div>
@@ -68,17 +90,7 @@ export default async function OperationsDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <CloudIcon className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Weather Requests</p>
-              <p className="text-2xl font-bold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       {/* Quick Actions */}
@@ -167,8 +179,8 @@ export default async function OperationsDashboardPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
         <div className="text-center py-8 text-gray-500">
           <DocumentTextIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>No recent activity to display</p>
-          <p className="text-sm">Start using the dashboard to see your activity here</p>
+          <p>Coming Soon in Phase 6</p>
+          <p className="text-sm">Recent activity tracking will be implemented in the next phase</p>
         </div>
       </div>
     </div>
