@@ -17,6 +17,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { useFarmer, useDeleteFarmer } from "@/lib/hooks"
 import { PlotManager } from "@/components/farmers/PlotManager"
 import { FarmerDialog } from "@/components/farmers/FarmerDialog"
+import { PolicyEnrollments } from "@/components/farmers/PolicyEnrollments"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -390,33 +391,12 @@ export default function FarmerProfilePage({ params }: FarmerProfilePageProps) {
 
           {/* Policy History Tab */}
           <TabsContent value="policies" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Policy History</CardTitle>
-                <p className="text-muted-foreground">Insurance product assignments and policy status</p>
-              </CardHeader>
-              <CardContent>
-                {farmer.assignedProduct ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{farmer.assignedProduct}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Assigned on {format(new Date(farmer.enrolment_date), "MMM dd, yyyy")}
-                        </p>
-                      </div>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        Active
-                      </Badge>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No insurance products assigned to this farmer yet.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div>
+              <h3 className="text-lg font-semibold">Policy History</h3>
+              <p className="text-muted-foreground">Insurance product enrollments and policy status for this farmer</p>
+            </div>
+            
+            <PolicyEnrollments farmerId={farmer.id} />
           </TabsContent>
 
           {/* Documents Tab */}

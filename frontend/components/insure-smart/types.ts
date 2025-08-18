@@ -1,6 +1,7 @@
 export interface Product {
   name: string;
   province: string;
+  district: string;
   commune: string;
   cropDuration: string;
   sumInsured: string;

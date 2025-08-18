@@ -11,7 +11,9 @@ import {
   PlotInsert,
   FarmerUpdate,
   PlotUpdate,
-  PlotFormData
+  PlotFormData,
+  ProductFilters,
+  ProductSorting
 } from './database.types'
 import { toast } from 'sonner'
 
@@ -33,7 +35,31 @@ export const plotKeys = {
 }
 
 export const productKeys = {
-  all: () => ['products'] as const,
+  all: ['products'] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (filters: ProductFilters, sorting: ProductSorting, pagination: PaginationParams) => 
+    [...productKeys.lists(), { filters, sorting, pagination }] as const,
+  details: () => [...productKeys.all, 'detail'] as const,
+  detail: (id: string) => [...productKeys.details(), id] as const,
+  stats: () => [...productKeys.all, 'stats'] as const,
+  cropTypes: () => [...productKeys.all, 'cropTypes'] as const,
+  regions: () => [...productKeys.all, 'regions'] as const,
+}
+
+export const enrollmentKeys = {
+  all: ['enrollments'] as const,
+  lists: () => [...enrollmentKeys.all, 'list'] as const,
+  list: (farmerId: string) => [...enrollmentKeys.lists(), farmerId] as const,
+}
+
+// Farmer enrollments hook
+export function useFarmerEnrollments(farmerId: string) {
+  return useQuery<any[]>({
+    queryKey: enrollmentKeys.list(farmerId),
+    queryFn: () => FarmersService.getFarmerEnrollments(farmerId),
+    enabled: !!farmerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 }
 
 // Farmers hooks
@@ -246,9 +272,135 @@ export function useDeletePlot() {
 // Products hooks
 export function useProducts() {
   return useQuery({
-    queryKey: productKeys.all(),
+    queryKey: productKeys.all,
     queryFn: () => ProductsService.getProducts(),
     staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+export function useProductsWithEnrollments(
+  filters: ProductFilters = {},
+  sorting: ProductSorting = { column: null, direction: 'asc' },
+  pagination: PaginationParams = { page: 1, limit: 10 }
+) {
+  return useQuery({
+    queryKey: productKeys.list(filters, sorting, pagination),
+    queryFn: () => ProductsService.getProductsWithEnrollments(filters, sorting, pagination),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useProductStats() {
+  return useQuery({
+    queryKey: productKeys.stats(),
+    queryFn: () => ProductsService.getProductStats(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+}
+
+export function useCropTypes() {
+  return useQuery({
+    queryKey: productKeys.cropTypes(),
+    queryFn: () => ProductsService.getCropTypes(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+export function useProduct(id: string) {
+  return useQuery({
+    queryKey: productKeys.detail(id),
+    queryFn: () => ProductsService.getProductById(id),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (productData: {
+      name: string
+      crop?: string
+      region: any
+      status: 'draft' | 'live'
+      triggers: any
+      coverage_start_date: string
+      coverage_end_date: string
+      terms: any
+    }) => ProductsService.createProduct(productData),
+    onSuccess: (data) => {
+      // Invalidate and refetch product-related queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      queryClient.invalidateQueries({ queryKey: productKeys.cropTypes() })
+      queryClient.invalidateQueries({ queryKey: productKeys.regions() })
+      
+      toast.success(`Product "${data.name}" has been created successfully!`)
+    },
+    onError: (error: any) => {
+      console.error('Error creating product:', error)
+      toast.error('Failed to create product. Please try again.')
+    },
+  })
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      updates 
+    }: { 
+      id: string, 
+      updates: Partial<{
+        name: string
+        crop: string
+        region: any
+        status: 'draft' | 'live' | 'archived'
+        triggers: any
+        coverage_start_date: string
+        coverage_end_date: string
+        terms: any
+      }>
+    }) => {
+      return ProductsService.updateProduct(id, updates)
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch product-related queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      
+      toast.success(`Product "${data.name}" has been updated successfully!`)
+    },
+    onError: (error: any) => {
+      console.error('Error updating product:', error)
+      toast.error('Failed to update product. Please try again.')
+    },
+  })
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (id: string) => ProductsService.deleteProduct(id),
+    onSuccess: (_, deletedId) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: productKeys.detail(deletedId) })
+      
+      // Invalidate products list queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      
+      toast.success('Product has been deleted successfully!')
+    },
+    onError: (error: any) => {
+      console.error('Error deleting product:', error)
+      toast.error('Failed to delete product. Please try again.')
+    },
   })
 }
 

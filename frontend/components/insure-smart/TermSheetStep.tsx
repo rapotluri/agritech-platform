@@ -1,8 +1,12 @@
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, TrendingDown, TrendingUp } from "lucide-react";
+import { CheckCircle, TrendingDown, TrendingUp, Save, Loader2 } from "lucide-react";
 import { Product, CoveragePeriod, OptimizationResult } from "./types";
+import { useCreateProduct } from "@/lib/hooks";
+import { mapInsureSmartToProduct, validateProductData } from "@/lib/productMappers";
 
 interface TermSheetStepProps {
   product: Product;
@@ -23,7 +27,47 @@ export default function TermSheetStep({
   getPerilIcon,
   getPerilLabel,
 }: TermSheetStepProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
+  const createProductMutation = useCreateProduct();
   const selected = optimizationResults.find((r) => r.id === selectedResult);
+
+  const handleSaveProduct = async (status: 'draft' | 'live') => {
+    if (!selected) {
+      console.error('No optimization result selected');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Transform the data to match the product schema
+      const productData = mapInsureSmartToProduct(
+        product,
+        coveragePeriods,
+        selectedResult,
+        optimizationResults,
+        status
+      );
+      
+      // Validate the product data
+      const validationErrors = validateProductData(productData);
+      if (validationErrors.length > 0) {
+        console.error('Product validation failed:', validationErrors);
+        setIsSaving(false);
+        return;
+      }
+
+      // Create the product
+      await createProductMutation.mutateAsync(productData);
+      
+      // Navigate back to Product Library
+      router.push('/protected/operations-dashboard/products');
+    } catch (error) {
+      console.error('Error saving product:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!selected) {
     return (
@@ -68,7 +112,7 @@ export default function TermSheetStep({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Location:</span>
-                        <span className="font-medium">{product.commune}, {product.province}</span>
+                        <span className="font-medium">{product.commune}, {product.district}, {product.province}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Coverage Periods:</span>
@@ -214,9 +258,39 @@ export default function TermSheetStep({
           Back: Product Design
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline">Save as Draft</Button>
-          <Button className="bg-green-600 hover:bg-green-700">
-            Finalize Product
+          <Button 
+            variant="outline" 
+            onClick={() => handleSaveProduct('draft')}
+            disabled={isSaving || createProductMutation.isPending}
+          >
+            {isSaving && createProductMutation.variables?.status === 'draft' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving Draft...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save as Draft
+              </>
+            )}
+          </Button>
+          <Button 
+            className="bg-green-600 hover:bg-green-700"
+            onClick={() => handleSaveProduct('live')}
+            disabled={isSaving || createProductMutation.isPending}
+          >
+            {isSaving && createProductMutation.variables?.status === 'live' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Finalizing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Finalize Product
+              </>
+            )}
           </Button>
         </div>
       </div>

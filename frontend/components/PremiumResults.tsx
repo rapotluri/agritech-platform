@@ -1,8 +1,48 @@
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Save, Loader2 } from "lucide-react";
 import type { PremiumResponse } from "@/types/premium";
+import { useCreateProduct } from "@/lib/hooks";
+import { mapManualBuilderToProduct, validateProductData } from "@/lib/productMappers";
 
-export function PremiumResults({ data }: { data: PremiumResponse }) {
+export function PremiumResults({ data, formData }: { data: PremiumResponse; formData?: any }) {
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
+  const createProductMutation = useCreateProduct();
+
+  const handleSaveProduct = async () => {
+    if (!formData) {
+      console.error('No form data available for product creation');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Transform the data to match the product schema
+      const productData = mapManualBuilderToProduct(formData, data);
+      
+      // Validate the product data
+      const validationErrors = validateProductData(productData);
+      if (validationErrors.length > 0) {
+        console.error('Product validation failed:', validationErrors);
+        setIsSaving(false);
+        return;
+      }
+
+      // Create the product
+      await createProductMutation.mutateAsync(productData);
+      
+      // Navigate back to Product Library
+      router.push('/protected/operations-dashboard/products');
+    } catch (error) {
+      console.error('Error saving product:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Premium Overview Card */}
@@ -127,6 +167,33 @@ export function PremiumResults({ data }: { data: PremiumResponse }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Save Product Button */}
+      {formData && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-center">
+              <Button 
+                onClick={handleSaveProduct}
+                disabled={isSaving || createProductMutation.isPending}
+                className="w-full max-w-md bg-green-600 hover:bg-green-700"
+              >
+                {isSaving || createProductMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Product...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Product
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 

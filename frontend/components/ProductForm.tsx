@@ -68,6 +68,7 @@ type TaskResponse = {
 // Update the component props
 interface ProductFormProps {
   setPremiumResponse: (response: PremiumResponse | null) => void;
+  setFormData?: (data: any) => void;
 }
 
 // Create zod schema
@@ -128,7 +129,7 @@ const formSchema = z.object({
   }, "Phases must have valid dates and all required fields"),
 });
 
-export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
+export default function ProductForm({ setPremiumResponse, setFormData }: ProductFormProps) {
   const cropTypes = ["Rice", "Maize", "Wheat", "Soybean", "Cotton"];
   const coverageTypes = ["Drought", "Excess Rainfall"];
   const indexTypes = ["Excess Rainfall", "Drought"];
@@ -158,7 +159,7 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
   // Watch for changes in phases
   const watchedIndexes = watch("indexes");
   
-  // Watch for province changes
+  // Watch for province changes and update form data
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "province" && value.province) {
@@ -167,9 +168,14 @@ export default function ProductForm({ setPremiumResponse }: ProductFormProps) {
         // Optionally reset commune value
         setValue("commune", provincesCommunes[value.province][0]);
       }
+      
+      // Update form data whenever form values change
+      if (setFormData && value) {
+        setFormData(value);
+      }
     });
     return () => subscription.unsubscribe();
-  }, [form, setValue]);
+  }, [form, setValue, setFormData]);
 
 
 

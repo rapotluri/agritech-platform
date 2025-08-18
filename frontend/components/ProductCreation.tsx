@@ -8,6 +8,7 @@ import type { PremiumResponse } from "@/types/premium";
 
 export default function ProductCreation() {
   const [premiumResponse, setPremiumResponse] = useState<PremiumResponse | null>(null);
+  const [formData, setFormData] = useState<any>(null);
 
   return (
     <div className="grid grid-cols-2 gap-6">
@@ -17,7 +18,10 @@ export default function ProductCreation() {
           <CardTitle className="text-2xl font-bold">Create Product</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProductForm setPremiumResponse={setPremiumResponse} />
+          <ProductForm 
+            setPremiumResponse={setPremiumResponse} 
+            setFormData={setFormData}
+          />
         </CardContent>
       </Card>
 
@@ -29,7 +33,10 @@ export default function ProductCreation() {
               <CardTitle>Premium Analysis</CardTitle>
             </CardHeader>
             <CardContent>
-              <PremiumResults data={premiumResponse} />
+              <PremiumResults 
+                data={premiumResponse} 
+                formData={formData}
+              />
             </CardContent>
           </Card>
         ) : (
