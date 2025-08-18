@@ -633,6 +633,31 @@ export class ProductsService {
 
     return data
   }
+
+  // Delete a product
+  static async deleteProduct(id: string): Promise<void> {
+    // First, delete all enrollments associated with this product
+    const { error: enrollmentsError } = await supabase
+      .from('enrollments')
+      .delete()
+      .eq('product_id', id)
+
+    if (enrollmentsError) {
+      console.error('Delete product enrollments error details:', enrollmentsError)
+      throw new Error(`Failed to delete product enrollments: ${enrollmentsError.message}`)
+    }
+
+    // Then delete the product
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Delete product error details:', error)
+      throw error
+    }
+  }
 }
 
 // Plots service

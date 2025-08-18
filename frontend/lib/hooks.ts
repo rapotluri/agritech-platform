@@ -382,6 +382,28 @@ export function useUpdateProduct() {
   })
 }
 
+export function useDeleteProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (id: string) => ProductsService.deleteProduct(id),
+    onSuccess: (_, deletedId) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: productKeys.detail(deletedId) })
+      
+      // Invalidate products list queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.stats() })
+      
+      toast.success('Product has been deleted successfully!')
+    },
+    onError: (error: any) => {
+      console.error('Error deleting product:', error)
+      toast.error('Failed to delete product. Please try again.')
+    },
+  })
+}
+
 // Optimistic updates helper
 export function useOptimisticFarmerUpdate() {
   const queryClient = useQueryClient()

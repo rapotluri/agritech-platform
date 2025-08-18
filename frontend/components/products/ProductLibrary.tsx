@@ -10,13 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
 import { ProductStats } from "./ProductStats"
 import { ProductFilters as ProductFiltersComponent, ProductFilters as IProductFilters } from "./ProductFilters"
 import { ProductTable } from "./ProductTable"
 import { 
   useProductsWithEnrollments, 
   useProductStats, 
-  useCropTypes
+  useCropTypes,
+  useDeleteProduct
 } from "@/lib/hooks"
 import { ProductSorting, SortableProductColumn } from "@/lib/database.types"
 import { Plus, Download } from "lucide-react"
@@ -57,7 +59,8 @@ export function ProductLibrary() {
 
   const { data: cropTypes = [] } = useCropTypes()
 
-
+  // Delete product mutation
+  const deleteProductMutation = useDeleteProduct()
 
   // Event handlers
   const handleFiltersChange = (newFilters: IProductFilters) => {
@@ -111,9 +114,14 @@ export function ProductLibrary() {
     console.log('Duplicate product:', productId)
   }
 
-  const handleArchive = (productId: string) => {
-    // Archive/unarchive product (to be implemented in future sections)
-    console.log('Archive product:', productId)
+  const handleDelete = async (product: any) => {
+    try {
+      await deleteProductMutation.mutateAsync(product.id)
+      // Remove from selection if selected
+      setSelectedProducts(prev => prev.filter(id => id !== product.id))
+    } catch (error) {
+      console.error('Error deleting product:', error)
+    }
   }
 
   const handleAssign = (productId: string) => {
@@ -212,7 +220,7 @@ export function ProductLibrary() {
             onView={handleView}
             onEdit={handleEdit}
             onDuplicate={handleDuplicate}
-            onArchive={handleArchive}
+            onDelete={handleDelete}
             onAssign={handleAssign}
           />
         </CardContent>

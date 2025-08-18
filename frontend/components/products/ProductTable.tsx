@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -30,12 +31,23 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   ArrowUpDown,
   MoreVertical,
   Eye,
   Edit,
   Copy,
-  Archive,
+  Trash2,
   Users,
   Package
 } from "lucide-react"
@@ -78,7 +90,7 @@ interface ProductTableProps {
   onView?: (productId: string) => void
   onEdit?: (productId: string) => void
   onDuplicate?: (productId: string) => void
-  onArchive?: (productId: string) => void
+  onDelete?: (product: ProductWithEnrollments) => void
   onAssign?: (productId: string) => void
 }
 
@@ -97,7 +109,7 @@ export function ProductTable({
   onView,
   onEdit,
   onDuplicate,
-  onArchive,
+  onDelete,
   onAssign
 }: ProductTableProps) {
 
@@ -319,13 +331,38 @@ export function ProductTable({
                         <Users className="mr-2 h-4 w-4" />
                         Assign to Farmers
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onArchive?.(product.id)}
-                        className="text-red-600"
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        {product.status === 'archived' ? 'Unarchive' : 'Archive'}
-                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            disabled={false}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete product{" "}
+                              <span className="font-semibold">{product.name}</span>{" "}
+                              and remove all their data from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDelete?.(product)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete Product
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
