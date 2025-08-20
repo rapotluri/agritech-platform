@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { acceptNDA } from '@/lib/nda';
+import { acceptNDAAction } from '@/app/actions';
 import { useNDAStatus } from '@/lib/hooks/useNDAStatus';
 import { AlertTriangle, FileText, CheckCircle, XCircle, Download } from 'lucide-react';
 
@@ -24,6 +24,7 @@ export default function NDAPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<boolean>(false);
   const [useIframe, setUseIframe] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   
   const router = useRouter();
   const { ndaStatus, loading: statusLoading } = useNDAStatus();
@@ -54,21 +55,24 @@ export default function NDAPage() {
     if (!isAgreed) return;
     
     setIsLoading(true);
+    setError('');
+    
     try {
-      await acceptNDA({
+      const result = await acceptNDAAction({
         nda_title: NDA_TITLE,
         nda_pdf_url: NDA_PDF_URL,
-        nda_sha256: '', // Not required as per user
-        ip: '', // Will be captured by backend
-        user_agent: navigator.userAgent,
-        locale: navigator.language || 'en-US'
+        nda_sha256: 'nda-accurate-v1-hash' // Placeholder hash
       });
       
-      // Redirect to operations dashboard
-      router.push('/protected/operations-dashboard/');
+      if (result.success) {
+        // Redirect to operations dashboard
+        router.push('/protected/operations-dashboard/');
+      } else {
+        setError(result.error || 'Failed to accept NDA');
+      }
     } catch (error) {
       console.error('Failed to accept NDA:', error);
-      // Show error message to user
+      setError('An unexpected error occurred while accepting the NDA');
     } finally {
       setIsLoading(false);
     }
@@ -82,11 +86,6 @@ export default function NDAPage() {
     // Sign out and redirect to sign-in
     // This would typically involve calling your auth service
     router.push('/sign-in');
-  };
-
-  const switchToReactPDF = () => {
-    setUseIframe(false);
-    setPdfError(false);
   };
 
   const switchToIframe = () => {
@@ -219,6 +218,16 @@ export default function NDAPage() {
 
           {/* Agreement Section */}
           <div className="p-6">
+            {/* Error Display */}
+            {error && (
+              <Alert className="mb-6 border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Alert className="mb-6">
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>

@@ -1,4 +1,70 @@
 /**
+ * Get user's IP address from request headers
+ * This function should be used on the server side
+ */
+export function getUserIPFromHeaders(headers: Headers): string {
+  // Check for forwarded headers first (common in production with proxies)
+  const forwardedFor = headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  // Check for real IP header
+  const realIP = headers.get('x-real-ip');
+  if (realIP) {
+    return realIP;
+  }
+
+  // Check for client IP header
+  const clientIP = headers.get('x-client-ip');
+  if (clientIP) {
+    return clientIP;
+  }
+
+  // Fallback for development
+  if (process.env.NODE_ENV === 'development') {
+    return '127.0.0.1';
+  }
+
+  return 'Unknown';
+}
+
+/**
+ * Get user agent from request headers
+ * This function should be used on the server side
+ */
+export function getUserAgentFromHeaders(headers: Headers): string {
+  const userAgent = headers.get('user-agent');
+  return userAgent || 'Unknown';
+}
+
+/**
+ * Get user's locale from request headers
+ * This function should be used on the server side
+ */
+export function getUserLocaleFromHeaders(headers: Headers): string {
+  // Check for Accept-Language header
+  const acceptLanguage = headers.get('accept-language');
+  if (acceptLanguage) {
+    // Parse the Accept-Language header and get the first preferred language
+    const languages = acceptLanguage.split(',');
+    if (languages.length > 0) {
+      const primaryLang = languages[0].split(';')[0].trim();
+      return primaryLang;
+    }
+  }
+
+  // Check for custom locale header
+  const locale = headers.get('x-locale');
+  if (locale) {
+    return locale;
+  }
+
+  return 'en-US';
+}
+
+/**
  * Get user's IP address
  * Note: This is a placeholder implementation
  * In production, you should get the real IP from the server side

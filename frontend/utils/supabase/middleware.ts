@@ -44,6 +44,24 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
+    // NDA check for authenticated users accessing protected routes
+    if (request.nextUrl.pathname.startsWith("/protected") && !user.error && user.data.user) {
+      // Check if user has accepted NDA
+      const { data: ndaAcceptance, error: ndaError } = await supabase
+        .from('nda_acceptances')
+        .select('id')
+        .eq('user_id', user.data.user.id)
+        .single();
+
+      // If NDA check fails or user hasn't accepted NDA, redirect to NDA page
+      if (ndaError || !ndaAcceptance) {
+        // Don't redirect if already on the NDA page to avoid infinite loops
+        if (request.nextUrl.pathname !== '/legal/nda') {
+          return NextResponse.redirect(new URL("/legal/nda", request.url));
+        }
+      }
+    }
+
     if (request.nextUrl.pathname === "/" && !user.error) {
       return NextResponse.redirect(new URL("/protected/dashboard", request.url));
     }

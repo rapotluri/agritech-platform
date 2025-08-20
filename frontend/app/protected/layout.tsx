@@ -16,6 +16,18 @@ export default async function ProtectedLayout({
     return redirect("/sign-in");
   }
 
+  // Check if user has accepted NDA
+  const { data: ndaAcceptance, error: ndaError } = await supabase
+    .from('nda_acceptances')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  // If NDA check fails or user hasn't accepted NDA, redirect to NDA page
+  if (ndaError || !ndaAcceptance) {
+    return redirect("/legal/nda");
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}

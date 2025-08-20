@@ -15,6 +15,13 @@ export interface NDAAcceptanceData {
   locale?: string
 }
 
+export interface NDAAcceptanceDataServer {
+  nda_title: string
+  nda_pdf_url: string
+  nda_sha256: string
+  headers: Headers
+}
+
 export interface NDAStatus {
   hasAccepted: boolean
   acceptedAt?: string
@@ -32,7 +39,7 @@ export interface CurrentNDA {
 }
 
 /**
- * Accept NDA for the current user
+ * Accept NDA for the current user (Client-side version)
  */
 export async function acceptNDA(data: NDAAcceptanceData): Promise<{ success: boolean; error?: string }> {
   try {

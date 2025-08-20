@@ -4,6 +4,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { acceptNDAServer } from '@/lib/ndaServiceServer'
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -132,3 +133,39 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+/**
+ * Server action to accept NDA
+ * This captures user IP, user-agent, and locale from request headers
+ */
+export async function acceptNDAAction(ndaData: {
+  nda_title: string
+  nda_pdf_url: string
+  nda_sha256: string
+}) {
+  try {
+    console.log('acceptNDAAction called with data:', ndaData);
+    const headersList = headers()
+    console.log('Headers captured:', {
+      'user-agent': headersList.get('user-agent'),
+      'x-forwarded-for': headersList.get('x-forwarded-for'),
+      'accept-language': headersList.get('accept-language')
+    });
+    
+    const result = await acceptNDAServer({
+      ...ndaData,
+      headers: headersList
+    })
+
+    console.log('acceptNDAServer result:', result);
+
+    if (!result.success) {
+      return { success: false, error: result.error }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in acceptNDAAction:', error)
+    return { success: false, error: 'Failed to accept NDA' }
+  }
+}
