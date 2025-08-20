@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           // Any uncertainty = show NDA page (safe fallback)
           return NextResponse.redirect(`${origin}/legal/nda`);
         }
-      } catch (error) {
+      } catch {
         // Any error = show NDA page (safe fallback)
         return NextResponse.redirect(`${origin}/legal/nda`);
       }

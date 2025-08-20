@@ -26,27 +26,27 @@ export async function acceptNDAServer(data: NDAAcceptanceDataServer): Promise<{ 
 
     // Test if we can access the table at all - but ignore errors for now
     try {
-      const { data: testData, error: testError } = await supabase
+      await supabase
         .from('nda_acceptances')
         .select('id')
         .limit(1);
 
       // Test query completed
-    } catch (testErr) {
+    } catch {
       // Test query failed (this might be normal)
     }
 
     // Test if we can see our own user record
     let appUser = null;
     try {
-      const { data: appUserData, error: appUserError } = await supabase
+      const { data: appUserData } = await supabase
         .from('app_users')
         .select('id, access_revoked_at')
         .eq('id', user.id)
         .single();
 
       appUser = appUserData;
-    } catch (appUserErr) {
+    } catch {
       // App user query failed
     }
 
@@ -85,7 +85,7 @@ export async function acceptNDAServer(data: NDAAcceptanceDataServer): Promise<{ 
       timezone: locationData.timezone,
     }
 
-    const { data: insertResult, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('nda_acceptances')
       .insert(ndaAcceptance)
       .select('id, user_id, accepted_at');
@@ -95,7 +95,7 @@ export async function acceptNDAServer(data: NDAAcceptanceDataServer): Promise<{ 
     }
 
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to accept NDA' }
   }
 }

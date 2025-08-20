@@ -31,7 +31,7 @@ export default async function ProtectedLayout({
     } else {
       // User has clearly accepted NDA - allow access
     }
-  } catch (error) {
+  } catch {
     // Any error = redirect to NDA page (safe fallback)
     return redirect("/legal/nda");
   }

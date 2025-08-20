@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Document, Page, pdfjs } from 'react-pdf';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -13,17 +12,10 @@ import { acceptNDAAction } from '@/app/actions';
 import { useNDAStatus } from '@/lib/hooks/useNDAStatus';
 import { AlertTriangle, FileText, CheckCircle, XCircle, Download } from 'lucide-react';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-
 export default function NDAPage() {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
   const [isAgreed, setIsAgreed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
-  const [pdfError, setPdfError] = useState<boolean>(false);
-  const [useIframe, setUseIframe] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   
   const router = useRouter();
@@ -41,16 +33,7 @@ export default function NDAPage() {
     }
   }, [ndaStatus, statusLoading, router]);
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
-    setPdfError(false);
-  };
 
-  const onDocumentLoadError = (error: Error) => {
-    console.error('PDF Load Error:', error);
-    setPdfError(true);
-    setUseIframe(true); // Fallback to iframe
-  };
 
   const handleAccept = async () => {
     if (!isAgreed) return;
@@ -71,6 +54,7 @@ export default function NDAPage() {
       } else {
         setError(result.error || 'Failed to accept NDA');
       }
+
     } catch (error) {
       console.error('Failed to accept NDA:', error);
       setError('An unexpected error occurred while accepting the NDA');
@@ -89,10 +73,7 @@ export default function NDAPage() {
     router.push('/sign-in');
   };
 
-  const switchToIframe = () => {
-    setUseIframe(true);
-    setPdfError(false);
-  };
+
 
   if (statusLoading) {
     return (
@@ -143,74 +124,13 @@ export default function NDAPage() {
 
               {/* PDF Content */}
               <div className="min-h-96">
-                {useIframe ? (
-                  // Iframe PDF Viewer (Primary)
-                  <div className="w-full h-96">
-                    <iframe
-                      src={`${NDA_PDF_URL}#toolbar=0&navpanes=0&scrollbar=0`}
-                      className="w-full h-full border-0"
-                      title="NDA Document"
-                      onError={() => setPdfError(true)}
-                    />
-                  </div>
-                ) : (
-                  // React PDF Viewer (Fallback)
-                  <div className="max-h-96 overflow-y-auto p-4">
-                    {pdfError ? (
-                      <div className="text-center">
-                        <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <p className="text-gray-600 mb-4">PDF viewer failed to load</p>
-                        <Button onClick={switchToIframe} variant="outline">
-                          Switch to Browser View
-                        </Button>
-                      </div>
-                    ) : (
-                      <Document
-                        file={NDA_PDF_URL}
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        onLoadError={onDocumentLoadError}
-                        loading={
-                          <div className="p-8 text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading PDF document...</p>
-                          </div>
-                        }
-                      >
-                        <Page 
-                          pageNumber={pageNumber} 
-                          width={Math.min(window.innerWidth - 200, 700)}
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
-                        />
-                      </Document>
-                    )}
-                    
-                    {/* PDF Navigation for React PDF */}
-                    {!pdfError && numPages > 1 && (
-                      <div className="flex items-center justify-center space-x-4 mt-4 pt-4 border-t">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                          disabled={pageNumber <= 1}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          Page {pageNumber} of {numPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
-                          disabled={pageNumber >= numPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="w-full h-96">
+                  <iframe
+                    src={`${NDA_PDF_URL}#toolbar=0&navpanes=0&scrollbar=0`}
+                    className="w-full h-full border-0"
+                    title="NDA Document"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -241,8 +161,7 @@ export default function NDAPage() {
               <Checkbox
                 id="nda-agreement"
                 checked={isAgreed}
-                onCheckedChange={(checked) => setIsAgreed(checked as boolean)}
-                className="mt-1"
+                onCheckedChange={(checked) => setIsAgreed(!!checked)}
               />
               <label 
                 htmlFor="nda-agreement" 
@@ -258,7 +177,7 @@ export default function NDAPage() {
               <Button
                 onClick={handleAccept}
                 disabled={!isAgreed || isLoading}
-                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                 size="lg"
               >
                 {isLoading ? (
