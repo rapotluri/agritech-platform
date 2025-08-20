@@ -57,17 +57,14 @@ export const updateSession = async (request: NextRequest) => {
         // Smart fallback: Only allow access if we're CERTAIN user has accepted NDA
         if (ndaError || !ndaAcceptance || !ndaAcceptance.id) {
           // Any uncertainty = redirect to NDA page (safe fallback)
-          console.log('NDA status unclear or not accepted, redirecting to NDA page');
           if (request.nextUrl.pathname !== '/legal/nda') {
             return NextResponse.redirect(new URL("/legal/nda", request.url));
           }
         } else {
           // User has clearly accepted NDA - allow access
-          console.log('User has clearly accepted NDA, allowing access');
         }
       } catch (error) {
         // Any error = redirect to NDA page (safe fallback)
-        console.log('Error checking NDA status, falling back to NDA page:', error);
         if (request.nextUrl.pathname !== '/legal/nda') {
           return NextResponse.redirect(new URL("/legal/nda", request.url));
         }

@@ -29,16 +29,13 @@ export async function GET(request: Request) {
         // Smart fallback: Only skip NDA if we're CERTAIN user has accepted it
         if (!ndaError && ndaAcceptance && ndaAcceptance.id) {
           // User has clearly accepted NDA - go to dashboard
-          console.log('User has clearly accepted NDA, redirecting to dashboard');
           return NextResponse.redirect(`${origin}/protected/operations-dashboard`);
         } else {
           // Any uncertainty = show NDA page (safe fallback)
-          console.log('NDA status unclear or not accepted, redirecting to NDA page');
           return NextResponse.redirect(`${origin}/legal/nda`);
         }
       } catch (error) {
         // Any error = show NDA page (safe fallback)
-        console.log('Error checking NDA status, falling back to NDA page:', error);
         return NextResponse.redirect(`${origin}/legal/nda`);
       }
     }

@@ -27,15 +27,12 @@ export default async function ProtectedLayout({
     // Smart fallback: Only allow access if we're CERTAIN user has accepted NDA
     if (ndaError || !ndaAcceptance || !ndaAcceptance.id) {
       // Any uncertainty = redirect to NDA page (safe fallback)
-      console.log('NDA status unclear or not accepted, redirecting to NDA page');
       return redirect("/legal/nda");
     } else {
       // User has clearly accepted NDA - allow access
-      console.log('User has clearly accepted NDA, allowing access to protected content');
     }
   } catch (error) {
     // Any error = redirect to NDA page (safe fallback)
-    console.log('Error checking NDA status, falling back to NDA page:', error);
     return redirect("/legal/nda");
   }
 

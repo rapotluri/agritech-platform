@@ -37,7 +37,6 @@ export default function NDAPage() {
   useEffect(() => {
     if (ndaStatus.hasAccepted && !statusLoading && ndaStatus.acceptedAt) {
       // Only redirect if we have clear evidence of acceptance
-      console.log('User has clearly accepted NDA, redirecting to dashboard');
       router.push('/protected/operations-dashboard/');
     }
   }, [ndaStatus, statusLoading, router]);
