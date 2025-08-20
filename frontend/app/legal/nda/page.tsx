@@ -33,9 +33,11 @@ export default function NDAPage() {
   const NDA_TITLE = 'NON-DISCLOSURE AND USE LIMITATION AGREEMENT – "ACCURATE"';
   const NDA_VERSION = 'v1.0';
 
-  // Redirect if already accepted
+  // Redirect if already accepted - but only if we're CERTAIN
   useEffect(() => {
-    if (ndaStatus.hasAccepted && !statusLoading) {
+    if (ndaStatus.hasAccepted && !statusLoading && ndaStatus.acceptedAt) {
+      // Only redirect if we have clear evidence of acceptance
+      console.log('User has clearly accepted NDA, redirecting to dashboard');
       router.push('/protected/operations-dashboard/');
     }
   }, [ndaStatus, statusLoading, router]);

@@ -16,15 +16,26 @@ export default async function ProtectedLayout({
     return redirect("/sign-in");
   }
 
-  // Check if user has accepted NDA
-  const { data: ndaAcceptance, error: ndaError } = await supabase
-    .from('nda_acceptances')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
+  // Check if user has accepted NDA with smart fallback
+  try {
+    const { data: ndaAcceptance, error: ndaError } = await supabase
+      .from('nda_acceptances')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
 
-  // If NDA check fails or user hasn't accepted NDA, redirect to NDA page
-  if (ndaError || !ndaAcceptance) {
+    // Smart fallback: Only allow access if we're CERTAIN user has accepted NDA
+    if (ndaError || !ndaAcceptance || !ndaAcceptance.id) {
+      // Any uncertainty = redirect to NDA page (safe fallback)
+      console.log('NDA status unclear or not accepted, redirecting to NDA page');
+      return redirect("/legal/nda");
+    } else {
+      // User has clearly accepted NDA - allow access
+      console.log('User has clearly accepted NDA, allowing access to protected content');
+    }
+  } catch (error) {
+    // Any error = redirect to NDA page (safe fallback)
+    console.log('Error checking NDA status, falling back to NDA page:', error);
     return redirect("/legal/nda");
   }
 
