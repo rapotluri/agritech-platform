@@ -44,6 +44,33 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
+    // NDA check for authenticated users accessing protected routes
+    if (request.nextUrl.pathname.startsWith("/protected") && !user.error && user.data.user) {
+      try {
+        // Check if user has accepted NDA with smart fallback
+        const { data: ndaAcceptance, error: ndaError } = await supabase
+          .from('nda_acceptances')
+          .select('id')
+          .eq('user_id', user.data.user.id)
+          .single();
+
+        // Smart fallback: Only allow access if we're CERTAIN user has accepted NDA
+        if (ndaError || !ndaAcceptance || !ndaAcceptance.id) {
+          // Any uncertainty = redirect to NDA page (safe fallback)
+          if (request.nextUrl.pathname !== '/legal/nda') {
+            return NextResponse.redirect(new URL("/legal/nda", request.url));
+          }
+        } else {
+          // User has clearly accepted NDA - allow access
+        }
+      } catch (error) {
+        // Any error = redirect to NDA page (safe fallback)
+        if (request.nextUrl.pathname !== '/legal/nda') {
+          return NextResponse.redirect(new URL("/legal/nda", request.url));
+        }
+      }
+    }
+
     if (request.nextUrl.pathname === "/" && !user.error) {
       return NextResponse.redirect(new URL("/protected/dashboard", request.url));
     }

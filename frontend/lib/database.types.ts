@@ -63,6 +63,65 @@ export interface Database {
           updated_at?: string
         }
       }
+      nda_acceptances: {
+        Row: {
+          id: string
+          user_id: string
+          accepted_at: string
+          nda_title: string
+          nda_pdf_url: string
+          nda_sha256: string
+          ip: string
+          user_agent: string
+          locale: string | null
+          country: string | null
+          country_code: string | null
+          region: string | null
+          city: string | null
+          latitude: number | null
+          longitude: number | null
+          timezone: string | null
+          email_sent_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          accepted_at?: string
+          nda_title: string
+          nda_pdf_url: string
+          nda_sha256: string
+          ip: string
+          user_agent: string
+          locale?: string | null
+          country?: string | null
+          country_code?: string | null
+          region?: string | null
+          city?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timezone?: string | null
+          email_sent_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          accepted_at?: string
+          nda_title?: string
+          nda_pdf_url?: string
+          nda_sha256?: string
+          ip?: string
+          user_agent?: string
+          locale?: string | null
+          country?: string | null
+          country_code?: string | null
+          region?: string | null
+          city?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timezone?: string | null
+          email_sent_at?: string | null
+        }
+      }
       farmers: {
         Row: {
           id: string

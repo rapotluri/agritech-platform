@@ -13,6 +13,7 @@ export default async function ProtectedPage() {
     return redirect("/sign-in");
   }
 
-  // Redirect authenticated users to the operations dashboard
-  return redirect("/protected/operations-dashboard");
+  // Let middleware and layout handle routing based on NDA status
+  // This page will never actually render - it's just a routing hub
+  return null;
 }

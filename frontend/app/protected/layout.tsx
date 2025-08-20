@@ -16,6 +16,26 @@ export default async function ProtectedLayout({
     return redirect("/sign-in");
   }
 
+  // Check if user has accepted NDA with smart fallback
+  try {
+    const { data: ndaAcceptance, error: ndaError } = await supabase
+      .from('nda_acceptances')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Smart fallback: Only allow access if we're CERTAIN user has accepted NDA
+    if (ndaError || !ndaAcceptance || !ndaAcceptance.id) {
+      // Any uncertainty = redirect to NDA page (safe fallback)
+      return redirect("/legal/nda");
+    } else {
+      // User has clearly accepted NDA - allow access
+    }
+  } catch {
+    // Any error = redirect to NDA page (safe fallback)
+    return redirect("/legal/nda");
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
