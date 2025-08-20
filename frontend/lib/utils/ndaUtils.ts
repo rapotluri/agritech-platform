@@ -7,7 +7,20 @@ export function getUserIPFromHeaders(headers: Headers): string {
   const forwardedFor = headers.get('x-forwarded-for');
   if (forwardedFor) {
     // x-forwarded-for can contain multiple IPs, take the first one
-    return forwardedFor.split(',')[0].trim();
+    const firstIP = forwardedFor.split(',')[0].trim();
+    
+    // Filter out localhost/private IPs in production
+    if (process.env.NODE_ENV === 'production') {
+      if (firstIP === '::1' || firstIP === '127.0.0.1' || firstIP.startsWith('192.168.') || firstIP.startsWith('10.') || firstIP.startsWith('172.')) {
+        // This is a local/private IP, try other headers
+        console.log('Filtered out local IP from x-forwarded-for:', firstIP);
+      } else {
+        return firstIP;
+      }
+    } else {
+      // In development, localhost is fine
+      return firstIP;
+    }
   }
 
   // Check for real IP header
@@ -22,9 +35,27 @@ export function getUserIPFromHeaders(headers: Headers): string {
     return clientIP;
   }
 
+  // Check for CF-Connecting-IP (Cloudflare)
+  const cfIP = headers.get('cf-connecting-ip');
+  if (cfIP) {
+    return cfIP;
+  }
+
+  // Check for X-Forwarded-For-Original (some load balancers)
+  const forwardedForOriginal = headers.get('x-forwarded-for-original');
+  if (forwardedForOriginal) {
+    return forwardedForOriginal;
+  }
+
   // Fallback for development
   if (process.env.NODE_ENV === 'development') {
     return '127.0.0.1';
+  }
+
+  // For production, try to get IP from environment or return unknown
+  const envIP = process.env.CLIENT_IP || process.env.REAL_IP;
+  if (envIP) {
+    return envIP;
   }
 
   return 'Unknown';
@@ -37,6 +68,60 @@ export function getUserIPFromHeaders(headers: Headers): string {
 export function getUserAgentFromHeaders(headers: Headers): string {
   const userAgent = headers.get('user-agent');
   return userAgent || 'Unknown';
+}
+
+/**
+ * Get user's geographic location from IP address
+ * This function should be used on the server side
+ */
+export async function getUserLocationFromIP(ip: string): Promise<{
+  country?: string;
+  country_code?: string;
+  region?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+}> {
+  try {
+    // Skip geolocation for localhost/private IPs
+    if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.') || ip === 'Unknown') {
+      return {
+        country: 'Local Development',
+        country_code: 'DEV',
+        region: 'Local',
+        city: 'Development',
+        timezone: 'UTC'
+      };
+    }
+
+    // Use ipapi.co (free tier: 1000 requests/day)
+    const response = await fetch(`https://ipapi.co/${ip}/json/`);
+    
+    if (!response.ok) {
+      throw new Error(`IP geolocation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      country: data.country_name,
+      country_code: data.country_code,
+      region: data.region,
+      city: data.city,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      timezone: data.timezone
+    };
+  } catch (error) {
+    console.error('Error getting location from IP:', error);
+    return {
+      country: 'Unknown',
+      country_code: 'UNK',
+      region: 'Unknown',
+      city: 'Unknown'
+    };
+  }
 }
 
 /**

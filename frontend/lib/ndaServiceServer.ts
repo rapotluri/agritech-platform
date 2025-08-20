@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { Database } from './database.types'
-import { getUserIPFromHeaders, getUserAgentFromHeaders, getUserLocaleFromHeaders } from './utils/ndaUtils'
+import { getUserIPFromHeaders, getUserAgentFromHeaders, getUserLocaleFromHeaders, getUserLocationFromIP } from './utils/ndaUtils'
 
 type NDAAcceptanceInsert = Database['public']['Tables']['nda_acceptances']['Insert']
 
@@ -75,15 +75,31 @@ export async function acceptNDAServer(data: NDAAcceptanceDataServer): Promise<{ 
 
     console.log('✅ User validation passed:', appUser);
 
+    const userIP = getUserIPFromHeaders(data.headers);
+    const userAgent = getUserAgentFromHeaders(data.headers);
+    const userLocale = getUserLocaleFromHeaders(data.headers);
+    
+    // Get geographic location from IP
+    console.log('Getting geographic location from IP:', userIP);
+    const locationData = await getUserLocationFromIP(userIP);
+    console.log('Location data captured:', locationData);
+
     const ndaAcceptance: NDAAcceptanceInsert = {
       user_id: user.id,
       accepted_at: new Date().toISOString(),
       nda_title: data.nda_title,
       nda_pdf_url: data.nda_pdf_url,
       nda_sha256: data.nda_sha256,
-      ip: getUserIPFromHeaders(data.headers),
-      user_agent: getUserAgentFromHeaders(data.headers),
-      locale: getUserLocaleFromHeaders(data.headers),
+      ip: userIP,
+      user_agent: userAgent,
+      locale: userLocale,
+      country: locationData.country,
+      country_code: locationData.country_code,
+      region: locationData.region,
+      city: locationData.city,
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      timezone: locationData.timezone,
     }
 
     console.log('NDA acceptance data prepared:', ndaAcceptance);

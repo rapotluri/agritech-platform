@@ -74,6 +74,13 @@ export interface Database {
           ip: string
           user_agent: string
           locale: string | null
+          country: string | null
+          country_code: string | null
+          region: string | null
+          city: string | null
+          latitude: number | null
+          longitude: number | null
+          timezone: string | null
           email_sent_at: string | null
         }
         Insert: {
@@ -86,6 +93,13 @@ export interface Database {
           ip: string
           user_agent: string
           locale?: string | null
+          country?: string | null
+          country_code?: string | null
+          region?: string | null
+          city?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timezone?: string | null
           email_sent_at?: string | null
         }
         Update: {
@@ -98,6 +112,13 @@ export interface Database {
           ip?: string
           user_agent?: string
           locale?: string | null
+          country?: string | null
+          country_code?: string | null
+          region?: string | null
+          city?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timezone?: string | null
           email_sent_at?: string | null
         }
       }

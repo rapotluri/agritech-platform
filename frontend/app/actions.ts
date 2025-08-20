@@ -146,9 +146,20 @@ export async function acceptNDAAction(ndaData: {
   try {
     console.log('acceptNDAAction called with data:', ndaData);
     const headersList = headers()
-    console.log('Headers captured:', {
+    
+    // Log all available headers for debugging
+    const allHeaders: Record<string, string> = {};
+    headersList.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+    
+    console.log('All available headers:', allHeaders);
+    console.log('Headers captured for NDA:', {
       'user-agent': headersList.get('user-agent'),
       'x-forwarded-for': headersList.get('x-forwarded-for'),
+      'x-real-ip': headersList.get('x-real-ip'),
+      'x-client-ip': headersList.get('x-client-ip'),
+      'cf-connecting-ip': headersList.get('cf-connecting-ip'),
       'accept-language': headersList.get('accept-language')
     });
     
