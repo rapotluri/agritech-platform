@@ -72,7 +72,7 @@ export const updateSession = async (request: NextRequest) => {
     }
 
     if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/protected/dashboard", request.url));
+      return NextResponse.redirect(new URL("/protected/operations-dashboard", request.url));
     }
 
     return response;
