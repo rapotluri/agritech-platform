@@ -13,3 +13,4 @@ tk
 optuna
 python-dotenv
 pyarrow
+supabase==2.0.0
