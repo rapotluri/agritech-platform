@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { DateInput } from "@/components/ui/date-input";
 import {
     Form,
     FormControl,
@@ -206,31 +207,16 @@ export default function DataForm() {
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel>Start Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[240px] pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <FormControl>
+                                <DateInput
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Pick a start date"
+                                    id={field.name}
+                                    aria-describedby={`${field.name}-error`}
+                                    aria-invalid={!!form.formState.errors.startDate}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -242,31 +228,16 @@ export default function DataForm() {
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel>End Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[240px] pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <FormControl>
+                                <DateInput
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Pick an end date"
+                                    id={field.name}
+                                    aria-describedby={`${field.name}-error`}
+                                    aria-invalid={!!form.formState.errors.endDate}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}

@@ -87,7 +87,18 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
                         maxPixels=1e13
                     )
                     # Convert Kelvin to Celsius and set as a property
-                    mean_temperature_celsius = ee.Number(mean_temperature_kelvin.get("temperature_2m_max")).subtract(273.15)
+                    #mean_temperature_celsius = ee.Number(mean_temperature_kelvin.get("temperature_2m_max")).subtract(273.15)
+
+                    # Get the temperature value
+                    temp_value = mean_temperature_kelvin.get("temperature_2m_max")
+                    
+                    # Use Earth Engine's conditional to handle null values
+                    mean_temperature_celsius = ee.Algorithms.If(
+                        temp_value,  # If temp_value exists (not null)
+                        ee.Number(temp_value).subtract(273.15),  # Convert to Celsius
+                        ee.Number(-999)  # Use -999 as a "no data" indicator
+                    )
+                    
                     return image.set("mean_temperature_celsius", mean_temperature_celsius)
 
                 # Apply the `extract_daily_data` function
