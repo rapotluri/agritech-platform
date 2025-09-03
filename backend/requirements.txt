@@ -7,7 +7,6 @@ earthengine-api
 gunicorn
 celery
 redis
-pymongo
 flower
 tk
 optuna

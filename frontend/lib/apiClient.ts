@@ -34,11 +34,6 @@ export const generateClimateData = async (params: ClimateDataParams) => {
   return response.data;  // This should return { filename: "filename.xlsx" }
 };
 
-// Keep the downloadFile function as is
-export const downloadFile = async (filename: string) => {
-  // Construct the download URL correctly
-  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/file?filename=${filename}`;
-  return fileUrl;
-};
+// Note: downloadFile function removed - files are now downloaded directly via Supabase signed URLs
 
 export default axiosInstance;
