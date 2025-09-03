@@ -14,6 +14,7 @@ interface ProductDetailsStepProps {
   communeOptions: string[];
   handleProvinceChange: (province: string) => void;
   handleDistrictChange: (district: string) => void;
+  handleDataTypeChange: (dataType: "precipitation" | "temperature") => void;
   canProceedToStep2: () => boolean;
   onNext: () => void;
 }
@@ -26,6 +27,7 @@ export default function ProductDetailsStep({
   communeOptions,
   handleProvinceChange,
   handleDistrictChange,
+  handleDataTypeChange,
   canProceedToStep2,
   onNext,
 }: ProductDetailsStepProps) {
@@ -91,6 +93,20 @@ export default function ProductDetailsStep({
             </Select>
           </div>
           <div className="space-y-2">
+            <Label htmlFor="dataType">Data Type *</Label>
+            <Select value={product.dataType} onValueChange={handleDataTypeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select data type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="precipitation">Precipitation</SelectItem>
+                <SelectItem value="temperature">Temperature</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
             <Label htmlFor="cropDuration">Total Crop Duration</Label>
             <Input
               id="cropDuration"
@@ -100,6 +116,7 @@ export default function ProductDetailsStep({
             />
             <p className="text-xs text-gray-500">Optional - for reference only</p>
           </div>
+          <div></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">

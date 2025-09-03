@@ -15,6 +15,7 @@ export function mapManualBuilderToProduct(
 ): {
   name: string
   crop?: string
+  data_type: string[]
   region: any
   status: 'draft' | 'live'
   triggers: any
@@ -121,6 +122,7 @@ export function mapManualBuilderToProduct(
   return {
     name: formData.productName,
     crop: formData.cropType || '',
+    data_type: ['precipitation'], // Manual Builder defaults to precipitation
     region,
     status: 'live', // Manual Builder creates live products by default
     triggers,
@@ -148,6 +150,7 @@ export function mapInsureSmartToProduct(
 ): {
   name: string
   crop?: string
+  data_type: string[]
   region: any
   status: 'draft' | 'live'
   triggers: any
@@ -208,6 +211,7 @@ export function mapInsureSmartToProduct(
   return {
     name: product.name,
     crop: '', // InsureSmart doesn't specify crop type currently
+    data_type: [product.dataType], // Map dataType to data_type array
     region,
     status,
     triggers,
@@ -225,6 +229,7 @@ export function mapInsureSmartToProduct(
 export function validateProductData(productData: {
   name: string
   crop?: string
+  data_type: string[]
   region: any
   status: 'draft' | 'live'
   triggers: any
@@ -256,6 +261,10 @@ export function validateProductData(productData: {
 
   if (!productData.terms) {
     errors.push('Product terms are required')
+  }
+
+  if (!productData.data_type || productData.data_type.length === 0) {
+    errors.push('Data type is required')
   }
 
   return errors

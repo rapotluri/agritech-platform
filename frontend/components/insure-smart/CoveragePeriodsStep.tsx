@@ -14,7 +14,8 @@ interface CoveragePeriodsStepProps {
   onBack: () => void;
   onNext: () => void;
   getPerilIcon: (peril: string) => React.ReactNode;
-  getPerilLabel: (peril: string) => string;
+  getPerilLabel: (peril: string, dataType?: string) => string;
+  dataType: "precipitation" | "temperature";
 }
 
 export default function CoveragePeriodsStep({
@@ -27,7 +28,27 @@ export default function CoveragePeriodsStep({
   onNext,
   getPerilIcon,
   getPerilLabel,
+  dataType,
 }: CoveragePeriodsStepProps) {
+  // Dynamic peril options based on data type
+  const getPerilOptions = (dataType: string) => {
+    if (dataType === "temperature") {
+      return [
+        { value: "LTI", label: "Low Temperature (LTI)", icon: <TrendingDown /> },
+        { value: "HTI", label: "High Temperature (HTI)", icon: <TrendingUp /> },
+        { value: "BOTH", label: "Both (LTI + HTI)", icon: <Zap /> }
+      ];
+    } else {
+      return [
+        { value: "LRI", label: "Low Rainfall (LRI)", icon: <TrendingDown /> },
+        { value: "ERI", label: "High Rainfall (ERI)", icon: <TrendingUp /> },
+        { value: "BOTH", label: "Both (LRI + ERI)", icon: <Zap /> }
+      ];
+    }
+  };
+
+  const perilOptions = getPerilOptions(dataType);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -96,24 +117,14 @@ export default function CoveragePeriodsStep({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="LRI">
-                              <div className="flex items-center gap-2">
-                                <TrendingDown className="h-4 w-4" />
-                                Low Rainfall (LRI)
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="ERI">
-                              <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4" />
-                                High Rainfall (ERI)
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="BOTH">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-4 w-4" />
-                                Both (LRI + ERI)
-                              </div>
-                            </SelectItem>
+                            {perilOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  {option.icon}
+                                  {option.label}
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -122,7 +133,7 @@ export default function CoveragePeriodsStep({
                       <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
                         {getPerilIcon(period.perilType)}
                         <span>
-                          {getPerilLabel(period.perilType)} coverage from {period.startDate} to {period.endDate}
+                          {getPerilLabel(period.perilType, dataType)} coverage from {period.startDate} to {period.endDate}
                         </span>
                       </div>
                     )}

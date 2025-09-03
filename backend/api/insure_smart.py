@@ -8,6 +8,30 @@ router = APIRouter(
 
 @router.post("/optimize")
 async def optimize_insure_smart(request: dict):
+    """
+    Start InsureSmart optimization task.
+    
+    Request format:
+    {
+        "product": {
+            "commune": str,
+            "province": str,
+            "sumInsured": str,
+            "premiumCap": str,
+            "dataType": "precipitation" | "temperature"  # Optional, defaults to "precipitation"
+        },
+        "periods": [
+            {
+                "startDate": str,
+                "endDate": str,
+                "perilType": "LRI" | "ERI" | "LTI" | "HTI" | "Both"
+            }
+        ]
+    }
+    
+    Returns:
+        {"message": str, "task_id": str}
+    """
     try:
         task = insure_smart_optimize_task.delay(request)
         return {"message": "Optimization started.", "task_id": task.id}

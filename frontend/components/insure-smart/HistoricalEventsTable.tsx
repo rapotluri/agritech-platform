@@ -4,9 +4,10 @@ import { OptimizationResult } from "./types";
 
 interface HistoricalEventsTableProps {
   selected: OptimizationResult;
+  dataType?: "precipitation" | "temperature";
 }
 
-export default function HistoricalEventsTable({ selected }: HistoricalEventsTableProps) {
+export default function HistoricalEventsTable({ selected, dataType = "precipitation" }: HistoricalEventsTableProps) {
   if (!selected.yearly_results || selected.yearly_results.length === 0) {
     return (
       <Card>
@@ -64,7 +65,9 @@ export default function HistoricalEventsTable({ selected }: HistoricalEventsTabl
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Period</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Index Type</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Trigger</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actual Rainfall</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    {dataType === "temperature" ? "Actual Temperature" : "Actual Rainfall"}
+                  </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payout</th>
                 </tr>
               </thead>
@@ -83,16 +86,23 @@ export default function HistoricalEventsTable({ selected }: HistoricalEventsTabl
                           <td className="px-4 py-3 text-sm">Period {periodIdx + 1}</td>
                           <td className="px-4 py-3 text-sm">
                             <Badge variant="outline" className="text-xs">
-                              {peril.peril_type === 'LRI' ? 'Low Rainfall' : 'High Rainfall'}
+                              {peril.peril_type === 'LRI' ? 'Low Rainfall' : 
+                               peril.peril_type === 'ERI' ? 'High Rainfall' :
+                               peril.peril_type === 'LTI' ? 'Low Temperature' : 
+                               'High Temperature'}
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {peril.peril_type === 'LRI' ? `≤${Math.round(peril.trigger)}` : `≥${Math.round(peril.trigger)}`}
+                            {peril.peril_type === 'LRI' || peril.peril_type === 'LTI' ? `≤${Math.round(peril.trigger)}` : `≥${Math.round(peril.trigger)}`}
+                            {peril.peril_type === 'LRI' || peril.peril_type === 'ERI' ? 'mm' : '°C'}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {peril.actual_rainfall !== undefined && peril.actual_rainfall !== null 
-                              ? Number(peril.actual_rainfall).toFixed(2) 
+                            {(peril.actual_rainfall !== undefined && peril.actual_rainfall !== null) || 
+                             (peril.actual_temperature !== undefined && peril.actual_temperature !== null) || 
+                             (peril.actual_value !== undefined && peril.actual_value !== null)
+                              ? Number(peril.actual_rainfall || peril.actual_temperature || peril.actual_value).toFixed(2) 
                               : '-'}
+                            {dataType === "temperature" ? '°C' : 'mm'}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {peril.payout > 0 ? (

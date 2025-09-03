@@ -234,6 +234,7 @@ export interface Database {
           created_by_user_id: string
           name: string
           crop: string
+          data_type: string[] // Array of data types (precipitation, temperature)
           region: string | any // jsonb
           status: 'draft' | 'live' | 'archived'
           triggers: any // jsonb
@@ -248,6 +249,7 @@ export interface Database {
           created_by_user_id: string
           name: string
           crop: string
+          data_type?: string[] // Array of data types (precipitation, temperature)
           region: string | any
           status?: 'draft' | 'live' | 'archived'
           triggers: any
@@ -262,6 +264,7 @@ export interface Database {
           created_by_user_id?: string
           name?: string
           crop?: string
+          data_type?: string[] // Array of data types (precipitation, temperature)
           region?: string | any
           status?: 'draft' | 'live' | 'archived'
           triggers?: any

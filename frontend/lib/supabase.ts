@@ -574,6 +574,7 @@ export class ProductsService {
   static async createProduct(productData: {
     name: string
     crop?: string
+    data_type?: string[]
     region: any
     status: 'draft' | 'live'
     triggers: any
@@ -608,6 +609,7 @@ export class ProductsService {
     updates: Partial<{
       name: string
       crop: string
+      data_type: string[]
       region: any
       status: 'draft' | 'live' | 'archived'
       triggers: any

@@ -7,13 +7,14 @@ export interface Product {
   sumInsured: string;
   premiumCap: string;
   notes: string;
+  dataType: "precipitation" | "temperature";
 }
 
 export interface CoveragePeriod {
   id: string;
   startDate: string;
   endDate: string;
-  perilType: "LRI" | "ERI" | "BOTH";
+  perilType: "LRI" | "ERI" | "BOTH" | "LTI" | "HTI";
 }
 
 export interface OptimizationResult {
@@ -29,6 +30,8 @@ export interface OptimizationResult {
   triggers: {
     lri?: { threshold: number; payout: number };
     eri?: { threshold: number; payout: number };
+    lti?: { threshold: number; payout: number };
+    hti?: { threshold: number; payout: number };
   };
   riskScore: "LOW" | "MEDIUM" | "HIGH";
   periods?: any[];

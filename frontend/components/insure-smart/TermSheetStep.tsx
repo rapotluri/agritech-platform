@@ -15,7 +15,7 @@ interface TermSheetStepProps {
   optimizationResults: OptimizationResult[];
   onBack: () => void;
   getPerilIcon: (peril: string) => React.ReactNode;
-  getPerilLabel: (peril: string) => string;
+  getPerilLabel: (peril: string, dataType?: string) => string;
 }
 
 export default function TermSheetStep({
@@ -159,7 +159,7 @@ export default function TermSheetStep({
                         {getPerilIcon(period.perils.length === 2 ? 'BOTH' : period.perils[0]?.peril_type)}
                         <span className="font-medium">Period {idx + 1}</span>
                         <Badge variant="outline">
-                          {period.perils.length === 2 ? 'Both (LRI + ERI)' : getPerilLabel(period.perils[0]?.peril_type)}
+                          {period.perils.length === 2 ? (product.dataType === "temperature" ? 'Both (LTI + HTI)' : 'Both (LRI + ERI)') : getPerilLabel(period.perils[0]?.peril_type, product.dataType)}
                         </Badge>
                         <span className="text-sm text-gray-600">
                           {coveragePeriods[idx]?.startDate && coveragePeriods[idx]?.endDate 
@@ -172,20 +172,25 @@ export default function TermSheetStep({
                         {period.perils.map((peril: any, perilIdx: number) => (
                           <div key={perilIdx} className="bg-gray-50 p-3 rounded">
                             <div className="flex items-center gap-2 mb-2">
-                              {peril.peril_type === 'LRI' ? (
+                              {peril.peril_type === 'LRI' || peril.peril_type === 'LTI' ? (
                                 <TrendingDown className="h-4 w-4 text-gray-600" />
                               ) : (
                                 <TrendingUp className="h-4 w-4 text-gray-600" />
                               )}
                               <span className="font-medium">
-                                {peril.peril_type === 'LRI' ? 'Low Rainfall Trigger' : 'High Rainfall Trigger'}
+                                {peril.peril_type === 'LRI' ? 'Low Rainfall Trigger' : 
+                                 peril.peril_type === 'ERI' ? 'High Rainfall Trigger' :
+                                 peril.peril_type === 'LTI' ? 'Low Temperature Trigger' : 
+                                 'High Temperature Trigger'}
                               </span>
                             </div>
                             <div className="space-y-1">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Trigger:</span>
                                 <span className="font-medium">
-                                  {peril.peril_type === 'LRI' ? '≤' : '≥'} {Number(peril.trigger).toFixed(0)}mm
+                                  {peril.peril_type === 'LRI' || peril.peril_type === 'LTI' ? '≤' : '≥'} 
+                                  {Number(peril.trigger).toFixed(0)}
+                                  {peril.peril_type === 'LRI' || peril.peril_type === 'ERI' ? 'mm' : '°C'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
