@@ -7,9 +7,10 @@ earthengine-api
 gunicorn
 celery
 redis
-pymongo
 flower
 tk
 optuna
 python-dotenv
 pyarrow
+supabase==2.0.0
+PyJWT==2.8.0

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createClient } from '@/utils/supabase/client';
 
 // Define a type for the parameters expected by the generateClimateData function
 interface ClimateDataParams {
@@ -14,6 +15,18 @@ const axiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Add request interceptor to include auth token
+axiosInstance.interceptors.request.use(async (config) => {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  
+  return config;
+});
+
 // Use the defined types in the function signature instead of `any`
 export const generateClimateData = async (params: ClimateDataParams) => {
   // Use the axios instance to send a GET request to the climate-data endpoint
@@ -21,11 +34,6 @@ export const generateClimateData = async (params: ClimateDataParams) => {
   return response.data;  // This should return { filename: "filename.xlsx" }
 };
 
-// Keep the downloadFile function as is
-export const downloadFile = async (filename: string) => {
-  // Construct the download URL correctly
-  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/file?filename=${filename}`;
-  return fileUrl;
-};
+// Note: downloadFile function removed - files are now downloaded directly via Supabase signed URLs
 
 export default axiosInstance;

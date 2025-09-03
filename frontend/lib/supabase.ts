@@ -806,6 +806,89 @@ export class EnrollmentsService {
   }
 }
 
+// Weather Downloads service
+export interface WeatherDownload {
+  id: string
+  requested_by_user_id: string
+  dataset: 'precipitation' | 'temperature'
+  provinces: string[]
+  date_start: string
+  date_end: string
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  file_url?: string
+  error_message?: string
+  created_at: string
+  updated_at: string
+}
+
+export class WeatherDownloadsService {
+  // Get all weather downloads for the current user
+  static async getWeatherDownloads(): Promise<WeatherDownload[]> {
+    const { data, error } = await supabase
+      .from('weather_downloads')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  // Get a specific download by ID
+  static async getWeatherDownloadById(id: string): Promise<WeatherDownload | null> {
+    const { data, error } = await supabase
+      .from('weather_downloads')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      if (error.code === 'PGRST116') return null // Not found
+      throw error
+    }
+    return data
+  }
+
+  // Subscribe to real-time updates for a specific download
+  static subscribeToDownloadUpdates(
+    downloadId: string, 
+    callback: (download: WeatherDownload) => void
+  ) {
+    return supabase
+      .channel(`weather-download-${downloadId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'weather_downloads',
+          filter: `id=eq.${downloadId}`
+        },
+        (payload) => {
+          callback(payload.new as WeatherDownload)
+        }
+      )
+      .subscribe()
+  }
+
+  // Subscribe to all download updates for the current user
+  static subscribeToAllDownloadUpdates(
+    callback: () => void
+  ) {
+    return supabase
+      .channel('weather-downloads-history')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'weather_downloads'
+        },
+        callback
+      )
+      .subscribe()
+  }
+}
+
 // Real-time subscriptions - temporarily disabled due to API compatibility
 // export const subscribeToFarmers = (callback: (farmers: Farmer[]) => void) => {
 //   return supabase
