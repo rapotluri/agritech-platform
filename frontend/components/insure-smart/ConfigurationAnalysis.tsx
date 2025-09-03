@@ -7,7 +7,8 @@ interface ConfigurationAnalysisProps {
   selected: OptimizationResult;
   coveragePeriods: CoveragePeriod[];
   getPerilIcon: (peril: string) => React.ReactNode;
-  getPerilLabel: (peril: string) => string;
+  getPerilLabel: (peril: string, dataType?: string) => string;
+  dataType: "precipitation" | "temperature";
 }
 
 export default function ConfigurationAnalysis({
@@ -15,6 +16,7 @@ export default function ConfigurationAnalysis({
   coveragePeriods,
   getPerilIcon,
   getPerilLabel,
+  dataType,
 }: ConfigurationAnalysisProps) {
   return (
     <div className="space-y-6">
@@ -75,8 +77,8 @@ export default function ConfigurationAnalysis({
                         <span className="font-medium">Period {idx + 1}</span>
                         <Badge variant="outline">
                           {period.perils.length === 2
-                            ? 'Both (LRI + ERI)'
-                            : getPerilLabel(period.perils[0]?.peril_type)}
+                            ? (dataType === "temperature" ? 'Both (LTI + HTI)' : 'Both (LRI + ERI)')
+                            : getPerilLabel(period.perils[0]?.peril_type, dataType)}
                         </Badge>
                       </div>
                       <div className="text-sm text-gray-600">

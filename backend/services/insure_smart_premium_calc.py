@@ -4,7 +4,12 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 
 # Helper: Map index type
-INDEX_TYPE_MAP = {"LRI": "Low Rainfall Index", "ERI": "Excess Rainfall Index"}
+INDEX_TYPE_MAP = {
+    "LRI": "Low Rainfall Index", 
+    "ERI": "Excess Rainfall Index",
+    "LTI": "Low Temperature Index",
+    "HTI": "High Temperature Index"
+}
 
 # Module-level cache for weather data
 _weather_data_cache = {}
@@ -55,7 +60,7 @@ def calculate_insure_smart_premium(
         commune: Commune name
         province: Province name
         periods: List of dicts, each with keys:
-            - peril_type ("LRI" or "ERI")
+            - peril_type ("LRI", "ERI", "LTI", or "HTI")
             - trigger (float)
             - duration (int)
             - unit_payout (float)
@@ -65,7 +70,7 @@ def calculate_insure_smart_premium(
             - end_day (int, optional)
         sum_insured: Product-level sum insured (cap on total payout per year)
         weather_data_period: Number of years (default 30)
-        data_type: "precipitation" (default)
+        data_type: "precipitation" or "temperature" (default "precipitation")
         admin_loading: Admin cost loading (default 0.15)
         profit_loading: Profit loading (default 0.075)
     Returns:
@@ -105,27 +110,52 @@ def calculate_insure_smart_premium(
                         year_start = datetime(year, 1, 1) + timedelta(days=start_day)
                         year_end = datetime(year, 1, 1) + timedelta(days=end_day)
                         period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune]
+                        
+                        # Add temperature data validation (filter out -999 values)
+                        if data_type == "temperature":
+                            period_data = period_data[period_data != -999]
+                        
                         if len(period_data) < p["duration"]:
                             payout = 0.0
                             trigger_met = False
-                            actual_rainfall = None
+                            actual_value = None
                         else:
                             import numpy as np
                             rolling_sums = np.convolve(period_data.values, np.ones(p["duration"]), mode='valid')
                             if p["peril_type"] == "LRI":
                                 min_rain = rolling_sums.min()
-                                actual_rainfall = float(min_rain)
+                                actual_value = float(min_rain)
                                 trigger_met = min_rain < p["trigger"]
                                 if trigger_met:
                                     payout = min((p["trigger"] - min_rain) * p["unit_payout"], p["max_payout"], p["allocated_si"])
                                 else:
                                     payout = 0.0
-                            else:
+                            elif p["peril_type"] == "ERI":
                                 max_rain = rolling_sums.max()
-                                actual_rainfall = float(max_rain)
+                                actual_value = float(max_rain)
                                 trigger_met = max_rain > p["trigger"]
                                 if trigger_met:
                                     payout = min((max_rain - p["trigger"]) * p["unit_payout"], p["max_payout"], p["allocated_si"])
+                                else:
+                                    payout = 0.0
+                            elif p["peril_type"] == "LTI":
+                                # For temperature, use rolling averages instead of sums
+                                rolling_avg = np.convolve(period_data.values, np.ones(p["duration"])/p["duration"], mode='valid')
+                                min_temp = rolling_avg.min()
+                                actual_value = float(min_temp)
+                                trigger_met = min_temp < p["trigger"]
+                                if trigger_met:
+                                    payout = min((p["trigger"] - min_temp) * p["unit_payout"], p["max_payout"], p["allocated_si"])
+                                else:
+                                    payout = 0.0
+                            elif p["peril_type"] == "HTI":
+                                # For temperature, use rolling averages instead of sums
+                                rolling_avg = np.convolve(period_data.values, np.ones(p["duration"])/p["duration"], mode='valid')
+                                max_temp = rolling_avg.max()
+                                actual_value = float(max_temp)
+                                trigger_met = max_temp > p["trigger"]
+                                if trigger_met:
+                                    payout = min((max_temp - p["trigger"]) * p["unit_payout"], p["max_payout"], p["allocated_si"])
                                 else:
                                     payout = 0.0
                         perils.append({
@@ -137,7 +167,7 @@ def calculate_insure_smart_premium(
                             "allocated_si": p["allocated_si"],
                             "trigger_met": trigger_met,
                             "payout": payout,
-                            "actual_rainfall": actual_rainfall
+                            "actual_value": actual_value
                         })
                     else:
                         break

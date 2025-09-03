@@ -19,8 +19,8 @@ def convert_excel_to_parquet():
     Convert all Excel files in the precipitation/Cambodia directory to Parquet format.
     """
     # Define paths
-    excel_dir = Path("files/precipitation/Cambodia")
-    parquet_dir = Path("climate_data/precipitation/Cambodia")
+    excel_dir = Path("files/temperature/Cambodia")
+    parquet_dir = Path("climate_data/temperature/Cambodia")
     
     # Create output directory if it doesn't exist
     parquet_dir.mkdir(parents=True, exist_ok=True)

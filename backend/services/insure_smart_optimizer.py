@@ -11,7 +11,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     Args:
         request_data: Dict containing:
-            - product: Dict with commune, province, sumInsured, premiumCap
+            - product: Dict with commune, province, sumInsured, premiumCap, dataType
             - periods: List[Dict] with startDate, endDate, perilType
     
     Returns:
@@ -25,6 +25,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     province = product["province"]
     sum_insured = float(product["sumInsured"])
     user_premium_cap = float(product["premiumCap"])
+    data_type = product.get("dataType", "precipitation")  # Extract data_type from product
     
     # Convert periods to optimizer format
     periods = convert_periods_format(periods_data)
@@ -67,7 +68,8 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             sum_insured, 
             most_affordable_min, 
             most_affordable_max,
-            user_premium_cap
+            user_premium_cap,
+            data_type
         )
         
         future_best_coverage = executor.submit(
@@ -79,7 +81,8 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             sum_insured, 
             best_coverage_cap, 
             best_coverage_cap,
-            user_premium_cap
+            user_premium_cap,
+            data_type
         )
         
         future_premium_choice = executor.submit(
@@ -91,7 +94,8 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             sum_insured, 
             premium_choice_min, 
             premium_choice_max,
-            user_premium_cap
+            user_premium_cap,
+            data_type
         )
         
         # Collect results
@@ -126,7 +130,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return results
 
 def run_optimization(option_type: str, commune: str, province: str, periods: List[Dict], 
-                    sum_insured: float, min_premium_cap: float, max_premium_cap: float, user_premium_cap: float = None) -> Dict[str, Any]:
+                    sum_insured: float, min_premium_cap: float, max_premium_cap: float, user_premium_cap: float = None, data_type: str = "precipitation") -> Dict[str, Any]:
     """
     Run a single optimization with specified premium cap range.
     """
@@ -155,7 +159,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
                 premium_cap = min_premium_cap
             
             # Generate trial configuration
-            trial_periods = generate_trial_configuration(trial, periods, sum_insured)
+            trial_periods = generate_trial_configuration(trial, periods, sum_insured, data_type)
             
             # Calculate premium and metrics
             result = calculate_insure_smart_premium(
@@ -163,6 +167,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
                 province=province,
                 periods=trial_periods,
                 sum_insured=sum_insured,
+                data_type=data_type,
                 admin_loading=0.15,
                 profit_loading=0.075
             )
@@ -193,7 +198,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         return None
     
     # Reconstruct the configuration
-    trial_periods = reconstruct_configuration(study.best_trial, periods, sum_insured)
+    trial_periods = reconstruct_configuration(study.best_trial, periods, sum_insured, data_type)
     
     # Recalculate metrics for this configuration
     result = calculate_insure_smart_premium(
@@ -201,6 +206,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         province=province,
         periods=trial_periods,
         sum_insured=sum_insured,
+        data_type=data_type,
         admin_loading=0.15,
         profit_loading=0.075
     )
@@ -214,7 +220,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         "expectedPayout": round(result["avg_payout"], 2),
         "premiumRate": round(result["premium_rate"], 4),
         "premiumCost": round(result["loaded_premium"], 2),
-        "triggers": format_triggers_for_frontend(trial_periods, periods),
+        "triggers": format_triggers_for_frontend(trial_periods, periods, data_type),
         "riskLevel": determine_risk_level(result["loss_ratio"]),
         "score": round(study.best_trial.value, 4),
         "periods": format_periods_for_output(trial_periods, periods),
@@ -256,8 +262,8 @@ def get_option_description(option_type: str) -> str:
 def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
     """
     Convert frontend periods format to optimizer format.
-    Frontend: [{"startDate": Date, "endDate": Date, "perilType": "LRI|ERI|Both"}]
-    Optimizer: [{"start_day": int, "end_day": int, "perils": [{"type": "LRI|ERI"}]}]
+    Frontend: [{"startDate": Date, "endDate": Date, "perilType": "LRI|ERI|Both|LTI|HTI"}]
+    Optimizer: [{"start_day": int, "end_day": int, "perils": [{"type": "LRI|ERI|LTI|HTI"}]}]
     """
     from datetime import datetime
     
@@ -284,7 +290,14 @@ def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
             perils.append({"type": "LRI"})
         elif peril_type == "ERI":
             perils.append({"type": "ERI"})
+        elif peril_type == "LTI":
+            perils.append({"type": "LTI"})
+        elif peril_type == "HTI":
+            perils.append({"type": "HTI"})
         elif peril_type == "Both":
+            # For "Both", we need to determine which perils to add based on context
+            # This will be handled by the frontend based on data type
+            # For now, default to LRI/ERI for backward compatibility
             perils.append({"type": "LRI"})
             perils.append({"type": "ERI"})
         
@@ -296,7 +309,7 @@ def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
     
     return converted_periods
 
-def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
+def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float, data_type: str = "precipitation") -> List[Dict]:
     """
     Generate a trial configuration by sampling parameters for each period and peril.
     SI is split between indexes (LRI, ERI) using a discrete set (40/60, 50/50, 60/40) for two indexes. If an index has multiple periods, split its SI allocation equally among its periods.
@@ -319,14 +332,17 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
     if n_indexes == 1:
         si_split[indexes[0]] = 1.0
     elif n_indexes == 2:
-        # Sample split for LRI/ERI from discrete set
+        # Sample split for LRI/ERI or LTI/HTI from discrete set
         split_options = [0.4, 0.5, 0.6]
         lri_split = trial.suggest_categorical("lri_si_split", split_options)
         eri_split = 1.0 - lri_split
-        # Assign splits based on which index is LRI/ERI
+        # Assign splits based on which index is LRI/ERI or LTI/HTI
         if "LRI" in indexes and "ERI" in indexes:
             si_split["LRI"] = lri_split
             si_split["ERI"] = eri_split
+        elif "LTI" in indexes and "HTI" in indexes:
+            si_split["LTI"] = lri_split
+            si_split["HTI"] = eri_split
         else:
             # If not standard, assign first index split, second gets remainder
             si_split[indexes[0]] = lri_split
@@ -354,12 +370,24 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"lri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
-            else:  # ERI
+            elif peril_type == "ERI":
                 trigger = trial.suggest_int(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
                 duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", 1, 5)
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"eri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
+            elif peril_type == "LTI":
+                trigger = trial.suggest_int(f"lti_trigger_{period_idx}_{peril_idx}", 20, 30)
+                duration = trial.suggest_int(f"lti_duration_{period_idx}_{peril_idx}", 1, 7)
+                # Use discrete values for unit_payout to ensure 2 decimal places
+                unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
+                unit_payout = trial.suggest_categorical(f"lti_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
+            elif peril_type == "HTI":
+                trigger = trial.suggest_int(f"hti_trigger_{period_idx}_{peril_idx}", 30, 40)
+                duration = trial.suggest_int(f"hti_duration_{period_idx}_{peril_idx}", 1, 10)
+                # Use discrete values for unit_payout to ensure 2 decimal places
+                unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
+                unit_payout = trial.suggest_categorical(f"hti_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             # max_payout is set to allocated_si
             max_payout = round(allocated_si, 2)
             trial_periods.append({
@@ -422,7 +450,7 @@ def to_python_type(obj):
 
 
 
-def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float) -> List[Dict]:
+def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum_insured: float, data_type: str = "precipitation") -> List[Dict]:
     """
     Reconstruct the full configuration from a trial.
     Uses the same SI split and allocation logic as generate_trial_configuration.
@@ -448,6 +476,9 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
         if "LRI" in indexes and "ERI" in indexes:
             si_split["LRI"] = lri_split
             si_split["ERI"] = eri_split
+        elif "LTI" in indexes and "HTI" in indexes:
+            si_split["LTI"] = lri_split
+            si_split["HTI"] = eri_split
         else:
             si_split[indexes[0]] = lri_split
             si_split[indexes[1]] = eri_split
@@ -466,10 +497,18 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
                 trigger = int(trial.params[f"lri_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"lri_duration_{period_idx}_{peril_idx}"])
                 unit_payout = float(trial.params[f"lri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
-            else:  # ERI
+            elif peril_type == "ERI":
                 trigger = int(trial.params[f"eri_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"eri_duration_{period_idx}_{peril_idx}"])
                 unit_payout = float(trial.params[f"eri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
+            elif peril_type == "LTI":
+                trigger = int(trial.params[f"lti_trigger_{period_idx}_{peril_idx}"])
+                duration = int(trial.params[f"lti_duration_{period_idx}_{peril_idx}"])
+                unit_payout = float(trial.params[f"lti_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
+            elif peril_type == "HTI":
+                trigger = int(trial.params[f"hti_trigger_{period_idx}_{peril_idx}"])
+                duration = int(trial.params[f"hti_duration_{period_idx}_{peril_idx}"])
+                unit_payout = float(trial.params[f"hti_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             max_payout = round(allocated_si, 2)
             trial_periods.append({
                 "peril_type": peril_type,
@@ -522,7 +561,7 @@ def format_periods_for_output(trial_periods: List[Dict], base_periods: List[Dict
     
     return output_periods
 
-def format_triggers_for_frontend(trial_periods: List[Dict], base_periods: List[Dict]) -> List[Dict]:
+def format_triggers_for_frontend(trial_periods: List[Dict], base_periods: List[Dict], data_type: str = "precipitation") -> List[Dict]:
     """
     Format triggers for frontend display.
     """
@@ -539,10 +578,22 @@ def format_triggers_for_frontend(trial_periods: List[Dict], base_periods: List[D
                 "value": f"≤ {int(trigger)}mm",
                 "payout": f"${round(max_payout, 2):.2f}"
             })
-        else:  # ERI
+        elif peril_type == "ERI":
             triggers.append({
                 "type": "High Rainfall", 
                 "value": f"≥ {int(trigger)}mm",
+                "payout": f"${round(max_payout, 2):.2f}"
+            })
+        elif peril_type == "LTI":
+            triggers.append({
+                "type": "Low Temperature",
+                "value": f"≤ {int(trigger)}°C",
+                "payout": f"${round(max_payout, 2):.2f}"
+            })
+        elif peril_type == "HTI":
+            triggers.append({
+                "type": "High Temperature", 
+                "value": f"≥ {int(trigger)}°C",
                 "payout": f"${round(max_payout, 2):.2f}"
             })
     

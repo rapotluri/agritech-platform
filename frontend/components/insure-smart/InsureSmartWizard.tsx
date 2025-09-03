@@ -25,6 +25,7 @@ export default function InsureSmartWizard() {
     sumInsured: "",
     premiumCap: "",
     notes: "",
+    dataType: "precipitation", // Default to precipitation
   });
   const [coveragePeriods, setCoveragePeriods] = useState<CoveragePeriod[]>([]);
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResult[]>([]);
@@ -55,6 +56,18 @@ export default function InsureSmartWizard() {
       district,
       commune: firstCommune,
     }));
+  };
+
+  // Handle data type changes and clear coverage periods
+  const handleDataTypeChange = (newDataType: "precipitation" | "temperature") => {
+    setProduct((prev) => ({
+      ...prev,
+      dataType: newDataType,
+    }));
+    // Clear existing coverage periods when data type changes
+    setCoveragePeriods([]);
+    // Clear optimization state
+    clearOptimizationState();
   };
 
   const addCoveragePeriod = () => {
@@ -91,6 +104,7 @@ export default function InsureSmartWizard() {
           sumInsured: product.sumInsured,
           premiumCap: product.premiumCap,
           notes: product.notes,
+          dataType: product.dataType, // Add dataType to product object
         },
         periods: coveragePeriods.map((p) => ({
           startDate: p.startDate,
@@ -131,7 +145,7 @@ export default function InsureSmartWizard() {
   const getStepProgress = () => (currentStep / 4) * 100;
 
   const canProceedToStep2 = (): boolean => {
-    return !!(product.name && product.province && product.district && product.commune && product.sumInsured && product.premiumCap);
+    return !!(product.name && product.province && product.district && product.commune && product.sumInsured && product.premiumCap && product.dataType);
   };
 
   const canProceedToStep3 = (): boolean => {
@@ -144,8 +158,10 @@ export default function InsureSmartWizard() {
   const getPerilIcon = (peril: string) => {
     switch (peril) {
       case "LRI":
+      case "LTI":
         return <TrendingDown className="h-4 w-4" />;
       case "ERI":
+      case "HTI":
         return <TrendingUp className="h-4 w-4" />;
       case "BOTH":
       case "Both":
@@ -155,15 +171,19 @@ export default function InsureSmartWizard() {
     }
   };
 
-  const getPerilLabel = (peril: string) => {
+  const getPerilLabel = (peril: string, dataType?: string) => {
     switch (peril) {
       case "LRI":
         return "Low Rainfall";
       case "ERI":
         return "High Rainfall";
+      case "LTI":
+        return "Low Temperature";
+      case "HTI":
+        return "High Temperature";
       case "BOTH":
       case "Both":
-        return "Both (LRI + ERI)";
+        return dataType === "temperature" ? "Both (LTI + HTI)" : "Both (LRI + ERI)";
       default:
         return peril;
     }
@@ -223,6 +243,7 @@ export default function InsureSmartWizard() {
             communeOptions={communeOptions}
             handleProvinceChange={handleProvinceChange}
             handleDistrictChange={handleDistrictChange}
+            handleDataTypeChange={handleDataTypeChange}
             canProceedToStep2={canProceedToStep2}
             onNext={() => setCurrentStep(2)}
           />
@@ -240,6 +261,7 @@ export default function InsureSmartWizard() {
             onNext={() => setCurrentStep(3)}
             getPerilIcon={getPerilIcon}
             getPerilLabel={getPerilLabel}
+            dataType={product.dataType}
           />
         )}
         

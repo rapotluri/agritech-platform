@@ -19,7 +19,7 @@ interface OptimizationStepProps {
   onNext: () => void;
   getRiskScoreColor: (score: string) => string;
   getPerilIcon: (peril: string) => React.ReactNode;
-  getPerilLabel: (peril: string) => string;
+  getPerilLabel: (peril: string, dataType?: string) => string;
 }
 
 export default function OptimizationStep({
@@ -111,8 +111,9 @@ export default function OptimizationStep({
                     coveragePeriods={coveragePeriods}
                     getPerilIcon={getPerilIcon}
                     getPerilLabel={getPerilLabel}
+                    dataType={product.dataType}
                   />
-                  <HistoricalEventsTable selected={selected} />
+                  <HistoricalEventsTable selected={selected} dataType={product.dataType} />
                 </>
               )}
             </div>
