@@ -10,8 +10,7 @@ import {
     TableCell, 
     TableHead, 
     TableHeader, 
-    TableRow,
-    TableCaption
+    TableRow
 } from '@/components/ui/table';
 import { WeatherDownload } from '@/lib/supabase';
 import { DownloadIcon, AlertCircleIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react';
