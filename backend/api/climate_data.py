@@ -1,6 +1,6 @@
 from uuid import uuid4
 import time
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from countries.cambodia import get_communes_geodataframe
 from celery_worker import data_task
 from utils.supabase_client import get_supabase_client
@@ -8,6 +8,8 @@ from models.weather_download import (
     WeatherDownloadRequest, 
     WeatherDownloadStatus
 )
+import jwt
+import os
 
 # Set up the FastAPI router
 router = APIRouter(
@@ -19,15 +21,60 @@ router = APIRouter(
 # Load GeoDataFrame with communes
 communes_gdf = get_communes_geodataframe()
 
-# Temporary user dependency - replace with proper auth when available
-async def get_current_user():
+async def get_current_user(authorization: str = Header(None)):
     """
-    Temporary user dependency for development.
-    Replace with proper authentication when available.
+    Extract user ID from Supabase JWT token.
     """
-    # For now, return a mock user ID
-    # In production, this should extract user from JWT token or session
-    return {"id": "00000000-0000-0000-0000-000000000000"}
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid authorization header"
+        )
+    
+    try:
+        # Extract token from "Bearer <token>"
+        token = authorization.split(" ")[1]
+        
+        # Get Supabase JWT secret from environment
+        supabase_jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
+        if not supabase_jwt_secret:
+            raise HTTPException(
+                status_code=500,
+                detail="Supabase JWT secret not configured"
+            )
+        
+        # Decode the JWT token
+        payload = jwt.decode(
+            token, 
+            supabase_jwt_secret, 
+            algorithms=["HS256"],
+            audience="authenticated"
+        )
+        
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token: missing user ID"
+            )
+        
+        return {"id": user_id}
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token has expired"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Authentication error: {str(e)}"
+        )
 
 @router.post("/climate-data")
 async def submit_climate_data_request(

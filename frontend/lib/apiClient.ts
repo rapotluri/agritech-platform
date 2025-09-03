@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createClient } from '@/utils/supabase/client';
 
 // Define a type for the parameters expected by the generateClimateData function
 interface ClimateDataParams {
@@ -12,6 +13,18 @@ interface ClimateDataParams {
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000",  // Fallback to localhost if environment variable is missing
   headers: { 'Content-Type': 'application/json' },
+});
+
+// Add request interceptor to include auth token
+axiosInstance.interceptors.request.use(async (config) => {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  
+  return config;
 });
 
 // Use the defined types in the function signature instead of `any`

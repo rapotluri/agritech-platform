@@ -178,8 +178,15 @@ def data_task(self, download_id: str):
                 all_data.to_excel(temp_file.name, index=False, engine="openpyxl")
                 temp_file_path = temp_file.name
             
-            # Upload to Supabase storage with retry logic
-            file_path = f"{download_record['requested_by_user_id']}/{download_id}.xlsx"
+            # Generate descriptive filename
+            provinces_str = "_".join(download_record['provinces'])
+            dataset_type = download_record['dataset']
+            date_start = download_record['date_start'].replace('-', '')
+            date_end = download_record['date_end'].replace('-', '')
+            
+            # Create descriptive filename: Province_DatasetType_StartDate_EndDate_DownloadID.xlsx
+            filename = f"{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx"
+            file_path = f"{download_record['requested_by_user_id']}/{filename}"
             print(f"[INFO] Uploading file to Supabase storage: {file_path}")
             
             max_retries = 3
@@ -227,9 +234,11 @@ def data_task(self, download_id: str):
             .execute()
         
         print(f"[INFO] Data retrieval completed successfully for download_id: {download_id}")
+        print(f"[INFO] Generated filename: {filename}")
         return {
             "status": "completed", 
             "file_url": file_path,
+            "filename": filename,
             "signed_url": signed_url,
             "records_processed": len(all_data),
             "provinces_processed": len(download_record["provinces"])

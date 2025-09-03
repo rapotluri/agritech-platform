@@ -14,3 +14,4 @@ optuna
 python-dotenv
 pyarrow
 supabase==2.0.0
+PyJWT==2.8.0

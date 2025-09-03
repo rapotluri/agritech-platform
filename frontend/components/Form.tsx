@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover";
 import { State, Country, IState, ICountry } from 'country-state-city';
 import apiClient from "@/lib/apiClient";
+import { WeatherDownloadsService, WeatherDownload } from '@/lib/supabase';
 
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
@@ -51,9 +52,8 @@ export default function DataForm() {
     const [countries, setCountries] = useState<ICountry[]>([]);
     const [states, setStates] = useState<IState[]>([]);
     const [loading, setLoading] = useState(false);
-    const [fileUrl, setFileUrl] = useState<string | null>(null);  // For the download link
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [taskId, setTaskId] = useState<string | null>(null);  // For polling the task status
+    const [downloadId, setDownloadId] = useState<string | null>(null);
+    const [downloads, setDownloads] = useState<WeatherDownload[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -68,7 +68,40 @@ export default function DataForm() {
     useEffect(() => {
         const allCountries = Country.getAllCountries();
         setCountries(allCountries);
+        loadUserDownloads();
     }, []);
+
+    // Real-time subscription for download status updates
+    useEffect(() => {
+        if (!downloadId) return
+
+        const subscription = WeatherDownloadsService.subscribeToDownloadUpdates(
+            downloadId,
+            (updatedDownload) => {
+                if (updatedDownload.status === 'completed') {
+                    setLoading(false)
+                    loadUserDownloads() // Refresh download list
+                } else if (updatedDownload.status === 'failed') {
+                    setError(updatedDownload.error_message || "Download failed")
+                    setLoading(false)
+                }
+            }
+        )
+
+        return () => {
+            subscription.unsubscribe()
+        }
+    }, [downloadId])
+
+    // Load user downloads using the service
+    const loadUserDownloads = async () => {
+        try {
+            const data = await WeatherDownloadsService.getWeatherDownloads()
+            setDownloads(data)
+        } catch (error) {
+            console.error("Error loading downloads:", error);
+        }
+    };
 
     const handleCountryChange = (countryName: string) => {
         const country = countries.find((c) => c.name === countryName);
@@ -90,52 +123,40 @@ export default function DataForm() {
         }
     };
 
-    // Poll the task status using taskId
-    const pollTaskStatus = async (taskId: string) => {
-        try {
-            const { data } = await apiClient.get(`/api/tasks/${taskId}`);
-    
-            if (data.status === 'Pending') {
-                setTimeout(() => pollTaskStatus(taskId), 15000);  // Poll every 3 seconds
-            } else if (data.status === 'SUCCESS') {
-                // Assuming 'result' contains the file ID or file URL in successful tasks
-                setFileUrl(`https://agritech-prod.onrender.com/api/file?task_id=${taskId}`);  // Assuming the backend returns a file ID
-                setLoading(false);
-            } else {
-                setError("Task failed. Please try again.");
-                setLoading(false);
-            }
-        } catch (error) {
-            console.error("Error polling task status:", error);
-            setError("Error checking task status.");
-            setLoading(false);
-        }
-    };
-
+    // Update form submission (still uses backend for processing)
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         setLoading(true);
         setError(null);
-        setFileUrl(null);
-    
-        const start = `${values.startDate.getFullYear()}-${values.startDate.getMonth() + 1}-${values.startDate.getDate()}`;
-        const end = `${values.endDate.getFullYear()}-${values.endDate.getMonth() + 1}-${values.endDate.getDate()}`;
-        const formattedState = values.state.replace(/\s+/g, '');
-    
-        const queryParams = {
-            province: formattedState,
-            start_date: start,
-            end_date: end,
-            data_type: values.dataType.toLowerCase(),
+        setDownloadId(null);
+        
+        const requestData = {
+            dataset: values.dataType.toLowerCase(),
+            provinces: [values.state.replace(/\s+/g, '')],
+            date_start: values.startDate.toISOString().split('T')[0],
+            date_end: values.endDate.toISOString().split('T')[0]
         };
-    
+        
         try {
-            const { data } = await apiClient.get(`/api/climate-data`, { params: queryParams });
-            setTaskId(data.task_id);  // Store task ID returned by the backend
-            pollTaskStatus(data.task_id);  // Start polling for task status
+            const { data } = await apiClient.post('/api/climate-data', requestData);
+            setDownloadId(data.download_id);
+            // No need for polling - real-time subscription handles updates
         } catch (error) {
             console.error("Error submitting form:", error);
             setError("Failed to submit request. Please try again.");
             setLoading(false);
+        }
+    };
+
+    // Download file directly using stored signed URL
+    const downloadFile = async (download: WeatherDownload) => {
+        if (!download.file_url) return
+        
+        try {
+            // Use the stored signed URL directly
+            window.open(download.file_url, '_blank')
+        } catch (error) {
+            console.error("Error downloading file:", error);
+            setError("Failed to download file");
         }
     };
     
@@ -272,19 +293,41 @@ export default function DataForm() {
                     {loading ? "Processing..." : "Submit"}
                 </Button>
 
-                
+                {error && <p className="text-red-500">{error}</p>}
             </form>
 
-            {fileUrl && (
-                    <div className="mt-4">
-                        <a href={fileUrl} download>
-                            <Button variant="default">Download File</Button>
-                        </a>
+            {/* Simple download history for completed downloads */}
+            {downloads.length > 0 && (
+                <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-3">Recent Downloads</h3>
+                    <div className="space-y-2">
+                        {downloads.slice(0, 3).map((download) => (
+                            <div key={download.id} className="flex justify-between items-center p-2 border rounded">
+                                <div>
+                                    <span className="font-medium">{download.dataset} - {download.provinces.join(', ')}</span>
+                                    <p className="text-sm text-gray-500">
+                                        {download.date_start} to {download.date_end}
+                                    </p>
+                                </div>
+                                {download.status === 'completed' && download.file_url && (
+                                    <Button 
+                                        size="sm" 
+                                        onClick={() => downloadFile(download)}
+                                    >
+                                        Download
+                                    </Button>
+                                )}
+                                {download.status === 'running' && (
+                                    <span className="text-blue-500 text-sm">Processing...</span>
+                                )}
+                                {download.status === 'failed' && (
+                                    <span className="text-red-500 text-sm">Failed</span>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                )}
-
-                {error && <p className="text-red-500">{error}</p>}
-
+                </div>
+            )}
         </Form>
     );
 }
