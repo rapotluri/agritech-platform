@@ -53,7 +53,7 @@ export default function DataForm() {
     const [states, setStates] = useState<IState[]>([]);
     const [loading, setLoading] = useState(false);
     const [downloadId, setDownloadId] = useState<string | null>(null);
-    const [downloads, setDownloads] = useState<WeatherDownload[]>([]);
+
     const [error, setError] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -68,7 +68,6 @@ export default function DataForm() {
     useEffect(() => {
         const allCountries = Country.getAllCountries();
         setCountries(allCountries);
-        loadUserDownloads();
     }, []);
 
     // Real-time subscription for download status updates
@@ -80,7 +79,6 @@ export default function DataForm() {
             (updatedDownload) => {
                 if (updatedDownload.status === 'completed') {
                     setLoading(false)
-                    loadUserDownloads() // Refresh download list
                 } else if (updatedDownload.status === 'failed') {
                     setError(updatedDownload.error_message || "Download failed")
                     setLoading(false)
@@ -93,15 +91,7 @@ export default function DataForm() {
         }
     }, [downloadId])
 
-    // Load user downloads using the service
-    const loadUserDownloads = async () => {
-        try {
-            const data = await WeatherDownloadsService.getWeatherDownloads()
-            setDownloads(data)
-        } catch (error) {
-            console.error("Error loading downloads:", error);
-        }
-    };
+
 
     const handleCountryChange = (countryName: string) => {
         const country = countries.find((c) => c.name === countryName);
@@ -147,23 +137,12 @@ export default function DataForm() {
         }
     };
 
-    // Download file directly using stored signed URL
-    const downloadFile = async (download: WeatherDownload) => {
-        if (!download.file_url) return
-        
-        try {
-            // Use the stored signed URL directly
-            window.open(download.file_url, '_blank')
-        } catch (error) {
-            console.error("Error downloading file:", error);
-            setError("Failed to download file");
-        }
-    };
+
     
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                     control={form.control}
                     name="country"
@@ -296,38 +275,7 @@ export default function DataForm() {
                 {error && <p className="text-red-500">{error}</p>}
             </form>
 
-            {/* Simple download history for completed downloads */}
-            {downloads.length > 0 && (
-                <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-3">Recent Downloads</h3>
-                    <div className="space-y-2">
-                        {downloads.slice(0, 3).map((download) => (
-                            <div key={download.id} className="flex justify-between items-center p-2 border rounded">
-                                <div>
-                                    <span className="font-medium">{download.dataset} - {download.provinces.join(', ')}</span>
-                                    <p className="text-sm text-gray-500">
-                                        {download.date_start} to {download.date_end}
-                                    </p>
-                                </div>
-                                {download.status === 'completed' && download.file_url && (
-                                    <Button 
-                                        size="sm" 
-                                        onClick={() => downloadFile(download)}
-                                    >
-                                        Download
-                                    </Button>
-                                )}
-                                {download.status === 'running' && (
-                                    <span className="text-blue-500 text-sm">Processing...</span>
-                                )}
-                                {download.status === 'failed' && (
-                                    <span className="text-red-500 text-sm">Failed</span>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+
         </Form>
     );
 }
