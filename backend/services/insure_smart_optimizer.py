@@ -56,21 +56,23 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         premium_choice_min = premium_choice_max - 0.01  # Reduce range if needed
     
     # Run 3 optimizations in parallel
+    # TEMPORARY: Only running "best_coverage" - other options disabled
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         # Submit all 3 optimization tasks
-        future_most_affordable = executor.submit(
-            run_optimization, 
-            "most_affordable", 
-            commune, 
-            province, 
-            periods, 
-            sum_insured, 
-            most_affordable_min, 
-            most_affordable_max,
-            user_premium_cap,
-            data_type
-        )
+        # DISABLED: Most Affordable optimization (temporarily disabled)
+        # future_most_affordable = executor.submit(
+        #     run_optimization, 
+        #     "most_affordable", 
+        #     commune, 
+        #     province, 
+        #     periods, 
+        #     sum_insured, 
+        #     most_affordable_min, 
+        #     most_affordable_max,
+        #     user_premium_cap,
+        #     data_type
+        # )
         
         future_best_coverage = executor.submit(
             run_optimization, 
@@ -85,26 +87,28 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             data_type
         )
         
-        future_premium_choice = executor.submit(
-            run_optimization, 
-            "premium_choice", 
-            commune, 
-            province, 
-            periods, 
-            sum_insured, 
-            premium_choice_min, 
-            premium_choice_max,
-            user_premium_cap,
-            data_type
-        )
+        # DISABLED: Premium Choice optimization (temporarily disabled)
+        # future_premium_choice = executor.submit(
+        #     run_optimization, 
+        #     "premium_choice", 
+        #     commune, 
+        #     province, 
+        #     periods, 
+        #     sum_insured, 
+        #     premium_choice_min, 
+        #     premium_choice_max,
+        #     user_premium_cap,
+        #     data_type
+        # )
         
         # Collect results
-        try:
-            most_affordable_result = future_most_affordable.result(timeout=300)  # 5 minute timeout
-            if most_affordable_result:
-                results.append(most_affordable_result)
-        except Exception as e:
-            print(f"Most Affordable optimization failed: {str(e)}")
+        # DISABLED: Most Affordable result collection (temporarily disabled)
+        # try:
+        #     most_affordable_result = future_most_affordable.result(timeout=300)  # 5 minute timeout
+        #     if most_affordable_result:
+        #         results.append(most_affordable_result)
+        # except Exception as e:
+        #     print(f"Most Affordable optimization failed: {str(e)}")
         
         try:
             best_coverage_result = future_best_coverage.result(timeout=300)
@@ -113,12 +117,13 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"Best Coverage optimization failed: {str(e)}")
         
-        try:
-            premium_choice_result = future_premium_choice.result(timeout=300)
-            if premium_choice_result:
-                results.append(premium_choice_result)
-        except Exception as e:
-            print(f"Premium Choice optimization failed: {str(e)}")
+        # DISABLED: Premium Choice result collection (temporarily disabled)
+        # try:
+        #     premium_choice_result = future_premium_choice.result(timeout=300)
+        #     if premium_choice_result:
+        #         results.append(premium_choice_result)
+        # except Exception as e:
+        #     print(f"Premium Choice optimization failed: {str(e)}")
     
     # Clear weather data cache to free up memory
     clear_weather_data_cache()
@@ -191,7 +196,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
             return -float('inf')
     
     # Run optimization
-    study.optimize(objective, n_trials=200, n_jobs=1)  # Single job for threading compatibility
+    study.optimize(objective, n_trials=200, n_jobs= 1)  # Single job for threading compatibility
     
     # Extract best configuration
     if study.best_trial.value == -float('inf'):
@@ -315,6 +320,18 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
     SI is split between indexes (LRI, ERI) using a discrete set (40/60, 50/50, 60/40) for two indexes. If an index has multiple periods, split its SI allocation equally among its periods.
     max_payout for each period/peril is set to its SI allocation. Only trigger, duration, and unit_payout are optimized.
     """
+    def get_constrained_duration_range(original_min: int, original_max: int, period_length: int) -> tuple[int, int]:
+        """Constrain duration range to not exceed period length."""
+        # Cap max to period_length
+        constrained_max = min(original_max, period_length)
+        # Ensure min doesn't exceed max
+        constrained_min = min(original_min, constrained_max)
+        # If min > max (edge case for very short periods), set both to period_length
+        if constrained_min > constrained_max:
+            constrained_min = period_length
+            constrained_max = period_length
+        return (constrained_min, constrained_max)
+    
     # First, determine which indexes are present and how many periods each has
     index_periods = {}
     for period in base_periods:
@@ -358,33 +375,43 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
     
     trial_periods = []
     for period_idx, base_period in enumerate(base_periods):
+        # Calculate period length (both start_day and end_day are inclusive)
+        start_day = base_period.get("start_day", 0)
+        end_day = base_period.get("end_day", 364)
+        period_length = end_day - start_day + 1
+        
         perils = base_period.get("perils", [])
         for peril_idx, peril in enumerate(perils):
             peril_type = peril["type"]
             # SI allocation for this period/peril
             allocated_si = index_period_si[peril_type]
+            
             # Optimize trigger, duration, unit_payout
             if peril_type == "LRI":
                 trigger = trial.suggest_int(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
-                duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", 5, 30)
+                dur_min, dur_max = get_constrained_duration_range(5, 30, period_length)
+                duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", dur_min, dur_max)
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"lri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             elif peril_type == "ERI":
                 trigger = trial.suggest_int(f"eri_trigger_{period_idx}_{peril_idx}", 40, 200)
-                duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", 1, 5)
+                dur_min, dur_max = get_constrained_duration_range(1, 5, period_length)
+                duration = trial.suggest_int(f"eri_duration_{period_idx}_{peril_idx}", dur_min, dur_max)
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"eri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             elif peril_type == "LTI":
                 trigger = trial.suggest_int(f"lti_trigger_{period_idx}_{peril_idx}", 20, 30)
-                duration = trial.suggest_int(f"lti_duration_{period_idx}_{peril_idx}", 1, 7)
+                dur_min, dur_max = get_constrained_duration_range(1, 7, period_length)
+                duration = trial.suggest_int(f"lti_duration_{period_idx}_{peril_idx}", dur_min, dur_max)
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"lti_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             elif peril_type == "HTI":
                 trigger = trial.suggest_int(f"hti_trigger_{period_idx}_{peril_idx}", 30, 40)
-                duration = trial.suggest_int(f"hti_duration_{period_idx}_{peril_idx}", 1, 10)
+                dur_min, dur_max = get_constrained_duration_range(1, 10, period_length)
+                duration = trial.suggest_int(f"hti_duration_{period_idx}_{peril_idx}", dur_min, dur_max)
                 # Use discrete values for unit_payout to ensure 2 decimal places
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"hti_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
@@ -489,6 +516,11 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
     index_period_si = {idx: (sum_insured * si_split[idx]) / index_period_count[idx] for idx in indexes}
     trial_periods = []
     for period_idx, base_period in enumerate(base_periods):
+        # Calculate period length (both start_day and end_day are inclusive)
+        start_day = base_period.get("start_day", 0)
+        end_day = base_period.get("end_day", 364)
+        period_length = end_day - start_day + 1
+        
         perils = base_period.get("perils", [])
         for peril_idx, peril in enumerate(perils):
             peril_type = peril["type"]
@@ -496,18 +528,26 @@ def reconstruct_configuration(trial: optuna.Trial, base_periods: List[Dict], sum
             if peril_type == "LRI":
                 trigger = int(trial.params[f"lri_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"lri_duration_{period_idx}_{peril_idx}"])
+                # Safety clamp: ensure duration doesn't exceed period length
+                duration = min(duration, period_length)
                 unit_payout = float(trial.params[f"lri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             elif peril_type == "ERI":
                 trigger = int(trial.params[f"eri_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"eri_duration_{period_idx}_{peril_idx}"])
+                # Safety clamp: ensure duration doesn't exceed period length
+                duration = min(duration, period_length)
                 unit_payout = float(trial.params[f"eri_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             elif peril_type == "LTI":
                 trigger = int(trial.params[f"lti_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"lti_duration_{period_idx}_{peril_idx}"])
+                # Safety clamp: ensure duration doesn't exceed period length
+                duration = min(duration, period_length)
                 unit_payout = float(trial.params[f"lti_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             elif peril_type == "HTI":
                 trigger = int(trial.params[f"hti_trigger_{period_idx}_{peril_idx}"])
                 duration = int(trial.params[f"hti_duration_{period_idx}_{peril_idx}"])
+                # Safety clamp: ensure duration doesn't exceed period length
+                duration = min(duration, period_length)
                 unit_payout = float(trial.params[f"hti_unit_payout_{period_idx}_{peril_idx}"])  # Already rounded from categorical
             max_payout = round(allocated_si, 2)
             trial_periods.append({
