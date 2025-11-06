@@ -166,6 +166,13 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
             # Generate trial configuration
             trial_periods = generate_trial_configuration(trial, periods, sum_insured, data_type)
             
+            # Validate that all durations are within period lengths
+            for tp in trial_periods:
+                period_length = tp.get("end_day", 364) - tp.get("start_day", 0) + 1
+                if tp.get("duration", 0) > period_length:
+                    # This should not happen with the fix, but log if it does
+                    print(f"WARNING: Duration {tp.get('duration')} exceeds period length {period_length} for {tp.get('peril_type')}")
+            
             # Calculate premium and metrics
             result = calculate_insure_smart_premium(
                 commune=commune,
@@ -179,24 +186,77 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
             
             # Check premium cap constraint
             loaded_premium_cost = round(result["loaded_premium"], 2)
-            if loaded_premium_cost > premium_cap:
-                return -float('inf')  # Exceeds premium cap
+            premium_cap_exceeded = loaded_premium_cost > premium_cap
+            premium_cap_penalty = 0.0
+            
+            if premium_cap_exceeded:
+                # Apply heavy penalty for exceeding premium cap (but don't completely reject)
+                # Penalty is proportional to how much it exceeds the cap
+                excess_ratio = (loaded_premium_cost - premium_cap) / premium_cap
+                premium_cap_penalty = 10.0 * excess_ratio  # Heavy penalty but allows exploration
             
             # Check payout frequency constraint to prevent over-optimization
             payout_years = result["payout_years"]
-            if payout_years > 25:  # Allow up to 25 payout years out of 30
-                return -float('inf')  # Too many payouts
+            payout_years_exceeded = payout_years > 25
+            
+            if payout_years_exceeded:
+                # Apply penalty for too many payouts
+                excess_payouts = payout_years - 25
+                payout_penalty = 5.0 * excess_payouts  # Heavy penalty per excess payout year
+            else:
+                payout_penalty = 0.0
             
             # Use the same composite scoring function for all options
-            score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"]), 4)
+            base_score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"]), 4)
             
-            return score
+            # Apply penalties
+            final_score = base_score - premium_cap_penalty - payout_penalty
+            
+            return final_score
             
         except Exception as e:
+            print(f"Error in objective function: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return -float('inf')
     
-    # Run optimization
-    study.optimize(objective, n_trials=200, n_jobs= 1)  # Single job for threading compatibility
+    # Run optimization with adaptive trial allocation
+    initial_trials = 250
+    extension_batch_size = 100
+    max_total_trials = 550
+    threshold_score = -3.0  # Extend trials if best score is better than this
+    
+    completed_trials = 0
+    
+    # Initial batch of trials
+    study.optimize(objective, n_trials=initial_trials, n_jobs=1)
+    completed_trials += initial_trials
+    
+    # Adaptive extension: continue if best score is close to positive
+    while completed_trials < max_total_trials:
+        # Check if we have a valid best trial
+        if study.best_trial.value == -float('inf'):
+            break
+        
+        # If best score is positive or meets constraints, we're done
+        if study.best_trial.value >= 0:
+            break
+        
+        # If best score is below threshold, extend trials
+        if study.best_trial.value > threshold_score:
+            remaining_trials = min(extension_batch_size, max_total_trials - completed_trials)
+            if remaining_trials > 0:
+                print(f"Best score ({study.best_trial.value:.2f}) is close to positive. Extending optimization with {remaining_trials} more trials...")
+                study.optimize(objective, n_trials=remaining_trials, n_jobs=1)
+                completed_trials += remaining_trials
+            else:
+                break
+        else:
+            # Best score is too negative, no point in extending
+            break
+    
+    best_score_str = "-inf" if study.best_trial.value == -float('inf') else f"{study.best_trial.value:.4f}"
+    print(f"Optimization completed: {completed_trials} total trials, best score: {best_score_str}")
     
     # Extract best configuration
     if study.best_trial.value == -float('inf'):
@@ -215,6 +275,26 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         admin_loading=0.15,
         profit_loading=0.075
     )
+    
+    # Check if the best configuration meets constraints
+    loaded_premium_cost = round(result["loaded_premium"], 2)
+    if option_type in ["most_affordable", "premium_choice"]:
+        # For these, premium cap was optimized, so check against what was used
+        premium_cap_ratio = study.best_trial.params.get("premium_cap_ratio", min_premium_cap)
+        premium_cap = round(sum_insured * premium_cap_ratio, 2)
+    else:
+        premium_cap = min_premium_cap  # Best Coverage uses fixed cap
+    
+    # If configuration doesn't meet premium cap, return None
+    # (The penalty system should guide optimizer, but we still reject if it doesn't meet hard constraint)
+    if loaded_premium_cost > premium_cap:
+        print(f"Warning: Best configuration still exceeds premium cap - loaded_premium: {loaded_premium_cost}, cap: {premium_cap}")
+        return None
+    
+    payout_years = result["payout_years"]
+    if payout_years > 25:
+        print(f"Warning: Best configuration still exceeds payout years limit - payout_years: {payout_years}, max: 25")
+        return None
     
     # Format the result with consistent precision
     config = {
@@ -322,14 +402,27 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
     """
     def get_constrained_duration_range(original_min: int, original_max: int, period_length: int) -> tuple[int, int]:
         """Constrain duration range to not exceed period length."""
-        # Cap max to period_length
+        # Validate period_length is positive
+        if period_length <= 0:
+            period_length = 1  # Fallback to minimum valid period length
+        
+        # Cap max to period_length (duration cannot exceed period length)
         constrained_max = min(original_max, period_length)
+        
+        # For min: allow it to be smaller than original_min if period is very short
+        # But prefer to keep original_min if possible
+        # Minimum must be at least 1 day
+        constrained_min = max(1, min(original_min, period_length))
+        
         # Ensure min doesn't exceed max
-        constrained_min = min(original_min, constrained_max)
-        # If min > max (edge case for very short periods), set both to period_length
+        constrained_min = min(constrained_min, constrained_max)
+        
+        # Final validation: if somehow min > max, set to valid range
         if constrained_min > constrained_max:
-            constrained_min = period_length
-            constrained_max = period_length
+            # If period is very short, use period_length as both min and max
+            constrained_min = max(1, period_length)
+            constrained_max = max(1, period_length)
+        
         return (constrained_min, constrained_max)
     
     # First, determine which indexes are present and how many periods each has
