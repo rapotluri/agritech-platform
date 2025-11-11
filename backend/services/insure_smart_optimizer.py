@@ -365,7 +365,15 @@ def convert_periods_format(periods_data: List[Dict]) -> List[Dict]:
             end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
         
         start_day = start_date.timetuple().tm_yday - 1  # 0-indexed
-        end_day = end_date.timetuple().tm_yday - 1
+        end_day_raw = end_date.timetuple().tm_yday - 1  # 0-indexed
+        
+        # Normalize end_day if period crosses year boundary
+        # If end_day < start_day, the period crosses into the next year
+        # Add 365 to end_day to normalize it (e.g., Dec 1=335, Feb 28=58 becomes Dec 1=335, Feb 28=423)
+        if end_day_raw < start_day:
+            end_day = end_day_raw + 365
+        else:
+            end_day = end_day_raw
         
         # Convert peril type to perils array
         peril_type = period["perilType"]
