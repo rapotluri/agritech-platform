@@ -286,10 +286,14 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
         premium_cap = min_premium_cap  # Best Coverage uses fixed cap
     
     # If configuration doesn't meet premium cap, return None
-    # (The penalty system should guide optimizer, but we still reject if it doesn't meet hard constraint)
-    if loaded_premium_cost > premium_cap:
-        print(f"Warning: Best configuration still exceeds premium cap - loaded_premium: {loaded_premium_cost}, cap: {premium_cap}")
+    # Allow small tolerance (1% or $0.10, whichever is larger) for rounding/precision issues
+    tolerance = max(premium_cap * 0.01, 0.10)
+    if loaded_premium_cost > premium_cap + tolerance:
+        print(f"Warning: Best configuration exceeds premium cap beyond tolerance - loaded_premium: {loaded_premium_cost}, cap: {premium_cap}, tolerance: {tolerance:.2f}")
         return None
+    elif loaded_premium_cost > premium_cap:
+        # Slight overage within tolerance - log but accept
+        print(f"Info: Best configuration slightly exceeds premium cap (within tolerance) - loaded_premium: {loaded_premium_cost}, cap: {premium_cap}, overage: {loaded_premium_cost - premium_cap:.2f}")
     
     payout_years = result["payout_years"]
     if payout_years > 25:
