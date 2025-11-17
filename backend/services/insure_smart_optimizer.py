@@ -207,7 +207,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
                 payout_penalty = 0.0
             
             # Use the same composite scoring function for all options
-            base_score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"]), 4)
+            base_score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"], premium_cap), 4)
             
             # Apply penalties
             final_score = base_score - premium_cap_penalty - payout_penalty
@@ -530,13 +530,14 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
             })
     return trial_periods
 
-def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float, sum_insured: float, loss_ratio: float) -> float:
+def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float, sum_insured: float, loss_ratio: float, premium_cap: float) -> float:
     """
     Calculate composite score based on the scoring function, using loaded premium and SI utilization.
     Now includes coverage penalty to heavily penalize configurations with low-coverage periods.
     """
-    # Premium utilization score (how close to premium cap)
-    premium_utilization_score = min(loaded_premium_cost / (loaded_premium_cost + 1), 1.0)  # Normalized
+    # Premium utilization score (how close to premium cap) - reward using more of the cap
+    # Normalize to [0, 1] where 1.0 means using the full cap
+    premium_utilization_score = min(loaded_premium_cost / premium_cap, 1.0) if premium_cap > 0 else 0.0
     
     # SI utilization score (how effectively sum insured is used)
     max_payout = result.get("max_payout", 0)
@@ -552,12 +553,14 @@ def calculate_composite_score(result: Dict[str, Any], loaded_premium_cost: float
     coverage_penalty = result.get("coverage_penalty", 0)
     
     # Composite score with strong coverage penalty
+    # Composite score with increased coverage weight and stronger coverage penalty
+    # Increased coverage weight from 0.1 to 0.25 to better incentivize coverage
     composite_score = (
-        0.4 * premium_utilization_score +
-        0.3 * si_utilization_score +
-        0.2 * payout_stability_score +
-        0.1 * coverage_score -
-        0.5 * coverage_penalty  # Heavy penalty for low coverage
+        0.5 * premium_utilization_score +  # Reduced from 0.4 to make room for coverage
+        0.25 * si_utilization_score +      # Reduced from 0.3
+        0.1 * payout_stability_score +
+        0.15 * coverage_score +            # Increased from 0.1 to 0.25
+        -1.0 * coverage_penalty            # Increased penalty from 0.5 to 1.0
     )
     
     return round(composite_score, 4)
