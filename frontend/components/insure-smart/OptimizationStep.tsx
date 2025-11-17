@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Zap } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, AlertTriangle } from "lucide-react";
 import { Product, CoveragePeriod, OptimizationResult } from "./types";
 import OptimizationResults from "./OptimizationResults";
 import ConfigurationAnalysis from "./ConfigurationAnalysis";
@@ -85,15 +85,57 @@ export default function OptimizationStep({
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <div className="flex items-center gap-2 text-green-800">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-semibold">Product Design Complete</span>
-                </div>
-                <p className="text-green-700 text-sm mt-1">
-                  Found {optimizationResults.length} optimized configurations that meet your criteria
-                </p>
-              </div>
+              {(() => {
+                // Check for error state - backend returns [{error: "..."}] when no valid configs found
+                const hasError = optimizationResults[0] && 'error' in optimizationResults[0];
+                
+                // Check if any result exceeds premium cap
+                const premiumCap = parseFloat(product.premiumCap) || 0;
+                const exceedsPremiumCap = !hasError && optimizationResults.some(
+                  (result) => result.premiumCost && result.premiumCost > premiumCap
+                );
+                
+                if (hasError) {
+                  // Error state (Red)
+                  return (
+                    <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-800">
+                        <AlertCircle className="h-5 w-5" />
+                        <span className="font-semibold">No Valid Configurations Found</span>
+                      </div>
+                      <p className="text-red-700 text-sm mt-1">
+                        No valid configurations found. Please try increasing your premium cap and run optimization again.
+                      </p>
+                    </div>
+                  );
+                } else if (exceedsPremiumCap) {
+                  // Warning state (Yellow)
+                  return (
+                    <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 text-yellow-800">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span className="font-semibold">Product Design Complete</span>
+                      </div>
+                      <p className="text-yellow-700 text-sm mt-1">
+                        Configuration slightly exceeds premium cap (within acceptable tolerance)
+                      </p>
+                    </div>
+                  );
+                } else {
+                  // Success state (Green)
+                  return (
+                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-800">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="font-semibold">Product Design Complete</span>
+                      </div>
+                      <p className="text-green-700 text-sm mt-1">
+                        Found {optimizationResults.length} optimized configurations that meet your criteria
+                      </p>
+                    </div>
+                  );
+                }
+              })()}
               
               {/* Configuration Cards - Horizontal Layout */}
               <OptimizationResults
