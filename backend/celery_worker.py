@@ -119,11 +119,16 @@ def data_task(self, download_id: str):
         
         # Initialize GEE if needed
         print(f"[INFO] Initializing Google Earth Engine...")
-        if not ee.data._credentials:  # type: ignore
-            if os.getenv("ENV") == "LOCAL":
-                initialize_gee_local()
-            else:
-                initialize_gee()
+        # Check if GEE is already initialized (safe for all versions)
+        if not getattr(ee.data, '_credentials', None):
+            try:
+                if os.getenv("ENV") == "LOCAL":
+                    initialize_gee_local()
+                else:
+                    initialize_gee()
+            except Exception:
+                # Already initialized, ignore
+                pass
         print(f"[INFO] Google Earth Engine initialized successfully")
         
         # Process each province with progress tracking
