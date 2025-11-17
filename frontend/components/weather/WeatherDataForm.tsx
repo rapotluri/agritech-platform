@@ -22,10 +22,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { State, Country, IState, ICountry } from 'country-state-city';
 import apiClient from "@/lib/apiClient";
 import { WeatherDownloadsService } from '@/lib/supabase';
 import { CloudIcon } from "@heroicons/react/24/outline";
+import cambodiaLocationData from "../../data/cambodia_locations.json";
 
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
@@ -41,9 +41,14 @@ const formSchema = z.object({
 
 const dataTypes = ["Temperature", "Precipitation"];
 
+interface LocationData {
+    [province: string]: {
+        [district: string]: string[];
+    };
+}
+
 export default function WeatherDataForm() {
-    const [countries, setCountries] = useState<ICountry[]>([]);
-    const [states, setStates] = useState<IState[]>([]);
+    const [provinces, setProvinces] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [downloadId, setDownloadId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -51,15 +56,16 @@ export default function WeatherDataForm() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            country: "",
+            country: "Cambodia",
             state: "",
             dataType: "",
         },
     });
 
     useEffect(() => {
-        const allCountries = Country.getAllCountries();
-        setCountries(allCountries);
+        const data = cambodiaLocationData as LocationData;
+        const provinceList = Object.keys(data);
+        setProvinces(provinceList);
     }, []);
 
     // Real-time subscription for download status updates
@@ -83,25 +89,6 @@ export default function WeatherDataForm() {
         }
     }, [downloadId])
 
-    const handleCountryChange = (countryName: string) => {
-        const country = countries.find((c) => c.name === countryName);
-        if (country) {
-            const countryIsoCode = country.isoCode;
-            let allStates = State.getStatesOfCountry(countryIsoCode);
-            // Check if the selected country is Cambodia
-            if (country.name === "Cambodia") {
-                allStates = allStates.map((state) => {
-                    // Replace 'TaiPoDistrict' with 'TbongKhmum' if present
-                    if (state.name === "Tai Po District") {
-                        return { ...state, name: "Tbong Khmum" };
-                    }
-                    return state;
-                });
-            }
-
-            setStates(allStates);
-        }
-    };
 
     // Update form submission (still uses backend for processing)
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -152,11 +139,9 @@ export default function WeatherDataForm() {
                                 <FormItem>
                                     <FormLabel>Country</FormLabel>
                                     <Select
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            handleCountryChange(value);
-                                            form.setValue("state", "");
-                                        }}
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                        disabled
                                     >
                                         <FormControl>
                                             <SelectTrigger>
@@ -164,11 +149,9 @@ export default function WeatherDataForm() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {Object.values(countries).map((country) => (
-                                                <SelectItem key={country.name} value={country.name}>
-                                                    {country.name}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="Cambodia">
+                                                Cambodia
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -181,19 +164,19 @@ export default function WeatherDataForm() {
                             name="state"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>State</FormLabel>
+                                    <FormLabel>Province</FormLabel>
                                     <Select
                                         onValueChange={(value) => field.onChange(value)}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a state" />
+                                                <SelectValue placeholder="Select a province" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {states.map((state) => (
-                                                <SelectItem key={state.name} value={state.name}>
-                                                    {state.name}
+                                            {provinces.map((province) => (
+                                                <SelectItem key={province} value={province}>
+                                                    {province}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

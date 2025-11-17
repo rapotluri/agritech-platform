@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateInput } from "@/components/ui/date-input"
 import { Search, X } from "lucide-react"
-import cambodiaData from "@/data/cambodia_provinces_districts_communes.json"
+import cambodiaData from "@/data/cambodia_locations.json"
 
 export interface ProductFilters {
   searchQuery?: string

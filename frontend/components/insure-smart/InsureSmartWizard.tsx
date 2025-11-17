@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import provincesDistrictsCommunesData from "../../data/cambodia_provinces_districts_communes.json";
+import provincesDistrictsCommunesData from "../../data/cambodia_locations.json";
 import apiClient from "@/lib/apiClient";
 import { Product, CoveragePeriod, OptimizationResult } from "./types";
 import InsureSmartHeader from "./InsureSmartHeader";
