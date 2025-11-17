@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import cambodiaLocationData from "../../data/cambodia_provinces_districts_communes.json"
+import cambodiaLocationData from "../../data/cambodia_locations.json"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
@@ -108,7 +108,7 @@ export function LocationSelector({
         <SelectContent>
           {provinces.map((prov) => (
             <SelectItem key={prov} value={prov}>
-              {prov.replace(/([A-Z])/g, ' $1').trim()}
+              {prov}
             </SelectItem>
           ))}
         </SelectContent>
@@ -125,7 +125,7 @@ export function LocationSelector({
         <SelectContent>
           {districts.map((dist) => (
             <SelectItem key={dist} value={dist}>
-              {dist.replace(/([A-Z])/g, ' $1').trim()}
+              {dist}
             </SelectItem>
           ))}
         </SelectContent>
@@ -142,7 +142,7 @@ export function LocationSelector({
         <SelectContent>
           {communes.map((com) => (
             <SelectItem key={com} value={com}>
-              {com.replace(/([A-Z])/g, ' $1').trim()}
+              {com}
             </SelectItem>
           ))}
         </SelectContent>
@@ -160,7 +160,7 @@ export function LocationSelector({
         <SelectContent>
           {provinces.map((prov) => (
             <SelectItem key={prov} value={prov}>
-              {prov.replace(/([A-Z])/g, ' $1').trim()}
+              {prov}
             </SelectItem>
           ))}
         </SelectContent>
@@ -173,7 +173,7 @@ export function LocationSelector({
         <SelectContent>
           {districts.map((dist) => (
             <SelectItem key={dist} value={dist}>
-              {dist.replace(/([A-Z])/g, ' $1').trim()}
+              {dist}
             </SelectItem>
           ))}
         </SelectContent>
@@ -186,7 +186,7 @@ export function LocationSelector({
         <SelectContent>
           {communes.map((com) => (
             <SelectItem key={com} value={com}>
-              {com.replace(/([A-Z])/g, ' $1').trim()}
+              {com}
             </SelectItem>
           ))}
         </SelectContent>

@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from countries.cambodia import normalize_province_name
 
 # Helper: Map index type
 INDEX_TYPE_MAP = {
@@ -18,14 +19,25 @@ def clear_weather_data_cache():
     """Clear the in-memory weather data cache."""
     _weather_data_cache.clear()
 
+def normalize_commune_name(commune: str) -> str:
+    """
+    Normalize commune name by removing spaces to match parquet file column names.
+    The parquet files use the old format without spaces (e.g., "BanteayNeang").
+    """
+    return commune.replace(" ", "")
+
 def _get_weather_data(province, data_type):
-    key = (province, data_type)
+    # Normalize province name to match climate data file naming
+    # This handles spaces, special characters, and spelling corrections (e.g., "Kracheh" -> "Kratie")
+    normalized_province = normalize_province_name(province)
+    
+    key = (normalized_province, data_type)
     if key in _weather_data_cache:
         return _weather_data_cache[key]
-    print(f"Loading weather data from disk for {province}, {data_type}")
+    print(f"Loading weather data from disk for {province} (normalized: {normalized_province}), {data_type}")
     
     # Try Parquet first (new format)
-    parquet_path = os.path.join(os.getcwd(), "climate_data", data_type, "Cambodia", f"{province}.parquet")
+    parquet_path = os.path.join(os.getcwd(), "climate_data", data_type, "Cambodia", f"{normalized_province}.parquet")
     if os.path.exists(parquet_path):
         print(f"Loading Parquet file: {parquet_path}")
         df = pd.read_parquet(parquet_path)
@@ -33,14 +45,14 @@ def _get_weather_data(province, data_type):
         return df
     
     # Fallback to Excel (old format)
-    excel_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{province}.xlsx")
+    excel_path = os.path.join(os.getcwd(), "files", data_type, "Cambodia", f"{normalized_province}.xlsx")
     if os.path.exists(excel_path):
         print(f"Loading Excel file (fallback): {excel_path}")
         df = pd.read_excel(excel_path, parse_dates=['Date'])
         _weather_data_cache[key] = df
         return df
     
-    raise FileNotFoundError(f"No weather data file found for {province}. Tried: {parquet_path} and {excel_path}")
+    raise FileNotFoundError(f"No weather data file found for {province} (normalized: {normalized_province}). Tried: {parquet_path} and {excel_path}")
 
 # Main function
 
@@ -77,10 +89,16 @@ def calculate_insure_smart_premium(
         Dict with all metrics needed for scoring and constraints
     """
     # 1. Load weather data
-    province = province.replace(" ", "")
+    # Province name normalization is handled in _get_weather_data()
     df = _get_weather_data(province, data_type)
-    if commune not in df.columns:
-        raise ValueError(f"Commune '{commune}' not found in data. Available: {df.columns.tolist()}")
+    
+    # Normalize commune name to match parquet file column names (remove spaces)
+    normalized_commune = normalize_commune_name(commune)
+    
+    # Try normalized name first, then fallback to original name
+    commune_column = normalized_commune if normalized_commune in df.columns else commune
+    if commune_column not in df.columns:
+        raise ValueError(f"Commune '{commune}' (normalized: '{normalized_commune}') not found in data. Available: {df.columns.tolist()}")
 
     # 2. Get available years
     years = sorted(df['Date'].dt.year.unique())[-weather_data_period:]
@@ -109,7 +127,7 @@ def calculate_insure_smart_premium(
                         end_day = p.get("end_day", 364)
                         year_start = datetime(year, 1, 1) + timedelta(days=start_day)
                         year_end = datetime(year, 1, 1) + timedelta(days=end_day)
-                        period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune]
+                        period_data = df[(df['Date'] >= year_start) & (df['Date'] <= year_end)][commune_column]
                         
                         # Add temperature data validation (filter out -999 values)
                         if data_type == "temperature":
