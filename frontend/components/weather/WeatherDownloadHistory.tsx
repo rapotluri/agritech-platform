@@ -27,8 +27,25 @@ export default function WeatherDownloadHistory() {
 
     const loadDownloads = async () => {
         try {
-            const data = await WeatherDownloadsService.getWeatherDownloads()
-            setDownloads(data)
+            // Trigger cleanup of old files (fire and forget)
+            try {
+                await WeatherDownloadsService.cleanupOldFiles();
+            } catch (cleanupError) {
+                // Log but don't fail the request if cleanup fails
+                console.warn('Cleanup failed (non-critical):', cleanupError);
+            }
+            
+            // Get all downloads
+            const allDownloads = await WeatherDownloadsService.getWeatherDownloads();
+            
+            // Filter to show only downloads from the last 24 hours
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const recentDownloads = allDownloads.filter(download => {
+                const downloadDate = new Date(download.created_at);
+                return downloadDate >= twentyFourHoursAgo;
+            });
+            
+            setDownloads(recentDownloads);
         } catch (error) {
             console.error('Error loading downloads:', error);
         } finally {
@@ -37,7 +54,7 @@ export default function WeatherDownloadHistory() {
     };
 
     return (
-        <Card className="h-[600px] flex flex-col">
+        <Card className="h-[800px] flex flex-col">
             <CardHeader className="flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 rounded-lg">
@@ -46,7 +63,7 @@ export default function WeatherDownloadHistory() {
                     <div>
                         <CardTitle>Download History</CardTitle>
                         <CardDescription>
-                            View and manage your weather data downloads
+                            View and manage your weather data downloads (Note: only downloads from the last 24 hours are displayed)
                         </CardDescription>
                     </div>
                 </div>

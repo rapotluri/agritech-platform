@@ -1,5 +1,6 @@
 from uuid import uuid4
 import time
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Header
 from countries.cambodia import get_communes_geodataframe
 from celery_worker import data_task
@@ -94,6 +95,81 @@ async def submit_climate_data_request(
                 status_code=404, 
                 detail=f"No communes found for province: {province}"
             )
+        
+        # Validate districts if provided
+        if request.districts:
+            # Normalize district names for comparison (remove spaces, similar to province normalization)
+            available_districts = province_gdf["NAME_2"].unique().tolist()
+            available_districts_normalized = {d.replace(" ", ""): d for d in available_districts}
+            
+            # Check each requested district
+            invalid_districts = []
+            normalized_request_districts = []
+            for d in request.districts:
+                normalized_d = d.replace(" ", "")
+                if normalized_d in available_districts_normalized:
+                    # Use the actual GeoDataFrame name (might have spaces)
+                    normalized_request_districts.append(available_districts_normalized[normalized_d])
+                else:
+                    invalid_districts.append(d)
+            
+            if invalid_districts:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Invalid districts for province {province}: {invalid_districts}. Available districts: {available_districts}"
+                )
+            
+            # Update request.districts with normalized names for storage
+            request.districts = normalized_request_districts
+            
+            # Validate communes if provided
+            if request.communes:
+                # Filter by districts first if provided
+                district_filtered_gdf = province_gdf[province_gdf["NAME_2"].isin(normalized_request_districts)]
+                available_communes = district_filtered_gdf["NAME_3"].unique().tolist()
+                available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
+                
+                # Check each requested commune
+                invalid_communes = []
+                normalized_request_communes = []
+                for c in request.communes:
+                    normalized_c = c.replace(" ", "")
+                    if normalized_c in available_communes_normalized:
+                        normalized_request_communes.append(available_communes_normalized[normalized_c])
+                    else:
+                        invalid_communes.append(c)
+                
+                if invalid_communes:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                    )
+                
+                # Update request.communes with normalized names for storage
+                request.communes = normalized_request_communes
+        elif request.communes:
+            # If communes provided but no districts, validate communes against all districts in province
+            available_communes = province_gdf["NAME_3"].unique().tolist()
+            available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
+            
+            # Check each requested commune
+            invalid_communes = []
+            normalized_request_communes = []
+            for c in request.communes:
+                normalized_c = c.replace(" ", "")
+                if normalized_c in available_communes_normalized:
+                    normalized_request_communes.append(available_communes_normalized[normalized_c])
+                else:
+                    invalid_communes.append(c)
+            
+            if invalid_communes:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                )
+            
+            # Update request.communes with normalized names for storage
+            request.communes = normalized_request_communes
     
     # Create database record
     supabase = get_supabase_client()
@@ -105,6 +181,12 @@ async def submit_climate_data_request(
         "date_end": request.date_end.isoformat(),
         "status": WeatherDownloadStatus.QUEUED.value
     }
+    
+    # Add districts and communes if provided (store as empty array if None for consistency)
+    if request.districts:
+        download_record["districts"] = request.districts
+    if request.communes:
+        download_record["communes"] = request.communes
     
     result = supabase.table("weather_downloads").insert(download_record).execute()
     download_id = result.data[0]["id"]
@@ -152,4 +234,100 @@ async def get_climate_data_legacy(
         raise HTTPException(
             status_code=400,
             detail=f"Invalid date format or data type: {str(e)}"
+        )
+
+@router.post("/climate-data/cleanup")
+async def cleanup_old_weather_files(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Clean up weather data files older than 24 hours from Supabase storage.
+    Deletes the files but keeps the database records.
+    """
+    supabase = get_supabase_client()
+    
+    # Calculate 24 hours ago
+    twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+    
+    try:
+        # Find all downloads older than 24 hours with file_url
+        result = supabase.table("weather_downloads")\
+            .select("*")\
+            .not_.is_("file_url", "null")\
+            .lt("created_at", twenty_four_hours_ago.isoformat())\
+            .execute()
+        
+        if not result.data:
+            return {
+                "message": "No old files to clean up",
+                "files_deleted": 0
+            }
+        
+        files_deleted = 0
+        files_failed = 0
+        
+        for download in result.data:
+            try:
+                # Reconstruct file path from download record
+                # Format: {user_id}/{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx
+                user_id = download["requested_by_user_id"]
+                provinces_str = "_".join(download["provinces"])
+                dataset_type = download["dataset"]
+                date_start = download["date_start"].replace('-', '')
+                date_end = download["date_end"].replace('-', '')
+                download_id = download["id"]
+                
+                filename = f"{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx"
+                file_path = f"{user_id}/{filename}"
+                
+                # Delete file from storage
+                try:
+                    storage_result = supabase.storage.from_("weather-data-downloads").remove([file_path])
+                    
+                    # Check if deletion was successful (Supabase returns a list of deleted file paths)
+                    if storage_result and len(storage_result) > 0:
+                        # Update record to remove file_url (set to null)
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                        
+                        files_deleted += 1
+                        print(f"[INFO] Deleted file: {file_path}")
+                    else:
+                        # File might not exist, but that's okay - still update the record
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                        
+                        files_deleted += 1
+                        print(f"[INFO] File not found (may have been deleted already): {file_path}, updated record")
+                except Exception as storage_error:
+                    # Even if file deletion fails, try to update the record
+                    try:
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                    except:
+                        pass
+                    
+                    files_failed += 1
+                    print(f"[WARNING] Failed to delete file {file_path}: {str(storage_error)}")
+                    
+            except Exception as e:
+                files_failed += 1
+                print(f"[ERROR] Error deleting file for download {download.get('id', 'unknown')}: {str(e)}")
+        
+        return {
+            "message": f"Cleanup completed. {files_deleted} files deleted, {files_failed} failed.",
+            "files_deleted": files_deleted,
+            "files_failed": files_failed
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error during cleanup: {str(e)}"
         )

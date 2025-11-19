@@ -814,6 +814,8 @@ export interface WeatherDownload {
   requested_by_user_id: string
   dataset: 'precipitation' | 'temperature'
   provinces: string[]
+  districts?: string[]
+  communes?: string[]
   date_start: string
   date_end: string
   status: 'queued' | 'running' | 'completed' | 'failed'
@@ -888,6 +890,13 @@ export class WeatherDownloadsService {
         callback
       )
       .subscribe()
+  }
+
+  // Cleanup old weather files (older than 24 hours)
+  static async cleanupOldFiles(): Promise<void> {
+    // Import apiClient dynamically to avoid circular dependencies
+    const { default: apiClient } = await import('@/lib/apiClient');
+    await apiClient.post('/api/climate-data/cleanup');
   }
 }
 

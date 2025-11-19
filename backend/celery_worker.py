@@ -143,6 +143,24 @@ def data_task(self, download_id: str):
             if province_gdf.empty:
                 raise Exception(f"Province not found in dataset: {province}")
             
+            # Filter by districts if provided
+            districts = download_record.get("districts")
+            if districts:
+                # Districts are stored with their actual GeoDataFrame names (may have spaces)
+                province_gdf = province_gdf[province_gdf["NAME_2"].isin(districts)]
+                if province_gdf.empty:
+                    raise Exception(f"No communes found for districts {districts} in province {province}")
+                print(f"[INFO] Filtered to {len(districts)} district(s): {districts}")
+            
+            # Filter by communes if provided
+            communes = download_record.get("communes")
+            if communes:
+                # Communes are stored with their actual GeoDataFrame names (may have spaces)
+                province_gdf = province_gdf[province_gdf["NAME_3"].isin(communes)]
+                if province_gdf.empty:
+                    raise Exception(f"No communes found for specified communes {communes} in province {province}")
+                print(f"[INFO] Filtered to {len(communes)} commune(s): {communes}")
+            
             # Retrieve data based on dataset type
             start_time = time.time()
             if download_record["dataset"] == "precipitation":
@@ -170,6 +188,28 @@ def data_task(self, download_id: str):
                 all_data = pd.merge(all_data, province_data, on="Date", how="outer")
         
         print(f"[INFO] Total records processed: {len(all_data)}")
+        
+        # Format data based on dataset type before creating file
+        print(f"[INFO] Formatting {download_record['dataset']} data...")
+        if download_record["dataset"] == "precipitation":
+            # Format precipitation: 2 decimals, values < 1 mm set to 0
+            for col in all_data.columns:
+                if col != 'Date':
+                    all_data[col] = all_data[col].apply(
+                        lambda x: 0.0 if pd.notna(x) and float(x) < 1.0 
+                        else round(float(x), 2) if pd.notna(x) 
+                        else x
+                    )
+            print(f"[INFO] Precipitation data formatted: 2 decimals, values < 1 mm set to 0")
+        elif download_record["dataset"] == "temperature":
+            # Format temperature: 1 decimal
+            for col in all_data.columns:
+                if col != 'Date':
+                    all_data[col] = all_data[col].apply(
+                        lambda x: round(float(x), 1) if pd.notna(x) 
+                        else x
+                    )
+            print(f"[INFO] Temperature data formatted: 1 decimal")
         
         # Validate data before creating file
         if all_data.empty:
