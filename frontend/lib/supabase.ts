@@ -814,6 +814,8 @@ export interface WeatherDownload {
   requested_by_user_id: string
   dataset: 'precipitation' | 'temperature'
   provinces: string[]
+  districts?: string[]
+  communes?: string[]
   date_start: string
   date_end: string
   status: 'queued' | 'running' | 'completed' | 'failed'

@@ -21,6 +21,8 @@ class WeatherDownloadRequest(BaseModel):
     provinces: List[str]
     date_start: date
     date_end: date
+    districts: Optional[List[str]] = None
+    communes: Optional[List[str]] = None
 
 class WeatherDownloadResponse(BaseModel):
     """Response model for weather data download."""

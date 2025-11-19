@@ -94,6 +94,81 @@ async def submit_climate_data_request(
                 status_code=404, 
                 detail=f"No communes found for province: {province}"
             )
+        
+        # Validate districts if provided
+        if request.districts:
+            # Normalize district names for comparison (remove spaces, similar to province normalization)
+            available_districts = province_gdf["NAME_2"].unique().tolist()
+            available_districts_normalized = {d.replace(" ", ""): d for d in available_districts}
+            
+            # Check each requested district
+            invalid_districts = []
+            normalized_request_districts = []
+            for d in request.districts:
+                normalized_d = d.replace(" ", "")
+                if normalized_d in available_districts_normalized:
+                    # Use the actual GeoDataFrame name (might have spaces)
+                    normalized_request_districts.append(available_districts_normalized[normalized_d])
+                else:
+                    invalid_districts.append(d)
+            
+            if invalid_districts:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Invalid districts for province {province}: {invalid_districts}. Available districts: {available_districts}"
+                )
+            
+            # Update request.districts with normalized names for storage
+            request.districts = normalized_request_districts
+            
+            # Validate communes if provided
+            if request.communes:
+                # Filter by districts first if provided
+                district_filtered_gdf = province_gdf[province_gdf["NAME_2"].isin(normalized_request_districts)]
+                available_communes = district_filtered_gdf["NAME_3"].unique().tolist()
+                available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
+                
+                # Check each requested commune
+                invalid_communes = []
+                normalized_request_communes = []
+                for c in request.communes:
+                    normalized_c = c.replace(" ", "")
+                    if normalized_c in available_communes_normalized:
+                        normalized_request_communes.append(available_communes_normalized[normalized_c])
+                    else:
+                        invalid_communes.append(c)
+                
+                if invalid_communes:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                    )
+                
+                # Update request.communes with normalized names for storage
+                request.communes = normalized_request_communes
+        elif request.communes:
+            # If communes provided but no districts, validate communes against all districts in province
+            available_communes = province_gdf["NAME_3"].unique().tolist()
+            available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
+            
+            # Check each requested commune
+            invalid_communes = []
+            normalized_request_communes = []
+            for c in request.communes:
+                normalized_c = c.replace(" ", "")
+                if normalized_c in available_communes_normalized:
+                    normalized_request_communes.append(available_communes_normalized[normalized_c])
+                else:
+                    invalid_communes.append(c)
+            
+            if invalid_communes:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                )
+            
+            # Update request.communes with normalized names for storage
+            request.communes = normalized_request_communes
     
     # Create database record
     supabase = get_supabase_client()
@@ -105,6 +180,12 @@ async def submit_climate_data_request(
         "date_end": request.date_end.isoformat(),
         "status": WeatherDownloadStatus.QUEUED.value
     }
+    
+    # Add districts and communes if provided (store as empty array if None for consistency)
+    if request.districts:
+        download_record["districts"] = request.districts
+    if request.communes:
+        download_record["communes"] = request.communes
     
     result = supabase.table("weather_downloads").insert(download_record).execute()
     download_id = result.data[0]["id"]
