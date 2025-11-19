@@ -79,7 +79,7 @@ export default function DownloadHistoryTable({ downloads, loading }: DownloadHis
                     <TableHeader className="sticky top-0 bg-background z-10 border-b">
                         <TableRow>
                             <TableHead className="w-[200px]">Dataset</TableHead>
-                            <TableHead className="w-[150px]">Provinces</TableHead>
+                            <TableHead className="w-[150px]">Location</TableHead>
                             <TableHead className="w-[180px]">Date Range</TableHead>
                             <TableHead className="w-[100px]">Status</TableHead>
                             <TableHead className="w-[120px]">Created</TableHead>
@@ -98,8 +98,18 @@ export default function DownloadHistoryTable({ downloads, loading }: DownloadHis
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="max-w-[150px] truncate" title={download.provinces.join(', ')}>
-                                        {download.provinces.join(', ')}
+                                    <div className="max-w-[150px]">
+                                        <div className="font-medium">{download.provinces.join(', ')}</div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            District: {download.districts && download.districts.length > 0 
+                                                ? download.districts.join(', ') 
+                                                : 'All Districts'}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            Commune: {download.communes && download.communes.length > 0 
+                                                ? download.communes.join(', ') 
+                                                : 'All'}
+                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
