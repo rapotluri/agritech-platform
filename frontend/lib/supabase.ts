@@ -891,6 +891,13 @@ export class WeatherDownloadsService {
       )
       .subscribe()
   }
+
+  // Cleanup old weather files (older than 24 hours)
+  static async cleanupOldFiles(): Promise<void> {
+    // Import apiClient dynamically to avoid circular dependencies
+    const { default: apiClient } = await import('@/lib/apiClient');
+    await apiClient.post('/api/climate-data/cleanup');
+  }
 }
 
 // Real-time subscriptions - temporarily disabled due to API compatibility

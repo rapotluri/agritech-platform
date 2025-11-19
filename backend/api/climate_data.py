@@ -1,5 +1,6 @@
 from uuid import uuid4
 import time
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Header
 from countries.cambodia import get_communes_geodataframe
 from celery_worker import data_task
@@ -233,4 +234,100 @@ async def get_climate_data_legacy(
         raise HTTPException(
             status_code=400,
             detail=f"Invalid date format or data type: {str(e)}"
+        )
+
+@router.post("/climate-data/cleanup")
+async def cleanup_old_weather_files(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Clean up weather data files older than 24 hours from Supabase storage.
+    Deletes the files but keeps the database records.
+    """
+    supabase = get_supabase_client()
+    
+    # Calculate 24 hours ago
+    twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+    
+    try:
+        # Find all downloads older than 24 hours with file_url
+        result = supabase.table("weather_downloads")\
+            .select("*")\
+            .not_.is_("file_url", "null")\
+            .lt("created_at", twenty_four_hours_ago.isoformat())\
+            .execute()
+        
+        if not result.data:
+            return {
+                "message": "No old files to clean up",
+                "files_deleted": 0
+            }
+        
+        files_deleted = 0
+        files_failed = 0
+        
+        for download in result.data:
+            try:
+                # Reconstruct file path from download record
+                # Format: {user_id}/{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx
+                user_id = download["requested_by_user_id"]
+                provinces_str = "_".join(download["provinces"])
+                dataset_type = download["dataset"]
+                date_start = download["date_start"].replace('-', '')
+                date_end = download["date_end"].replace('-', '')
+                download_id = download["id"]
+                
+                filename = f"{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx"
+                file_path = f"{user_id}/{filename}"
+                
+                # Delete file from storage
+                try:
+                    storage_result = supabase.storage.from_("weather-data-downloads").remove([file_path])
+                    
+                    # Check if deletion was successful (Supabase returns a list of deleted file paths)
+                    if storage_result and len(storage_result) > 0:
+                        # Update record to remove file_url (set to null)
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                        
+                        files_deleted += 1
+                        print(f"[INFO] Deleted file: {file_path}")
+                    else:
+                        # File might not exist, but that's okay - still update the record
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                        
+                        files_deleted += 1
+                        print(f"[INFO] File not found (may have been deleted already): {file_path}, updated record")
+                except Exception as storage_error:
+                    # Even if file deletion fails, try to update the record
+                    try:
+                        supabase.table("weather_downloads")\
+                            .update({"file_url": None})\
+                            .eq("id", download_id)\
+                            .execute()
+                    except:
+                        pass
+                    
+                    files_failed += 1
+                    print(f"[WARNING] Failed to delete file {file_path}: {str(storage_error)}")
+                    
+            except Exception as e:
+                files_failed += 1
+                print(f"[ERROR] Error deleting file for download {download.get('id', 'unknown')}: {str(e)}")
+        
+        return {
+            "message": f"Cleanup completed. {files_deleted} files deleted, {files_failed} failed.",
+            "files_deleted": files_deleted,
+            "files_failed": files_failed
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error during cleanup: {str(e)}"
         )
