@@ -37,7 +37,7 @@ export default function WeatherDownloadHistory() {
     };
 
     return (
-        <Card className="h-[600px] flex flex-col">
+        <Card className="h-[800px] flex flex-col">
             <CardHeader className="flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 rounded-lg">
