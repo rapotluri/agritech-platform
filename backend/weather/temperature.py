@@ -1,6 +1,7 @@
 import ee
 import pandas as pd
 from datetime import datetime, timedelta
+from countries.cambodia import to_climate_column_name
 
 def get_date_batches(start_date: str, end_date: str, batch_years: int = 10):
     """Split date range into batches of specified years."""
@@ -53,7 +54,8 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
         # Retrieve temperature data for each commune in the district
         for commune_idx, (_, commune) in enumerate(district_communes.iterrows(), 1):
             commune_name = commune["NAME_3"]
-            print(f"[INFO] Processing commune {commune_idx}/{total_communes}: {commune_name}")
+            district_name = commune["NAME_2"]
+            print(f"[INFO] Processing commune {commune_idx}/{total_communes}: {commune_name} in district {district_name}")
             commune_data = pd.DataFrame()
 
             # Process each date batch
@@ -105,13 +107,15 @@ def retrieve_temperature_data(province_gdf, start_date: str, end_date: str):
                 time_series = temperature.map(extract_daily_data).getInfo()
 
                 # Convert to a DataFrame
+                # Use district_commune format for column name
+                column_name = to_climate_column_name(district_name, commune_name)
                 daily_data = {
                     entry["properties"]["date"]: entry["properties"]["mean_temperature_celsius"]
                     for entry in time_series["features"]
                     if "mean_temperature_celsius" in entry["properties"]
                 }
                 batch_df = pd.DataFrame(
-                    list(daily_data.items()), columns=["Date", commune_name]
+                    list(daily_data.items()), columns=["Date", column_name]
                 )
 
                 # Merge with existing data for this commune

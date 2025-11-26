@@ -99,6 +99,7 @@ export default function InsureSmartWizard() {
         product: {
           productName: product.name,
           province: product.province,
+          district: product.district,
           commune: product.commune,
           cropDuration: product.cropDuration,
           sumInsured: product.sumInsured,

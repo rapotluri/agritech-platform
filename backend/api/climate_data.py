@@ -2,7 +2,14 @@ from uuid import uuid4
 import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Header
-from countries.cambodia import get_communes_geodataframe
+from countries.cambodia import (
+    get_communes_geodataframe,
+    validate_location,
+    get_all_provinces,
+    get_districts_for_province,
+    get_communes_for_district,
+    province_to_filename
+)
 from celery_worker import data_task
 from utils.supabase_client import get_supabase_client
 from models.weather_download import (
@@ -86,10 +93,25 @@ async def submit_climate_data_request(
     Submit a new weather data download request.
     Creates a database record and starts a Celery task.
     Only endpoint needed - all reads handled by frontend directly.
+    
+    All location names (provinces, districts, communes) must be in canonical format
+    (with spaces preserved). Example: "Banteay Meanchey", "Mongkol Borei", "Banteay Neang"
+    
+    If validation fails, error messages will include available options for the invalid location.
     """
-    # Validate provinces exist in the dataset
+    # Validate provinces exist in the dataset using canonical location data
     for province in request.provinces:
-        province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
+        # Validate province using canonical location data
+        if not validate_location(province):
+            available_provinces = get_all_provinces()
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Invalid province: {province}. Available provinces: {available_provinces}"
+            )
+        
+        # Get province GeoDataFrame using normalized name for file lookup
+        normalized_province = province_to_filename(province)
+        province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == normalized_province]
         if province_gdf.empty:
             raise HTTPException(
                 status_code=404, 
@@ -98,78 +120,91 @@ async def submit_climate_data_request(
         
         # Validate districts if provided
         if request.districts:
-            # Normalize district names for comparison (remove spaces, similar to province normalization)
-            available_districts = province_gdf["NAME_2"].unique().tolist()
-            available_districts_normalized = {d.replace(" ", ""): d for d in available_districts}
-            
-            # Check each requested district
+            # Validate each district using canonical location data
             invalid_districts = []
-            normalized_request_districts = []
             for d in request.districts:
-                normalized_d = d.replace(" ", "")
-                if normalized_d in available_districts_normalized:
-                    # Use the actual GeoDataFrame name (might have spaces)
-                    normalized_request_districts.append(available_districts_normalized[normalized_d])
-                else:
+                if not validate_location(province, d):
                     invalid_districts.append(d)
             
             if invalid_districts:
+                available_districts = get_districts_for_province(province)
                 raise HTTPException(
                     status_code=404,
                     detail=f"Invalid districts for province {province}: {invalid_districts}. Available districts: {available_districts}"
                 )
             
-            # Update request.districts with normalized names for storage
-            request.districts = normalized_request_districts
+            # Filter GeoDataFrame by districts (using canonical names from GeoJSON)
+            province_gdf = province_gdf[province_gdf["NAME_2"].isin(request.districts)]
+            if province_gdf.empty:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No communes found for districts {request.districts} in province {province}"
+                )
             
             # Validate communes if provided
             if request.communes:
-                # Filter by districts first if provided
-                district_filtered_gdf = province_gdf[province_gdf["NAME_2"].isin(normalized_request_districts)]
-                available_communes = district_filtered_gdf["NAME_3"].unique().tolist()
-                available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
-                
-                # Check each requested commune
+                # Validate each commune using canonical location data
                 invalid_communes = []
-                normalized_request_communes = []
                 for c in request.communes:
-                    normalized_c = c.replace(" ", "")
-                    if normalized_c in available_communes_normalized:
-                        normalized_request_communes.append(available_communes_normalized[normalized_c])
-                    else:
+                    # Need to check commune against each district since commune names can be duplicated
+                    commune_found = False
+                    for d in request.districts:
+                        if validate_location(province, d, c):
+                            commune_found = True
+                            break
+                    if not commune_found:
                         invalid_communes.append(c)
                 
                 if invalid_communes:
+                    # Get available communes for the specified districts
+                    available_communes = []
+                    for d in request.districts:
+                        available_communes.extend(get_communes_for_district(province, d))
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                        detail=f"Invalid communes for province {province} and districts {request.districts}: {invalid_communes}. Available communes: {available_communes}"
                     )
                 
-                # Update request.communes with normalized names for storage
-                request.communes = normalized_request_communes
+                # Filter GeoDataFrame by communes (using canonical names from GeoJSON)
+                province_gdf = province_gdf[province_gdf["NAME_3"].isin(request.communes)]
+                if province_gdf.empty:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"No communes found for specified communes {request.communes} in province {province}"
+                    )
         elif request.communes:
             # If communes provided but no districts, validate communes against all districts in province
-            available_communes = province_gdf["NAME_3"].unique().tolist()
-            available_communes_normalized = {c.replace(" ", ""): c for c in available_communes}
-            
-            # Check each requested commune
+            # Note: This is less efficient but necessary for backward compatibility
             invalid_communes = []
-            normalized_request_communes = []
             for c in request.communes:
-                normalized_c = c.replace(" ", "")
-                if normalized_c in available_communes_normalized:
-                    normalized_request_communes.append(available_communes_normalized[normalized_c])
-                else:
+                # Check if commune exists in any district of the province
+                commune_found = False
+                districts = get_districts_for_province(province)
+                for d in districts:
+                    if validate_location(province, d, c):
+                        commune_found = True
+                        break
+                if not commune_found:
                     invalid_communes.append(c)
             
             if invalid_communes:
+                # Get all available communes for the province
+                available_communes = []
+                districts = get_districts_for_province(province)
+                for d in districts:
+                    available_communes.extend(get_communes_for_district(province, d))
                 raise HTTPException(
                     status_code=404,
                     detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
                 )
             
-            # Update request.communes with normalized names for storage
-            request.communes = normalized_request_communes
+            # Filter GeoDataFrame by communes
+            province_gdf = province_gdf[province_gdf["NAME_3"].isin(request.communes)]
+            if province_gdf.empty:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No communes found for specified communes {request.communes} in province {province}"
+                )
     
     # Create database record
     supabase = get_supabase_client()

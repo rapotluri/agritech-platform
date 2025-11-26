@@ -146,19 +146,20 @@ export default function WeatherDataForm() {
         
         const requestData: any = {
             dataset: values.dataType.toLowerCase(),
-            provinces: [values.state.replace(/\s+/g, '')],
+            provinces: [values.state],
             date_start: values.startDate.toISOString().split('T')[0],
             date_end: values.endDate.toISOString().split('T')[0]
         };
 
         // Add districts if a specific district is selected (not "All Districts")
         if (values.district && values.district !== "__all__") {
-            requestData.districts = [values.district.replace(/\s+/g, '')];
+            requestData.districts = [values.district];
         }
 
         // Add communes if a specific commune is selected (not "All Communes")
+        // Note: district must be included when commune is selected
         if (values.commune && values.commune !== "__all__") {
-            requestData.communes = [values.commune.replace(/\s+/g, '')];
+            requestData.communes = [values.commune];
         }
         
         try {
