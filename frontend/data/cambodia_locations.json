@@ -34,8 +34,6 @@
     ],
     "Paoy Paet": [
       "Nimitt",
-      "Ou Chrov",
-      "Ou Reusey",
       "Paoy Paet",
       "Phsar Kandal"
     ],
@@ -122,7 +120,6 @@
       "Ampil Pram Daeum",
       "Bavel",
       "Boeung Pram",
-      "Bouvel",
       "Kdol Ta Haen",
       "Khlaeng Meas",
       "Khnach Romeas",
@@ -395,7 +392,6 @@
       "Chrey Bak",
       "Kouk Banteay",
       "Krang Leav",
-      "Phnom Kraing Dey Meas",
       "Pongro",
       "Prasnoeb",
       "Prey Mul",
@@ -432,7 +428,6 @@
       "Chaong Maong",
       "Chieb",
       "Kbal Tuek",
-      "Kdol Saen Chey",
       "Khlong Popok",
       "Krang Skear",
       "Tang Krasang",
@@ -505,8 +500,7 @@
       "Prey Rumduol",
       "Tang Samraong",
       "Tang Sya",
-      "Traeng Trayueng",
-      "Yeay Mao Pichnil"
+      "Traeng Trayueng"
     ],
     "Samraong Tong": [
       "Kahaeng",
@@ -663,7 +657,6 @@
       "Tani"
     ],
     "Banteay Meas": [
-      "Banteay Meas Khang Kaeut",
       "Banteay Meas Khang lech",
       "Prey Tonle",
       "Samraong Kraom",
@@ -672,7 +665,6 @@
       "Sdach Kong Khang Tboung",
       "Sdach Kong Khang lech",
       "Tnoat Chong Srang",
-      "Trapeang Sala Khang Kaeut",
       "Trapeang Sala Khang Lech",
       "Tuk Meas Khang Kaeut",
       "Tuk Meas Khang Lech",
@@ -727,13 +719,10 @@
       "Boeng Sala Khang Cheung",
       "Boeng Sala Khang Tboung",
       "Damnak Kantuot Khang Cheung",
-      "Damnak Kantuot Khang Tboung",
-      "Kampong Trach Khang Kaeut",
       "Kampong Trach Khang Lech",
       "Phnom Prasat",
       "Prasat Phnom Khyang",
       "Preaek Kroes",
-      "Ruessei Srok Khang Kaeut",
       "Ruessei Srok Khang Lech",
       "Svay Tong Khang Cheung",
       "Svay Tong Khang Tboung"
@@ -1002,7 +991,6 @@
     ],
     "Snuol": [
       "Khsuem",
-      "Kronhoung Saen Chey",
       "Pir Thnu",
       "Snuol",
       "Srae Char",
@@ -1021,7 +1009,6 @@
     "Srok Ou Krieng Saenchey": [
       "Kbal Damrei",
       "Ou Krieng",
-      "Oukondear Senchey",
       "Roluos Mean Chey",
       "Srae Chis"
     ],
@@ -1122,8 +1109,6 @@
   "Phnom Penh": {
     "Khan Boeng Keng Kang": [
       "Boeng Keng Kang Ti Bei",
-      "Boeng Keng Kang Ti Muoy",
-      "Boeng Keng Kang Ti Pir",
       "Olympic",
       "Tumnob Tuek",
       "Tuol Svay Prey Ti Muoy",
@@ -1191,12 +1176,9 @@
     ],
     "Khan Mean Chey": [
       "Boeng Tumpun 1",
-      "Boeng Tumpun 2",
       "Chak Angrae Kraom",
       "Chak Angrae Leu",
-      "Stueng Mean chey 1",
-      "Stueng Mean chey 2",
-      "Stueng Mean chey 3"
+      "Stueng Mean chey 1"
     ],
     "Khan Praek Pnov": [
       "Kouk Roka",
@@ -1217,10 +1199,7 @@
     ],
     "Khan Pur SenChey": [
       "Chaom Chau 1",
-      "Chaom Chau 2",
-      "Chaom Chau 3",
       "Kakab 1",
-      "Kakab 2",
       "Samraong Kraom",
       "Trapeang Krasang"
     ],
@@ -1230,14 +1209,11 @@
       "Kilomaetr Lekh Prammuoy",
       "Ruessei Kaev",
       "Svay Pak",
-      "Tuol Sangkae 1",
-      "Tuol Sangkae 2"
+      "Tuol Sangkae 1"
     ],
     "Khan Saensokh": [
       "Khmuonh",
-      "Kouk Khleang",
       "Krang Thnong",
-      "Ou Baek K'am",
       "Phnom Penh Thmei",
       "Tuek Thla"
     ],
@@ -1269,8 +1245,7 @@
       "Ream"
     ],
     "Kaoh Rung": [
-      "Kaoh Rung",
-      "Koah Rung Sonlem"
+      "Kaoh Rung"
     ],
     "Preah Sihanouk": [
       "Bei",
@@ -1284,7 +1259,6 @@
       "Prey Nob",
       "Sameakki",
       "Samrong",
-      "Ta Ney",
       "Tuek L'ak",
       "Tuek Thla",
       "Tuol Totueng",
@@ -2021,7 +1995,6 @@
       "Ta Phem",
       "Tram Kak",
       "Trapeang Kranhoung",
-      "Trapeang Thum Khang Cheung",
       "Trapeang Thum Khang Tboung"
     ],
     "Treang": [
