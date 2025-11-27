@@ -2,7 +2,12 @@ import os
 import pandas as pd
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
-from countries.cambodia import normalize_province_name
+from countries.cambodia import (
+    province_to_filename,
+    to_climate_column_name,
+    validate_location,
+    from_climate_column_name
+)
 
 # Helper: Map index type
 INDEX_TYPE_MAP = {
@@ -19,17 +24,19 @@ def clear_weather_data_cache():
     """Clear the in-memory weather data cache."""
     _weather_data_cache.clear()
 
-def normalize_commune_name(commune: str) -> str:
-    """
-    Normalize commune name by removing spaces to match parquet file column names.
-    The parquet files use the old format without spaces (e.g., "BanteayNeang").
-    """
-    return commune.replace(" ", "")
-
 def _get_weather_data(province, data_type):
-    # Normalize province name to match climate data file naming
-    # This handles spaces, special characters, and spelling corrections (e.g., "Kracheh" -> "Kratie")
-    normalized_province = normalize_province_name(province)
+    # Validate province exists in canonical location data (e.g., "Banteay Meanchey")
+    if not validate_location(province):
+        from countries.cambodia import get_all_provinces
+        available_provinces = get_all_provinces()
+        raise ValueError(
+            f"Invalid province: '{province}'. "
+            f"Province must be in canonical format (e.g., 'Banteay Meanchey'). "
+            f"Available provinces: {available_provinces}"
+        )
+    
+    # Convert canonical province name to filename format
+    normalized_province = province_to_filename(province)
     
     key = (normalized_province, data_type)
     if key in _weather_data_cache:
@@ -59,6 +66,7 @@ def _get_weather_data(province, data_type):
 def calculate_insure_smart_premium(
     commune: str,
     province: str,
+    district: str,
     periods: List[Dict[str, Any]],
     sum_insured: float,
     weather_data_period: int = 30,
@@ -68,9 +76,14 @@ def calculate_insure_smart_premium(
 ) -> Dict[str, Any]:
     """
     Calculate premium and risk metrics for Insure Smart optimization.
+    
+    All location parameters must be in canonical format (with spaces preserved).
+    Example: province="Banteay Meanchey", district="Mongkol Borei", commune="Banteay Neang"
+    
     Args:
-        commune: Commune name
-        province: Province name
+        commune: Commune name in canonical format (e.g., "Banteay Neang")
+        province: Province name in canonical format (e.g., "Banteay Meanchey")
+        district: District name in canonical format (e.g., "Mongkol Borei") - required when commune is provided
         periods: List of dicts, each with keys:
             - peril_type ("LRI", "ERI", "LTI", or "HTI")
             - trigger (float)
@@ -88,17 +101,41 @@ def calculate_insure_smart_premium(
     Returns:
         Dict with all metrics needed for scoring and constraints
     """
+    # Validate location using canonical format (e.g., "Banteay Meanchey", "Mongkol Borei", "Banteay Neang")
+    if not validate_location(province, district, commune):
+        from countries.cambodia import get_all_provinces, get_districts_for_province, get_communes_for_district
+        # Provide helpful error message with suggestions
+        if not validate_location(province):
+            available_provinces = get_all_provinces()
+            raise ValueError(
+                f"Invalid province: '{province}'. "
+                f"Province must be in canonical format (e.g., 'Banteay Meanchey'). "
+                f"Available provinces: {available_provinces}"
+            )
+        elif not validate_location(province, district):
+            available_districts = get_districts_for_province(province)
+            raise ValueError(
+                f"Invalid district: '{district}' in province '{province}'. "
+                f"District must be in canonical format. "
+                f"Available districts for {province}: {available_districts}"
+            )
+        else:
+            available_communes = get_communes_for_district(province, district)
+            raise ValueError(
+                f"Invalid commune: '{commune}' in district '{district}', province '{province}'. "
+                f"Commune must be in canonical format. "
+                f"Available communes for {district}, {province}: {available_communes}"
+            )
+    
     # 1. Load weather data
     # Province name normalization is handled in _get_weather_data()
     df = _get_weather_data(province, data_type)
     
-    # Normalize commune name to match parquet file column names (remove spaces)
-    normalized_commune = normalize_commune_name(commune)
+    # Convert district and commune to climate data column format
+    commune_column = to_climate_column_name(district, commune)
     
-    # Try normalized name first, then fallback to original name
-    commune_column = normalized_commune if normalized_commune in df.columns else commune
     if commune_column not in df.columns:
-        raise ValueError(f"Commune '{commune}' (normalized: '{normalized_commune}') not found in data. Available: {df.columns.tolist()}")
+        raise ValueError(f"Commune '{commune}' in district '{district}' (column: '{commune_column}') not found in data. Available columns: {df.columns.tolist()}")
 
     # 2. Get available years
     years = sorted(df['Date'].dt.year.unique())[-weather_data_period:]

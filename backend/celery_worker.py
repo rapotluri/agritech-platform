@@ -12,7 +12,11 @@ from utils.gee_utils import initialize_gee
 from utils.gee_utils_local import initialize_gee_local
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
-from countries.cambodia import get_communes_geodataframe
+from countries.cambodia import (
+    get_communes_geodataframe,
+    validate_location,
+    province_to_filename
+)
 from io import BytesIO
 from dotenv import load_dotenv
 from services.insure_smart_optimizer import optimize_insure_smart
@@ -138,15 +142,37 @@ def data_task(self, download_id: str):
         for i, province in enumerate(download_record["provinces"]):
             print(f"[INFO] Processing province {i+1}/{total_provinces}: {province}")
             
-            # Validate province exists
-            province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == province]
+            # Validate province using canonical location data (e.g., "Banteay Meanchey")
+            if not validate_location(province):
+                from countries.cambodia import get_all_provinces
+                available_provinces = get_all_provinces()
+                raise Exception(
+                    f"Invalid province: '{province}'. "
+                    f"Province must be in canonical format (e.g., 'Banteay Meanchey'). "
+                    f"Available provinces: {available_provinces}"
+                )
+            
+            # Get province GeoDataFrame using normalized name for file lookup
+            normalized_province = province_to_filename(province)
+            province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == normalized_province]
             if province_gdf.empty:
                 raise Exception(f"Province not found in dataset: {province}")
             
             # Filter by districts if provided
             districts = download_record.get("districts")
             if districts:
-                # Districts are stored with their actual GeoDataFrame names (may have spaces)
+                # Validate districts using canonical location data (e.g., "Mongkol Borei")
+                for d in districts:
+                    if not validate_location(province, d):
+                        from countries.cambodia import get_districts_for_province
+                        available_districts = get_districts_for_province(province)
+                        raise Exception(
+                            f"Invalid district: '{d}' in province '{province}'. "
+                            f"District must be in canonical format. "
+                            f"Available districts for {province}: {available_districts}"
+                        )
+                
+                # Districts are stored with their canonical names (may have spaces)
                 province_gdf = province_gdf[province_gdf["NAME_2"].isin(districts)]
                 if province_gdf.empty:
                     raise Exception(f"No communes found for districts {districts} in province {province}")
@@ -155,7 +181,48 @@ def data_task(self, download_id: str):
             # Filter by communes if provided
             communes = download_record.get("communes")
             if communes:
-                # Communes are stored with their actual GeoDataFrame names (may have spaces)
+                # Validate communes using canonical location data
+                # If districts are provided, validate commune against those districts
+                if districts:
+                    for c in communes:
+                        commune_found = False
+                        for d in districts:
+                            if validate_location(province, d, c):
+                                commune_found = True
+                                break
+                        if not commune_found:
+                            from countries.cambodia import get_communes_for_district
+                            available_communes = []
+                            for d in districts:
+                                available_communes.extend(get_communes_for_district(province, d))
+                            raise Exception(
+                                f"Invalid commune: '{c}' in province '{province}', districts {districts}. "
+                                f"Commune must be in canonical format. "
+                                f"Available communes: {available_communes}"
+                            )
+                else:
+                    # If no districts, check commune exists in any district of the province
+                    for c in communes:
+                        commune_found = False
+                        from countries.cambodia import get_districts_for_province
+                        all_districts = get_districts_for_province(province)
+                        for d in all_districts:
+                            if validate_location(province, d, c):
+                                commune_found = True
+                                break
+                        if not commune_found:
+                            from countries.cambodia import get_districts_for_province, get_communes_for_district
+                            available_communes = []
+                            all_districts = get_districts_for_province(province)
+                            for d in all_districts:
+                                available_communes.extend(get_communes_for_district(province, d))
+                            raise Exception(
+                                f"Invalid commune: '{c}' in province '{province}'. "
+                                f"Commune must be in canonical format. "
+                                f"Available communes: {available_communes}"
+                            )
+                
+                # Communes are stored with their canonical names (may have spaces)
                 province_gdf = province_gdf[province_gdf["NAME_3"].isin(communes)]
                 if province_gdf.empty:
                     raise Exception(f"No communes found for specified communes {communes} in province {province}")

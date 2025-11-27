@@ -63,7 +63,7 @@ export default function WeatherDownloadHistory() {
                     <div>
                         <CardTitle>Download History</CardTitle>
                         <CardDescription>
-                            View and manage your weather data downloads (Note: only downloads from the last 24 hours are displayed)
+                            View and manage your weather data downloads (Note: Downloads are stored only for 24 hours)
                         </CardDescription>
                     </div>
                 </div>

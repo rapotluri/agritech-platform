@@ -11,7 +11,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     Args:
         request_data: Dict containing:
-            - product: Dict with commune, province, sumInsured, premiumCap, dataType
+            - product: Dict with commune, province, district, sumInsured, premiumCap, dataType
             - periods: List[Dict] with startDate, endDate, perilType
     
     Returns:
@@ -23,6 +23,9 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     commune = product["commune"]
     province = product["province"]
+    district = product.get("district")
+    if not district:
+        raise ValueError("District is required when commune is provided")
     sum_insured = float(product["sumInsured"])
     user_premium_cap = float(product["premiumCap"])
     data_type = product.get("dataType", "precipitation")  # Extract data_type from product
@@ -79,6 +82,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "best_coverage", 
             commune, 
             province, 
+            district,
             periods, 
             sum_insured, 
             best_coverage_cap, 
@@ -134,7 +138,7 @@ def optimize_insure_smart(request_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     return results
 
-def run_optimization(option_type: str, commune: str, province: str, periods: List[Dict], 
+def run_optimization(option_type: str, commune: str, province: str, district: str, periods: List[Dict], 
                     sum_insured: float, min_premium_cap: float, max_premium_cap: float, user_premium_cap: float = None, data_type: str = "precipitation") -> Dict[str, Any]:
     """
     Run a single optimization with specified premium cap range.
@@ -177,6 +181,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
             result = calculate_insure_smart_premium(
                 commune=commune,
                 province=province,
+                district=district,
                 periods=trial_periods,
                 sum_insured=sum_insured,
                 data_type=data_type,
@@ -269,6 +274,7 @@ def run_optimization(option_type: str, commune: str, province: str, periods: Lis
     result = calculate_insure_smart_premium(
         commune=commune,
         province=province,
+        district=district,
         periods=trial_periods,
         sum_insured=sum_insured,
         data_type=data_type,
