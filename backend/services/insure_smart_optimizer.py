@@ -1,7 +1,12 @@
 import optuna
 import numpy as np
 from typing import List, Dict, Any, Tuple
-from services.insure_smart_premium_calc import calculate_insure_smart_premium, clear_weather_data_cache
+from services.insure_smart_premium_calc import (
+    calculate_insure_smart_premium, 
+    clear_weather_data_cache,
+    DEFAULT_ADMIN_LOADING,
+    DEFAULT_PROFIT_LOADING
+)
 import concurrent.futures
 import threading
 
@@ -185,8 +190,8 @@ def run_optimization(option_type: str, commune: str, province: str, district: st
                 periods=trial_periods,
                 sum_insured=sum_insured,
                 data_type=data_type,
-                admin_loading=0.15,
-                profit_loading=0.075
+                admin_loading=DEFAULT_ADMIN_LOADING,
+                profit_loading=DEFAULT_PROFIT_LOADING
             )
             
             # Check premium cap constraint
@@ -278,8 +283,8 @@ def run_optimization(option_type: str, commune: str, province: str, district: st
         periods=trial_periods,
         sum_insured=sum_insured,
         data_type=data_type,
-        admin_loading=0.15,
-        profit_loading=0.075
+        admin_loading=DEFAULT_ADMIN_LOADING,
+        profit_loading=DEFAULT_PROFIT_LOADING
     )
     
     # Check if the best configuration meets constraints

@@ -17,6 +17,11 @@ INDEX_TYPE_MAP = {
     "HTI": "High Temperature Index"
 }
 
+# Standardized loading percentages for premium calculation
+# Change these values in one place to update throughout the system
+DEFAULT_ADMIN_LOADING = 0.15  # 15% admin cost loading
+DEFAULT_PROFIT_LOADING = 0.15  # 7.5% profit loading
+
 # Module-level cache for weather data
 _weather_data_cache = {}
 
@@ -71,8 +76,8 @@ def calculate_insure_smart_premium(
     sum_insured: float,
     weather_data_period: int = 30,
     data_type: str = "precipitation",
-    admin_loading: float = 0.15,
-    profit_loading: float = 0.075
+    admin_loading: float = None,
+    profit_loading: float = None
 ) -> Dict[str, Any]:
     """
     Calculate premium and risk metrics for Insure Smart optimization.
@@ -96,11 +101,17 @@ def calculate_insure_smart_premium(
         sum_insured: Product-level sum insured (cap on total payout per year)
         weather_data_period: Number of years (default 30)
         data_type: "precipitation" or "temperature" (default "precipitation")
-        admin_loading: Admin cost loading (default 0.15)
-        profit_loading: Profit loading (default 0.075)
+        admin_loading: Admin cost loading (defaults to DEFAULT_ADMIN_LOADING if None)
+        profit_loading: Profit loading (defaults to DEFAULT_PROFIT_LOADING if None)
     Returns:
         Dict with all metrics needed for scoring and constraints
     """
+    # Use default loading values if not provided
+    if admin_loading is None:
+        admin_loading = DEFAULT_ADMIN_LOADING
+    if profit_loading is None:
+        profit_loading = DEFAULT_PROFIT_LOADING
+    
     # Validate location using canonical format (e.g., "Banteay Meanchey", "Mongkol Borei", "Banteay Neang")
     if not validate_location(province, district, commune):
         from countries.cambodia import get_all_provinces, get_districts_for_province, get_communes_for_district
