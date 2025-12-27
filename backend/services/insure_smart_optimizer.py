@@ -182,6 +182,20 @@ def run_optimization(option_type: str, commune: str, province: str, district: st
                     # This should not happen with the fix, but log if it does
                     print(f"WARNING: Duration {tp.get('duration')} exceeds period length {period_length} for {tp.get('peril_type')}")
             
+            # Check if max_payout is achievable for LRI (safety check)
+            # This validates that trigger * unit_payout >= max_payout (allocated_si)
+            impracticality_penalty = 0.0
+            for tp in trial_periods:
+                if tp["peril_type"] == "LRI":
+                    max_achievable = tp["trigger"] * tp["unit_payout"]
+                    if max_achievable < tp["max_payout"]:
+                        # Calculate how far off we are (as a ratio)
+                        shortfall_ratio = (tp["max_payout"] - max_achievable) / tp["max_payout"]
+                        # Very heavy penalty - makes impractical configurations strongly discouraged
+                        # Using 20.0 multiplier to ensure invalid combinations score very poorly
+                        impracticality_penalty = 20.0 * shortfall_ratio
+                        break  # Only need to check once, penalty applies to whole config
+            
             # Calculate premium and metrics
             result = calculate_insure_smart_premium(
                 commune=commune,
@@ -220,7 +234,7 @@ def run_optimization(option_type: str, commune: str, province: str, district: st
             base_score = round(calculate_composite_score(result, loaded_premium_cost, sum_insured, result["loss_ratio"], premium_cap), 4)
             
             # Apply penalties
-            final_score = base_score - premium_cap_penalty - payout_penalty
+            final_score = base_score - premium_cap_penalty - payout_penalty - impracticality_penalty
             
             return final_score
             
@@ -504,10 +518,13 @@ def generate_trial_configuration(trial: optuna.Trial, base_periods: List[Dict], 
             
             # Optimize trigger, duration, unit_payout
             if peril_type == "LRI":
+                # Sample trigger first (reverse sampling approach)
                 trigger = trial.suggest_int(f"lri_trigger_{period_idx}_{peril_idx}", 20, 150)
                 dur_min, dur_max = get_constrained_duration_range(5, 30, period_length)
                 duration = trial.suggest_int(f"lri_duration_{period_idx}_{peril_idx}", dur_min, dur_max)
                 # Use discrete values for unit_payout to ensure 2 decimal places
+                # Note: Must use fixed list for Optuna categorical distribution
+                # Validation of trigger * unit_payout >= allocated_si is done in objective function
                 unit_payout_options = [round(x * 0.05, 2) for x in range(10, 61)]  # 0.50 to 3.00 in 0.05 steps
                 unit_payout = trial.suggest_categorical(f"lri_unit_payout_{period_idx}_{peril_idx}", unit_payout_options)
             elif peril_type == "ERI":
