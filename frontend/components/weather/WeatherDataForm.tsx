@@ -25,7 +25,14 @@ import {
 import apiClient from "@/lib/apiClient";
 import { WeatherDownloadsService } from '@/lib/supabase';
 import { CloudIcon } from "@heroicons/react/24/outline";
-import cambodiaLocationData from "../../data/cambodia_locations.json";
+import {
+    COUNTRY_LOCATION_CONFIG,
+    CountryCode,
+    SUPPORTED_COUNTRIES,
+    getCommunesForDistrict,
+    getDistrictsForState,
+    getStatesForCountry,
+} from "./locationConfig";
 
 const formSchema = z.object({
     country: z.string().min(1, "Country is required"),
@@ -51,14 +58,8 @@ function formatDateLocal(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-interface LocationData {
-    [province: string]: {
-        [district: string]: string[];
-    };
-}
-
 export default function WeatherDataForm() {
-    const [provinces, setProvinces] = useState<string[]>([]);
+    const [states, setStates] = useState<string[]>([]);
     const [districts, setDistricts] = useState<string[]>([]);
     const [communes, setCommunes] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -76,18 +77,22 @@ export default function WeatherDataForm() {
         },
     });
 
-    const selectedProvince = form.watch("state");
+    const selectedCountry = form.watch("country") as CountryCode;
+    const selectedState = form.watch("state");
     const selectedDistrict = form.watch("district");
+    const countryConfig = COUNTRY_LOCATION_CONFIG[selectedCountry];
 
     useEffect(() => {
-        const data = cambodiaLocationData as LocationData;
-        const provinceList = Object.keys(data);
-        setProvinces(provinceList);
-    }, []);
+        setStates(getStatesForCountry(selectedCountry));
+        setDistricts([]);
+        setCommunes([]);
+        form.setValue("state", "");
+        form.setValue("district", "");
+        form.setValue("commune", "");
+    }, [selectedCountry, form]);
 
-    // Update districts when province changes
     useEffect(() => {
-        if (!selectedProvince) {
+        if (!selectedState) {
             setDistricts([]);
             setCommunes([]);
             form.setValue("district", "");
@@ -95,36 +100,28 @@ export default function WeatherDataForm() {
             return;
         }
 
-        const data = cambodiaLocationData as LocationData;
-        const provinceData = data[selectedProvince];
-        if (provinceData) {
-            const districtList = Object.keys(provinceData);
-            setDistricts(districtList);
-            // Reset commune when province changes
-            setCommunes([]);
-            form.setValue("district", "");
-            form.setValue("commune", "");
-        }
-    }, [selectedProvince, form]);
+        setDistricts(getDistrictsForState(selectedCountry, selectedState));
+        setCommunes([]);
+        form.setValue("district", "");
+        form.setValue("commune", "");
+    }, [selectedCountry, selectedState, form]);
 
-    // Update communes when district changes
     useEffect(() => {
-        if (!selectedProvince || !selectedDistrict || selectedDistrict === "__all__") {
+        if (
+            !countryConfig.hasCommuneLevel ||
+            !selectedState ||
+            !selectedDistrict ||
+            selectedDistrict === "__all__"
+        ) {
             setCommunes([]);
             form.setValue("commune", "");
             return;
         }
 
-        const data = cambodiaLocationData as LocationData;
-        const provinceData = data[selectedProvince];
-        if (provinceData && provinceData[selectedDistrict]) {
-            const communeList = provinceData[selectedDistrict];
-            setCommunes(communeList);
-            form.setValue("commune", "");
-        }
-    }, [selectedProvince, selectedDistrict, form]);
+        setCommunes(getCommunesForDistrict(selectedCountry, selectedState, selectedDistrict));
+        form.setValue("commune", "");
+    }, [countryConfig.hasCommuneLevel, selectedCountry, selectedState, selectedDistrict, form]);
 
-    // Real-time subscription for download status updates
     useEffect(() => {
         if (!downloadId) return
 
@@ -145,35 +142,30 @@ export default function WeatherDataForm() {
         }
     }, [downloadId])
 
-
-    // Update form submission (still uses backend for processing)
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         setLoading(true);
         setError(null);
         setDownloadId(null);
         
-        const requestData: any = {
+        const requestData: Record<string, unknown> = {
+            country: values.country,
             dataset: values.dataType.toLowerCase(),
             provinces: [values.state],
             date_start: formatDateLocal(values.startDate),
             date_end: formatDateLocal(values.endDate)
         };
 
-        // Add districts if a specific district is selected (not "All Districts")
         if (values.district && values.district !== "__all__") {
             requestData.districts = [values.district];
         }
 
-        // Add communes if a specific commune is selected (not "All Communes")
-        // Note: district must be included when commune is selected
-        if (values.commune && values.commune !== "__all__") {
+        if (countryConfig.hasCommuneLevel && values.commune && values.commune !== "__all__") {
             requestData.communes = [values.commune];
         }
         
         try {
             const { data } = await apiClient.post('/api/climate-data', requestData);
             setDownloadId(data.download_id);
-            // No need for polling - real-time subscription handles updates
         } catch (error) {
             console.error("Error submitting form:", error);
             setError("Failed to submit request. Please try again.");
@@ -208,7 +200,6 @@ export default function WeatherDataForm() {
                                     <Select
                                         onValueChange={field.onChange}
                                         value={field.value}
-                                        disabled
                                     >
                                         <FormControl>
                                             <SelectTrigger>
@@ -216,9 +207,11 @@ export default function WeatherDataForm() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Cambodia">
-                                                Cambodia
-                                            </SelectItem>
+                                            {SUPPORTED_COUNTRIES.map((country) => (
+                                                <SelectItem key={country} value={country}>
+                                                    {COUNTRY_LOCATION_CONFIG[country].label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -231,20 +224,20 @@ export default function WeatherDataForm() {
                             name="state"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Province</FormLabel>
+                                    <FormLabel>{countryConfig.labels.state}</FormLabel>
                                     <Select
                                         onValueChange={(value) => field.onChange(value)}
                                         value={field.value}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a province" />
+                                                <SelectValue placeholder={`Select a ${countryConfig.labels.state.toLowerCase()}`} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {provinces.map((province) => (
-                                                <SelectItem key={province} value={province}>
-                                                    {province}
+                                            {states.map((state) => (
+                                                <SelectItem key={state} value={state}>
+                                                    {state}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -259,22 +252,26 @@ export default function WeatherDataForm() {
                             name="district"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>District</FormLabel>
+                                    <FormLabel>{countryConfig.labels.district}</FormLabel>
                                     <Select
                                         onValueChange={(value) => field.onChange(value)}
                                         value={field.value}
-                                        disabled={!selectedProvince}
+                                        disabled={!selectedState}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={selectedProvince ? "Select a district" : "Select province first"} />
+                                                <SelectValue placeholder={
+                                                    selectedState
+                                                        ? `Select a ${countryConfig.labels.district.toLowerCase()}`
+                                                        : `Select ${countryConfig.labels.state.toLowerCase()} first`
+                                                } />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {selectedProvince && (
+                                            {selectedState && (
                                                 <>
                                                     <SelectItem value="__all__">
-                                                        All Districts
+                                                        All {countryConfig.labels.district}s
                                                     </SelectItem>
                                                     {districts.map((district) => (
                                                         <SelectItem key={district} value={district}>
@@ -290,41 +287,49 @@ export default function WeatherDataForm() {
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="commune"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Commune</FormLabel>
-                                    <Select
-                                        onValueChange={(value) => field.onChange(value)}
-                                        value={field.value}
-                                        disabled={!selectedDistrict || selectedDistrict === "__all__"}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={selectedDistrict && selectedDistrict !== "__all__" ? "Select a commune" : selectedDistrict === "__all__" ? "Select specific district" : "Select district first"} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {selectedDistrict && selectedDistrict !== "__all__" && (
-                                                <>
-                                                    <SelectItem value="__all__">
-                                                        All Communes
-                                                    </SelectItem>
-                                                    {communes.map((commune) => (
-                                                        <SelectItem key={commune} value={commune}>
-                                                            {commune}
+                        {countryConfig.hasCommuneLevel && (
+                            <FormField
+                                control={form.control}
+                                name="commune"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{countryConfig.labels.commune}</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => field.onChange(value)}
+                                            value={field.value}
+                                            disabled={!selectedDistrict || selectedDistrict === "__all__"}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={
+                                                        selectedDistrict && selectedDistrict !== "__all__"
+                                                            ? `Select a ${countryConfig.labels.commune.toLowerCase()}`
+                                                            : selectedDistrict === "__all__"
+                                                                ? `Select specific ${countryConfig.labels.district.toLowerCase()}`
+                                                                : `Select ${countryConfig.labels.district.toLowerCase()} first`
+                                                    } />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {selectedDistrict && selectedDistrict !== "__all__" && (
+                                                    <>
+                                                        <SelectItem value="__all__">
+                                                            All {countryConfig.labels.commune}s
                                                         </SelectItem>
-                                                    ))}
-                                                </>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                                        {communes.map((commune) => (
+                                                            <SelectItem key={commune} value={commune}>
+                                                                {commune}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         <FormField
                             control={form.control}

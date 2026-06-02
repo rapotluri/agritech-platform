@@ -2,16 +2,17 @@ from uuid import uuid4
 import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Header
-from countries.cambodia import (
-    get_communes_geodataframe,
-    validate_location,
+from countries import (
+    get_geodataframe,
+    validate_location as validate_country_location,
     get_all_provinces,
     get_districts_for_province,
     get_communes_for_district,
-    province_to_filename
+    province_to_filename,
 )
 from celery_worker import data_task
 from utils.supabase_client import get_supabase_client
+from utils.country_utils import country_for_db
 from models.weather_download import (
     WeatherDownloadRequest, 
     WeatherDownloadStatus
@@ -19,15 +20,11 @@ from models.weather_download import (
 import jwt
 import os
 
-# Set up the FastAPI router
 router = APIRouter(
     prefix="/api",
     tags=["climate-data"],
     responses={404: {"description": "Not found"}},
 )
-
-# Load GeoDataFrame with communes
-communes_gdf = get_communes_geodataframe()
 
 async def get_current_user(authorization: str = Header(None)):
     """
@@ -40,10 +37,8 @@ async def get_current_user(authorization: str = Header(None)):
         )
     
     try:
-        # Extract token from "Bearer <token>"
         token = authorization.split(" ")[1]
         
-        # Get Supabase JWT secret from environment
         supabase_jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
         if not supabase_jwt_secret:
             raise HTTPException(
@@ -51,7 +46,6 @@ async def get_current_user(authorization: str = Header(None)):
                 detail="Supabase JWT secret not configured"
             )
         
-        # Decode the JWT token
         payload = jwt.decode(
             token, 
             supabase_jwt_secret, 
@@ -92,124 +86,104 @@ async def submit_climate_data_request(
     """
     Submit a new weather data download request.
     Creates a database record and starts a Celery task.
-    Only endpoint needed - all reads handled by frontend directly.
-    
-    All location names (provinces, districts, communes) must be in canonical format
-    (with spaces preserved). Example: "Banteay Meanchey", "Mongkol Borei", "Banteay Neang"
-    
-    If validation fails, error messages will include available options for the invalid location.
     """
-    # Validate provinces exist in the dataset using canonical location data
+    country = request.country
+    communes_gdf = get_geodataframe(country)
+
     for province in request.provinces:
-        # Validate province using canonical location data
-        if not validate_location(province):
-            available_provinces = get_all_provinces()
+        if not validate_country_location(country, province):
+            available_provinces = get_all_provinces(country)
             raise HTTPException(
                 status_code=404, 
-                detail=f"Invalid province: {province}. Available provinces: {available_provinces}"
+                detail=f"Invalid province/state for {country}: {province}. Available options: {available_provinces}"
             )
         
-        # Get province GeoDataFrame using normalized name for file lookup
-        normalized_province = province_to_filename(province)
+        normalized_province = province_to_filename(country, province)
         province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == normalized_province]
         if province_gdf.empty:
             raise HTTPException(
                 status_code=404, 
-                detail=f"No communes found for province: {province}"
+                detail=f"No locations found for province/state: {province}"
             )
         
-        # Validate districts if provided
         if request.districts:
-            # Validate each district using canonical location data
             invalid_districts = []
             for d in request.districts:
-                if not validate_location(province, d):
+                if not validate_country_location(country, province, d):
                     invalid_districts.append(d)
             
             if invalid_districts:
-                available_districts = get_districts_for_province(province)
+                available_districts = get_districts_for_province(country, province)
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Invalid districts for province {province}: {invalid_districts}. Available districts: {available_districts}"
+                    detail=f"Invalid districts for {province}: {invalid_districts}. Available districts: {available_districts}"
                 )
             
-            # Filter GeoDataFrame by districts (using canonical names from GeoJSON)
             province_gdf = province_gdf[province_gdf["NAME_2"].isin(request.districts)]
             if province_gdf.empty:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"No communes found for districts {request.districts} in province {province}"
+                    detail=f"No locations found for districts {request.districts} in {province}"
                 )
             
-            # Validate communes if provided
             if request.communes:
-                # Validate each commune using canonical location data
                 invalid_communes = []
                 for c in request.communes:
-                    # Need to check commune against each district since commune names can be duplicated
-                    commune_found = False
-                    for d in request.districts:
-                        if validate_location(province, d, c):
-                            commune_found = True
-                            break
+                    commune_found = any(
+                        validate_country_location(country, province, d, c)
+                        for d in request.districts
+                    )
                     if not commune_found:
                         invalid_communes.append(c)
                 
                 if invalid_communes:
-                    # Get available communes for the specified districts
                     available_communes = []
                     for d in request.districts:
-                        available_communes.extend(get_communes_for_district(province, d))
+                        available_communes.extend(get_communes_for_district(country, province, d))
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Invalid communes for province {province} and districts {request.districts}: {invalid_communes}. Available communes: {available_communes}"
+                        detail=f"Invalid communes for {province} and districts {request.districts}: {invalid_communes}. Available communes: {available_communes}"
                     )
                 
-                # Filter GeoDataFrame by communes (using canonical names from GeoJSON)
                 province_gdf = province_gdf[province_gdf["NAME_3"].isin(request.communes)]
                 if province_gdf.empty:
                     raise HTTPException(
                         status_code=404,
-                        detail=f"No communes found for specified communes {request.communes} in province {province}"
+                        detail=f"No communes found for specified communes {request.communes} in {province}"
                     )
         elif request.communes:
-            # If communes provided but no districts, validate communes against all districts in province
-            # Note: This is less efficient but necessary for backward compatibility
             invalid_communes = []
             for c in request.communes:
-                # Check if commune exists in any district of the province
                 commune_found = False
-                districts = get_districts_for_province(province)
+                districts = get_districts_for_province(country, province)
                 for d in districts:
-                    if validate_location(province, d, c):
+                    if validate_country_location(country, province, d, c):
                         commune_found = True
                         break
                 if not commune_found:
                     invalid_communes.append(c)
             
             if invalid_communes:
-                # Get all available communes for the province
                 available_communes = []
-                districts = get_districts_for_province(province)
+                districts = get_districts_for_province(country, province)
                 for d in districts:
-                    available_communes.extend(get_communes_for_district(province, d))
+                    available_communes.extend(get_communes_for_district(country, province, d))
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Invalid communes for province {province}: {invalid_communes}. Available communes: {available_communes}"
+                    detail=f"Invalid communes for {province}: {invalid_communes}. Available communes: {available_communes}"
                 )
             
-            # Filter GeoDataFrame by communes
             province_gdf = province_gdf[province_gdf["NAME_3"].isin(request.communes)]
             if province_gdf.empty:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"No communes found for specified communes {request.communes} in province {province}"
+                    detail=f"No communes found for specified communes {request.communes} in {province}"
                 )
     
-    # Create database record
     supabase = get_supabase_client()
     download_record = {
         "requested_by_user_id": current_user["id"],
+        "country": country_for_db(request.country),
         "dataset": request.dataset.value,
         "provinces": request.provinces,
         "date_start": request.date_start.isoformat(),
@@ -217,7 +191,6 @@ async def submit_climate_data_request(
         "status": WeatherDownloadStatus.QUEUED.value
     }
     
-    # Add districts and communes if provided (store as empty array if None for consistency)
     if request.districts:
         download_record["districts"] = request.districts
     if request.communes:
@@ -226,7 +199,6 @@ async def submit_climate_data_request(
     result = supabase.table("weather_downloads").insert(download_record).execute()
     download_id = result.data[0]["id"]
     
-    # Start Celery task with download_id
     task = data_task.delay(download_id)
     
     return {
@@ -235,7 +207,6 @@ async def submit_climate_data_request(
         "message": f"{request.dataset.value.capitalize()} data retrieval has been initiated."
     }
 
-# Keep the old GET endpoint for backward compatibility (deprecated)
 @router.get("/climate-data")
 async def get_climate_data_legacy(
     province: str, start_date: str, end_date: str, data_type: str,
@@ -245,16 +216,12 @@ async def get_climate_data_legacy(
     DEPRECATED: Legacy endpoint for backward compatibility.
     Use POST /api/climate-data instead.
     """
-    # Convert to new format and call the new endpoint
-    # This maintains backward compatibility during migration
     from datetime import datetime
     
     try:
-        # Parse dates
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
         end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
         
-        # Create request object
         request = WeatherDownloadRequest(
             dataset=data_type.lower(),
             provinces=[province],
@@ -262,7 +229,6 @@ async def get_climate_data_legacy(
             date_end=end_date_obj
         )
         
-        # Call the new endpoint with the current user
         return await submit_climate_data_request(request, current_user)
         
     except ValueError as e:
@@ -281,11 +247,9 @@ async def cleanup_old_weather_files(
     """
     supabase = get_supabase_client()
     
-    # Calculate 24 hours ago
     twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
     
     try:
-        # Find all downloads older than 24 hours with file_url
         result = supabase.table("weather_downloads")\
             .select("*")\
             .not_.is_("file_url", "null")\
@@ -303,8 +267,6 @@ async def cleanup_old_weather_files(
         
         for download in result.data:
             try:
-                # Reconstruct file path from download record
-                # Format: {user_id}/{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx
                 user_id = download["requested_by_user_id"]
                 provinces_str = "_".join(download["provinces"])
                 dataset_type = download["dataset"]
@@ -315,13 +277,10 @@ async def cleanup_old_weather_files(
                 filename = f"{provinces_str}_{dataset_type}_data_{date_start}_{date_end}_{download_id}.xlsx"
                 file_path = f"{user_id}/{filename}"
                 
-                # Delete file from storage
                 try:
                     storage_result = supabase.storage.from_("weather-data-downloads").remove([file_path])
                     
-                    # Check if deletion was successful (Supabase returns a list of deleted file paths)
                     if storage_result and len(storage_result) > 0:
-                        # Update record to remove file_url (set to null)
                         supabase.table("weather_downloads")\
                             .update({"file_url": None})\
                             .eq("id", download_id)\
@@ -330,7 +289,6 @@ async def cleanup_old_weather_files(
                         files_deleted += 1
                         print(f"[INFO] Deleted file: {file_path}")
                     else:
-                        # File might not exist, but that's okay - still update the record
                         supabase.table("weather_downloads")\
                             .update({"file_url": None})\
                             .eq("id", download_id)\
@@ -339,7 +297,6 @@ async def cleanup_old_weather_files(
                         files_deleted += 1
                         print(f"[INFO] File not found (may have been deleted already): {file_path}, updated record")
                 except Exception as storage_error:
-                    # Even if file deletion fails, try to update the record
                     try:
                         supabase.table("weather_downloads")\
                             .update({"file_url": None})\

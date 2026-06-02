@@ -812,6 +812,7 @@ export class EnrollmentsService {
 export interface WeatherDownload {
   id: string
   requested_by_user_id: string
+  country?: 'Cambodia' | 'Nigeria' | ('Cambodia' | 'Nigeria')[]
   dataset: 'precipitation' | 'temperature'
   provinces: string[]
   districts?: string[]

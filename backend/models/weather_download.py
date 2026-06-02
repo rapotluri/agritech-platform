@@ -1,8 +1,12 @@
 from pydantic import BaseModel, field_validator, model_validator, ValidationInfo
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import date
 from enum import Enum
-from countries.cambodia import validate_location
+from countries import (
+    SUPPORTED_COUNTRIES,
+    get_country_module,
+    validate_location as validate_country_location,
+)
 
 class WeatherDatasetType(str, Enum):
     """Enumeration for weather dataset types."""
@@ -20,11 +24,10 @@ class WeatherDownloadRequest(BaseModel):
     """
     Request model for weather data download.
     
-    All location names (provinces, districts, communes) must be in canonical format
-    (e.g., "Banteay Meanchey" with spaces preserved).
-    
+    All location names (provinces/states, districts/LGAs, communes) must be in canonical format.
     If communes are provided, districts must also be provided.
     """
+    country: Literal["Cambodia", "Nigeria"] = "Cambodia"
     dataset: WeatherDatasetType
     provinces: List[str]
     date_start: date
@@ -32,57 +35,74 @@ class WeatherDownloadRequest(BaseModel):
     districts: Optional[List[str]] = None
     communes: Optional[List[str]] = None
     
+    @field_validator('country')
+    @classmethod
+    def validate_country(cls, v: str) -> str:
+        if v not in SUPPORTED_COUNTRIES:
+            raise ValueError(f"Unsupported country: {v}. Supported countries: {list(SUPPORTED_COUNTRIES)}")
+        return v
+
     @field_validator('provinces')
     @classmethod
-    def validate_provinces(cls, v: List[str]) -> List[str]:
-        """Validate that all provinces exist in canonical location data."""
+    def validate_provinces(cls, v: List[str], info: ValidationInfo) -> List[str]:
+        country = info.data.get("country", "Cambodia") if info.data else "Cambodia"
         for province in v:
-            if not validate_location(province):
-                raise ValueError(f"Invalid province: {province}. Province must be in canonical format (e.g., 'Banteay Meanchey').")
+            if not validate_country_location(country, province):
+                module = get_country_module(country)
+                if country == "Nigeria":
+                    available = module.get_all_states()
+                else:
+                    available = module.get_all_provinces()
+                raise ValueError(
+                    f"Invalid province/state for {country}: {province}. Available options: {available}"
+                )
         return v
     
     @field_validator('districts')
     @classmethod
     def validate_districts(cls, v: Optional[List[str]], info: ValidationInfo) -> Optional[List[str]]:
-        """Validate that all districts exist in canonical location data for the given provinces."""
         if v is None:
             return v
         
-        # Get provinces from the model data
-        provinces = info.data.get('provinces', []) if info.data else []
+        data = info.data if info.data else {}
+        country = data.get("country", "Cambodia")
+        provinces = data.get('provinces', [])
         if not provinces:
             return v
         
         invalid_districts = []
         for district in v:
-            # Check if district exists in any of the provided provinces
-            district_valid = any(validate_location(province, district) for province in provinces)
+            district_valid = any(
+                validate_country_location(country, province, district)
+                for province in provinces
+            )
             if not district_valid:
                 invalid_districts.append(district)
         
         if invalid_districts:
             raise ValueError(
-                f"Invalid districts: {invalid_districts}. "
-                "Districts must be in canonical format and must belong to one of the specified provinces."
+                f"Invalid districts for {country}: {invalid_districts}. "
+                "Districts must be in canonical format and belong to one of the specified provinces/states."
             )
         return v
     
     @field_validator('communes')
     @classmethod
     def validate_communes(cls, v: Optional[List[str]], info: ValidationInfo) -> Optional[List[str]]:
-        """Validate that all communes exist in canonical location data for the given districts."""
         if v is None:
             return v
         
-        # Get provinces and districts from the model data
         data = info.data if info.data else {}
+        country = data.get("country", "Cambodia")
         provinces = data.get('provinces', [])
         districts = data.get('districts', [])
+
+        if country == "Nigeria" and v:
+            raise ValueError("Communes are not supported for Nigeria. Use state and LGA only.")
         
         if not provinces:
             return v
         
-        # If communes are provided, districts must also be provided
         if not districts:
             raise ValueError(
                 "Districts must be provided when communes are specified. "
@@ -91,9 +111,8 @@ class WeatherDownloadRequest(BaseModel):
         
         invalid_communes = []
         for commune in v:
-            # Check if commune exists in any of the provided province-district combinations
             commune_valid = any(
-                validate_location(province, district, commune)
+                validate_country_location(country, province, district, commune)
                 for province in provinces
                 for district in districts
             )
@@ -103,16 +122,12 @@ class WeatherDownloadRequest(BaseModel):
         if invalid_communes:
             raise ValueError(
                 f"Invalid communes: {invalid_communes}. "
-                "Communes must be in canonical format and must belong to one of the specified districts."
+                "Communes must be in canonical format and belong to one of the specified districts."
             )
         return v
     
     @model_validator(mode='after')
     def validate_district_commune_relationship(self):
-        """
-        Ensure that districts are provided when communes are provided.
-        This is a cross-field validation.
-        """
         if self.communes is not None and len(self.communes) > 0:
             if self.districts is None or len(self.districts) == 0:
                 raise ValueError(
@@ -124,6 +139,7 @@ class WeatherDownloadRequest(BaseModel):
 class WeatherDownloadResponse(BaseModel):
     """Response model for weather data download."""
     id: str
+    country: Optional[Literal["Cambodia", "Nigeria"]] = "Cambodia"
     status: WeatherDownloadStatus
     file_url: Optional[str] = None
     error_message: Optional[str] = None

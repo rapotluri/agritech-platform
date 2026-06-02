@@ -12,10 +12,15 @@ from utils.gee_utils import initialize_gee
 from utils.gee_utils_local import initialize_gee_local
 from weather.precipitation import retrieve_precipitation_data
 from weather.temperature import retrieve_temperature_data
-from countries.cambodia import (
-    get_communes_geodataframe,
-    validate_location,
-    province_to_filename
+from utils.country_utils import normalize_country
+from countries import (
+    get_geodataframe,
+    validate_location as validate_country_location,
+    get_all_provinces,
+    get_districts_for_province,
+    get_communes_for_district,
+    province_to_filename,
+    detect_country_for_province,
 )
 from io import BytesIO
 from dotenv import load_dotenv
@@ -40,9 +45,6 @@ except ImportError as e:
 # Initialize Celery
 celery_app = Celery("tasks")
 celery_app.config_from_object("celeryconfig")
-
-# Load GeoDataFrame with communes
-communes_gdf = get_communes_geodataframe()
 
 # Create files directory if it doesn't exist
 os.makedirs(os.path.join(os.getcwd(), "files"), exist_ok=True)
@@ -72,7 +74,7 @@ def init_worker(**kwargs):
     print("[DEBUG] Worker initialization completed")
 
 @celery_app.task(name="data_task", bind=True)
-def data_task(self, download_id: str):
+def data_task(self, download_id: str, country: str | None = None):
     """
     Enhanced Celery task for processing weather data downloads.
     
@@ -114,6 +116,12 @@ def data_task(self, download_id: str):
         
         download_record = result.data[0]
         print(f"[INFO] Processing {download_record['dataset']} data for provinces: {download_record['provinces']}")
+
+        country = normalize_country(download_record.get("country")) or country
+        if not country:
+            country = detect_country_for_province(download_record["provinces"][0]) or "Cambodia"
+        communes_gdf = get_geodataframe(country)
+        print(f"[INFO] Using country: {country}")
         
         # Update status to running
         supabase.table("weather_downloads")\
@@ -143,17 +151,14 @@ def data_task(self, download_id: str):
             print(f"[INFO] Processing province {i+1}/{total_provinces}: {province}")
             
             # Validate province using canonical location data (e.g., "Banteay Meanchey")
-            if not validate_location(province):
-                from countries.cambodia import get_all_provinces
-                available_provinces = get_all_provinces()
+            if not validate_country_location(country, province):
+                available_provinces = get_all_provinces(country)
                 raise Exception(
-                    f"Invalid province: '{province}'. "
-                    f"Province must be in canonical format (e.g., 'Banteay Meanchey'). "
-                    f"Available provinces: {available_provinces}"
+                    f"Invalid province/state: '{province}'. "
+                    f"Available options for {country}: {available_provinces}"
                 )
             
-            # Get province GeoDataFrame using normalized name for file lookup
-            normalized_province = province_to_filename(province)
+            normalized_province = province_to_filename(country, province)
             province_gdf = communes_gdf[communes_gdf["normalized_NAME_1"] == normalized_province]
             if province_gdf.empty:
                 raise Exception(f"Province not found in dataset: {province}")
@@ -163,13 +168,11 @@ def data_task(self, download_id: str):
             if districts:
                 # Validate districts using canonical location data (e.g., "Mongkol Borei")
                 for d in districts:
-                    if not validate_location(province, d):
-                        from countries.cambodia import get_districts_for_province
-                        available_districts = get_districts_for_province(province)
+                    if not validate_country_location(country, province, d):
+                        available_districts = get_districts_for_province(country, province)
                         raise Exception(
-                            f"Invalid district: '{d}' in province '{province}'. "
-                            f"District must be in canonical format. "
-                            f"Available districts for {province}: {available_districts}"
+                            f"Invalid district/LGA: '{d}' in '{province}'. "
+                            f"Available options: {available_districts}"
                         )
                 
                 # Districts are stored with their canonical names (may have spaces)
@@ -180,45 +183,37 @@ def data_task(self, download_id: str):
             
             # Filter by communes if provided
             communes = download_record.get("communes")
-            if communes:
-                # Validate communes using canonical location data
-                # If districts are provided, validate commune against those districts
+            if communes and country != "Nigeria":
                 if districts:
                     for c in communes:
                         commune_found = False
                         for d in districts:
-                            if validate_location(province, d, c):
+                            if validate_country_location(country, province, d, c):
                                 commune_found = True
                                 break
                         if not commune_found:
-                            from countries.cambodia import get_communes_for_district
                             available_communes = []
                             for d in districts:
-                                available_communes.extend(get_communes_for_district(province, d))
+                                available_communes.extend(get_communes_for_district(country, province, d))
                             raise Exception(
-                                f"Invalid commune: '{c}' in province '{province}', districts {districts}. "
-                                f"Commune must be in canonical format. "
+                                f"Invalid commune: '{c}' in '{province}', districts {districts}. "
                                 f"Available communes: {available_communes}"
                             )
                 else:
-                    # If no districts, check commune exists in any district of the province
                     for c in communes:
                         commune_found = False
-                        from countries.cambodia import get_districts_for_province
-                        all_districts = get_districts_for_province(province)
+                        all_districts = get_districts_for_province(country, province)
                         for d in all_districts:
-                            if validate_location(province, d, c):
+                            if validate_country_location(country, province, d, c):
                                 commune_found = True
                                 break
                         if not commune_found:
-                            from countries.cambodia import get_districts_for_province, get_communes_for_district
                             available_communes = []
-                            all_districts = get_districts_for_province(province)
+                            all_districts = get_districts_for_province(country, province)
                             for d in all_districts:
-                                available_communes.extend(get_communes_for_district(province, d))
+                                available_communes.extend(get_communes_for_district(country, province, d))
                             raise Exception(
-                                f"Invalid commune: '{c}' in province '{province}'. "
-                                f"Commune must be in canonical format. "
+                                f"Invalid commune: '{c}' in '{province}'. "
                                 f"Available communes: {available_communes}"
                             )
                 
@@ -234,13 +229,15 @@ def data_task(self, download_id: str):
                 province_data = retrieve_precipitation_data(
                     province_gdf, 
                     download_record["date_start"], 
-                    download_record["date_end"]
+                    download_record["date_end"],
+                    country,
                 )
             elif download_record["dataset"] == "temperature":
                 province_data = retrieve_temperature_data(
                     province_gdf, 
                     download_record["date_start"], 
-                    download_record["date_end"]
+                    download_record["date_end"],
+                    country,
                 )
             else:
                 raise Exception(f"Unsupported dataset type: {download_record['dataset']}")
