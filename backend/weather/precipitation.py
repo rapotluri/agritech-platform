@@ -3,7 +3,15 @@
 import ee
 import pandas as pd
 from datetime import datetime, timedelta
-from countries.cambodia import to_climate_column_name
+from countries import (
+    get_geodataframe,
+    validate_location as validate_country_location,
+    get_all_provinces,
+    get_districts_for_province,
+    get_communes_for_district,
+    province_to_filename,
+    to_climate_column_name,
+)
 
 def get_date_batches(start_date: str, end_date: str, batch_years: int = 10):
     """Split date range into batches of specified years."""
@@ -28,7 +36,7 @@ def get_date_batches(start_date: str, end_date: str, batch_years: int = 10):
     
     return batches
 
-def retrieve_precipitation_data(province_gdf, start_date: str, end_date: str):
+def retrieve_precipitation_data(province_gdf, start_date: str, end_date: str, country: str = "Cambodia"):
     """
     Retrieve daily precipitation data for all communes within the specified province.
     Args:
@@ -109,7 +117,7 @@ def retrieve_precipitation_data(province_gdf, start_date: str, end_date: str):
 
                 # Convert to a DataFrame
                 # Use district_commune format for column name
-                column_name = to_climate_column_name(district_name, commune_name)
+                column_name = to_climate_column_name(country, district_name, commune_name)
                 daily_data = {
                     entry["properties"]["date"]: entry["properties"]["mean_precipitation"]
                     for entry in time_series["features"]

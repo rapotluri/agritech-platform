@@ -13,6 +13,7 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { WeatherDownload } from '@/lib/supabase';
+import { getCountryConfig } from './locationConfig';
 import { DownloadIcon, AlertCircleIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react';
 
 interface DownloadHistoryTableProps {
@@ -25,7 +26,6 @@ export default function DownloadHistoryTable({ downloads, loading }: DownloadHis
         if (!download.file_url) return
         
         try {
-            // Use the stored signed URL directly
             window.open(download.file_url, '_blank')
         } catch (error) {
             console.error('Error downloading file:', error);
@@ -78,7 +78,8 @@ export default function DownloadHistoryTable({ downloads, loading }: DownloadHis
                 <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 border-b">
                         <TableRow>
-                            <TableHead className="w-[200px]">Dataset</TableHead>
+                            <TableHead className="w-[100px]">Country</TableHead>
+                            <TableHead className="w-[160px]">Dataset</TableHead>
                             <TableHead className="w-[150px]">Location</TableHead>
                             <TableHead className="w-[180px]">Date Range</TableHead>
                             <TableHead className="w-[100px]">Status</TableHead>
@@ -87,79 +88,88 @@ export default function DownloadHistoryTable({ downloads, loading }: DownloadHis
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {downloads.map((download) => (
-                            <TableRow key={download.id}>
-                                <TableCell className="font-medium">
-                                    <div className="flex flex-col">
-                                        <span className="capitalize">{download.dataset}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            Weather Data
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="max-w-[150px]">
-                                        <div className="font-medium">{download.provinces.join(', ')}</div>
-                                        <div className="text-xs text-muted-foreground mt-0.5">
-                                            District: {download.districts && download.districts.length > 0 
-                                                ? download.districts.join(', ') 
-                                                : 'All Districts'}
+                        {downloads.map((download) => {
+                            const countryConfig = getCountryConfig(download.country);
+
+                            return (
+                                <TableRow key={download.id}>
+                                    <TableCell>
+                                        <span className="font-medium">{countryConfig.label}</span>
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="flex flex-col">
+                                            <span className="capitalize">{download.dataset}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Weather Data
+                                            </span>
                                         </div>
-                                        <div className="text-xs text-muted-foreground mt-0.5">
-                                            Commune: {download.communes && download.communes.length > 0 
-                                                ? download.communes.join(', ') 
-                                                : 'All'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="max-w-[150px]">
+                                            <div className="font-medium">{download.provinces.join(', ')}</div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                                {countryConfig.labels.district}: {download.districts && download.districts.length > 0 
+                                                    ? download.districts.join(', ') 
+                                                    : `All ${countryConfig.labels.district}s`}
+                                            </div>
+                                            {countryConfig.hasCommuneLevel && (
+                                                <div className="text-xs text-muted-foreground mt-0.5">
+                                                    {countryConfig.labels.commune}: {download.communes && download.communes.length > 0 
+                                                        ? download.communes.join(', ') 
+                                                        : 'All'}
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="text-sm">
-                                        <div>{download.date_start}</div>
-                                        <div className="text-muted-foreground">to {download.date_end}</div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {getStatusBadge(download.status)}
-                                    {download.status === 'failed' && download.error_message && (
-                                        <div className="mt-1 text-xs text-destructive max-w-[100px] truncate" title={download.error_message}>
-                                            {download.error_message}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm">
+                                            <div>{download.date_start}</div>
+                                            <div className="text-muted-foreground">to {download.date_end}</div>
                                         </div>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="text-sm">
-                                        {new Date(download.created_at).toLocaleDateString()}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {download.status === 'completed' && download.file_url ? (
-                                        <Button 
-                                            size="sm" 
-                                            onClick={() => downloadFile(download)}
-                                            className="flex items-center gap-1"
-                                        >
-                                            <DownloadIcon className="h-3 w-3" />
-                                            Download
-                                        </Button>
-                                    ) : download.status === 'running' ? (
-                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                            <ClockIcon className="h-3 w-3 animate-spin" />
-                                            Processing
+                                    </TableCell>
+                                    <TableCell>
+                                        {getStatusBadge(download.status)}
+                                        {download.status === 'failed' && download.error_message && (
+                                            <div className="mt-1 text-xs text-destructive max-w-[100px] truncate" title={download.error_message}>
+                                                {download.error_message}
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm">
+                                            {new Date(download.created_at).toLocaleDateString()}
                                         </div>
-                                    ) : download.status === 'failed' ? (
-                                        <div className="flex items-center gap-1 text-sm text-destructive">
-                                            <XCircleIcon className="h-3 w-3" />
-                                            Failed
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                            <ClockIcon className="h-3 w-3" />
-                                            Queued
-                                        </div>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                    </TableCell>
+                                    <TableCell>
+                                        {download.status === 'completed' && download.file_url ? (
+                                            <Button 
+                                                size="sm" 
+                                                onClick={() => downloadFile(download)}
+                                                className="flex items-center gap-1"
+                                            >
+                                                <DownloadIcon className="h-3 w-3" />
+                                                Download
+                                            </Button>
+                                        ) : download.status === 'running' ? (
+                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                <ClockIcon className="h-3 w-3 animate-spin" />
+                                                Processing
+                                            </div>
+                                        ) : download.status === 'failed' ? (
+                                            <div className="flex items-center gap-1 text-sm text-destructive">
+                                                <XCircleIcon className="h-3 w-3" />
+                                                Failed
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                <ClockIcon className="h-3 w-3" />
+                                                Queued
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>
