@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/client'
 import { 
   Plot, 
   Product,
+  Claim,
   FarmerInsert, 
   PlotInsert, 
   FarmerUpdate, 
@@ -898,6 +899,127 @@ export class WeatherDownloadsService {
     // Import apiClient dynamically to avoid circular dependencies
     const { default: apiClient } = await import('@/lib/apiClient');
     await apiClient.post('/api/climate-data/cleanup');
+  }
+}
+
+// Claims service
+export class ClaimsService {
+  static async getClaims(status?: Claim['status']) {
+    let query = supabase
+      .from('claims')
+      .select(`
+        *,
+        enrollment:enrollments(
+          id, season, status, sum_insured, premium,
+          farmer:farmers(id, english_name, phone),
+          product:products(id, name, crop)
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async getClaimById(id: string) {
+    const { data, error } = await supabase
+      .from('claims')
+      .select(`
+        *,
+        enrollment:enrollments(
+          id, season, status, sum_insured, premium, product_id, farmer_id, plot_id,
+          farmer:farmers(id, english_name, phone, province, district, commune),
+          plot:plots(id, province, district, commune, crop, area_ha),
+          product:products(id, name, crop, triggers, region, coverage_start_date, coverage_end_date)
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async countByStatus(status: Claim['status'] = 'pending') {
+    const { count, error } = await supabase
+      .from('claims')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', status)
+
+    if (error) throw error
+    return count || 0
+  }
+
+  static async createClaim(claimData: {
+    enrollment_id?: string | null
+    trigger_window?: string | null
+    trigger_value?: number | null
+    payout: number
+    status?: Claim['status']
+    termsheet_snapshot?: any
+    peril_breakdown?: any
+  }) {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('claims')
+      .insert({
+        created_by_user_id: user.id,
+        enrollment_id: claimData.enrollment_id ?? null,
+        trigger_window: claimData.trigger_window ?? null,
+        trigger_value: claimData.trigger_value ?? null,
+        payout: claimData.payout,
+        status: claimData.status || 'pending',
+        termsheet_snapshot: claimData.termsheet_snapshot ?? null,
+        peril_breakdown: claimData.peril_breakdown ?? null,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateClaimStatus(
+    id: string,
+    status: Claim['status'],
+    extras?: { notes?: string }
+  ) {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const existing = await this.getClaimById(id)
+    const snap = existing?.termsheet_snapshot || {}
+    const termsheet_snapshot = {
+      ...snap,
+      meta: {
+        ...(snap.meta || {}),
+        ...(extras?.notes != null ? { notes: extras.notes } : {}),
+        reviewed_by_user_id: user.id,
+        reviewed_at: new Date().toISOString(),
+        previous_status: existing?.status,
+      },
+    }
+
+    const { data, error } = await supabase
+      .from('claims')
+      .update({
+        status,
+        termsheet_snapshot,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   }
 }
 

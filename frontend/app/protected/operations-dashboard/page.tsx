@@ -13,13 +13,14 @@ import {
   DocumentTextIcon,
   ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
-import { useFarmerStats, useProductStats } from "@/lib/hooks";
+import { useFarmerStats, useProductStats, usePendingClaimsCount } from "@/lib/hooks";
 
 export default function OperationsDashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const { data: farmerStats } = useFarmerStats();
   const { data: productStats } = useProductStats();
+  const { data: pendingClaimsCount } = usePendingClaimsCount();
 
   useEffect(() => {
     // Check if user is authenticated
@@ -85,7 +86,9 @@ export default function OperationsDashboardPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending Claims</p>
-              <p className="text-2xl font-bold text-gray-900">0</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {pendingClaimsCount ?? 0}
+              </p>
             </div>
           </div>
         </div>
