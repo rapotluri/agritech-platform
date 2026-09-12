@@ -34,3 +34,4 @@ backend/~$KampongSpeu_climate_data.xlsx
 backend/api/g_credentials.json
 /.cursor
 *.md
+run_commands.txt

@@ -25,6 +25,7 @@ from countries import (
 from io import BytesIO
 from dotenv import load_dotenv
 from services.insure_smart_optimizer import optimize_insure_smart
+from services.claims_evaluator import evaluate_claim
 
 # Add the backend directory to Python path for imports
 backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -407,4 +408,29 @@ def insure_smart_optimize_task(request_dict):
         return result
     except Exception as e:
         print(f"Error in insure_smart_optimize_task: {str(e)}")
+        raise
+
+
+@celery_app.task(name="claims_evaluate_task")
+def claims_evaluate_task(request_dict):
+    """
+    Evaluate a claim using live GEE weather for a single commune.
+    Does not write weather_downloads or Excel files.
+    """
+    import uuid
+
+    task_id = str(uuid.uuid4())[:8]
+    print(f"[INFO] Starting claims_evaluate_task: {task_id}")
+    try:
+        # Strip internal-only fields before evaluation
+        payload = dict(request_dict or {})
+        payload.pop("_requested_by_user_id", None)
+        result = evaluate_claim(payload)
+        print(
+            f"[INFO] claims_evaluate_task {task_id} completed: "
+            f"triggered={result.get('triggered')} payout={result.get('payout')}"
+        )
+        return result
+    except Exception as e:
+        print(f"Error in claims_evaluate_task: {str(e)}")
         raise

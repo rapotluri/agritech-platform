@@ -316,6 +316,47 @@ export interface Database {
           updated_at?: string
         }
       }
+      claims: {
+        Row: {
+          id: string
+          created_by_user_id: string
+          enrollment_id: string | null
+          trigger_window: string | null
+          trigger_value: number | null
+          payout: number
+          status: 'pending' | 'approved' | 'paid' | 'rejected'
+          termsheet_snapshot: any
+          peril_breakdown: any
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          created_by_user_id: string
+          enrollment_id?: string | null
+          trigger_window?: string | null
+          trigger_value?: number | null
+          payout: number
+          status?: 'pending' | 'approved' | 'paid' | 'rejected'
+          termsheet_snapshot?: any
+          peril_breakdown?: any
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          created_by_user_id?: string
+          enrollment_id?: string | null
+          trigger_window?: string | null
+          trigger_value?: number | null
+          payout?: number
+          status?: 'pending' | 'approved' | 'paid' | 'rejected'
+          termsheet_snapshot?: any
+          peril_breakdown?: any
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -336,6 +377,11 @@ export type Farmer = Database['public']['Tables']['farmers']['Row']
 export type Plot = Database['public']['Tables']['plots']['Row']
 export type Product = Database['public']['Tables']['products']['Row']
 export type Enrollment = Database['public']['Tables']['enrollments']['Row']
+export type Claim = Database['public']['Tables']['claims']['Row']
+export type ClaimInsert = Database['public']['Tables']['claims']['Insert']
+export type ClaimUpdate = Database['public']['Tables']['claims']['Update']
+export type ClaimStatus = Claim['status']
+export type ClaimSource = 'enrollment' | 'product' | 'manual'
 
 // Insert types
 export type FarmerInsert = Database['public']['Tables']['farmers']['Insert']

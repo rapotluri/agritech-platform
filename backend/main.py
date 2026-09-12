@@ -10,6 +10,7 @@ from utils.settings import origins
 from api.premium import router as premium_router
 from dotenv import load_dotenv
 from api.insure_smart import router as insure_smart_router
+from api.claims import router as claims_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,6 +44,7 @@ app.include_router(climate_data_router)
 app.include_router(task_router)
 app.include_router(premium_router)
 app.include_router(insure_smart_router)
+app.include_router(claims_router)
 
 @app.get("/")
 async def root():
