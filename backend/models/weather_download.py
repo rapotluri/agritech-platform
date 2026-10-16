@@ -27,7 +27,7 @@ class WeatherDownloadRequest(BaseModel):
     All location names (provinces/states, districts/LGAs, communes) must be in canonical format.
     If communes are provided, districts must also be provided.
     """
-    country: Literal["Cambodia", "Nigeria"] = "Cambodia"
+    country: Literal["Cambodia", "India", "Nigeria"] = "Cambodia"
     dataset: WeatherDatasetType
     provinces: List[str]
     date_start: date
@@ -139,7 +139,7 @@ class WeatherDownloadRequest(BaseModel):
 class WeatherDownloadResponse(BaseModel):
     """Response model for weather data download."""
     id: str
-    country: Optional[Literal["Cambodia", "Nigeria"]] = "Cambodia"
+    country: Optional[Literal["Cambodia", "India", "Nigeria"]] = "Cambodia"
     status: WeatherDownloadStatus
     file_url: Optional[str] = None
     error_message: Optional[str] = None

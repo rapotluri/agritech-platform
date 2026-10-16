@@ -813,7 +813,7 @@ export class EnrollmentsService {
 export interface WeatherDownload {
   id: string
   requested_by_user_id: string
-  country?: 'Cambodia' | 'Nigeria' | ('Cambodia' | 'Nigeria')[]
+  country?: 'Cambodia' | 'India' | 'Nigeria' | ('Cambodia' | 'India' | 'Nigeria')[]
   dataset: 'precipitation' | 'temperature'
   provinces: string[]
   districts?: string[]

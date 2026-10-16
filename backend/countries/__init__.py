@@ -1,9 +1,10 @@
 from typing import List, Optional
 
-from countries import cambodia, nigeria
+from countries import cambodia, india, nigeria
 
 SUPPORTED_COUNTRIES = {
     "Cambodia": cambodia,
+    "India": india,
     "Nigeria": nigeria,
 }
 

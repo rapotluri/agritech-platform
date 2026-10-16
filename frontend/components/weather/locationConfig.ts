@@ -1,4 +1,5 @@
 import cambodiaLocationData from "../../data/cambodia_locations.json";
+import indiaLocationData from "../../data/india_locations.json";
 import nigeriaLocationData from "../../data/nigeria_locations.json";
 
 export type LocationData = {
@@ -7,7 +8,7 @@ export type LocationData = {
     };
 };
 
-export type CountryCode = "Cambodia" | "Nigeria";
+export type CountryCode = "Cambodia" | "India" | "Nigeria";
 
 export interface CountryLocationConfig {
     label: string;
@@ -28,6 +29,16 @@ export const COUNTRY_LOCATION_CONFIG: Record<CountryCode, CountryLocationConfig>
             state: "Province",
             district: "District",
             commune: "Commune",
+        },
+        hasCommuneLevel: true,
+    },
+    India: {
+        label: "India",
+        locationData: indiaLocationData as LocationData,
+        labels: {
+            state: "State",
+            district: "District",
+            commune: "Taluk",
         },
         hasCommuneLevel: true,
     },
