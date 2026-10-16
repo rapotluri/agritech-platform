@@ -76,17 +76,18 @@ def retrieve_precipitation_data(province_gdf, start_date: str, end_date: str, co
                 batch_end_dt = datetime.strptime(batch_end, "%Y-%m-%d")
                 batch_end_gee = (batch_end_dt + timedelta(days=1)).strftime("%Y-%m-%d")
 
-                # Define the geometry
-                if commune["geometry"].geom_type == "MultiPolygon":
+                # Define the geometry (GeoPandas yields Shapely geometries)
+                geom = commune["geometry"]
+                if geom.geom_type == "MultiPolygon":
                     polygons = [
                         ee.Geometry.Polygon(list(poly.exterior.coords))
-                        for poly in commune["geometry"].geoms
+                        for poly in geom.geoms
                     ]
                     commune_geometry = ee.Geometry.MultiPolygon(polygons)
+                elif geom.geom_type == "Polygon":
+                    commune_geometry = ee.Geometry.Polygon(list(geom.exterior.coords))
                 else:
-                    commune_geometry = ee.Geometry.Polygon(
-                        commune["geometry"]["coordinates"]
-                    )
+                    raise ValueError(f"Unsupported geometry type: {geom.geom_type}")
 
                 # Fetch CHIRPS precipitation data for the commune's polygon over the specified time period
                 chirps = (
